@@ -29,6 +29,10 @@
     history: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.2a4.8 4.8 0 1 1-4.4 3" stroke="#7E93AB" stroke-width="1.4" stroke-linecap="round"/><path d="M3 3.4v2.6h2.6M8 5.5V8l1.8 1.2" stroke="#7E93AB" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     notes: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4.2 2.8h5.2L12 5.4v7.8H4.2V2.8z" stroke="#7E93AB" stroke-width="1.3" stroke-linejoin="round"/><path d="M9.3 2.8v2.8H12M6 8.2h4.2M6 10.6h3.2" stroke="#7E93AB" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     swap: `<svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M9.8 6A3.8 3.8 0 1 1 8.2 2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8.05 1.35 8.3 3.05 6.6 3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    clock: `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.2a4.8 4.8 0 1 1-4.4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 3.4v2.6h2.6M8 5.5V8l1.8 1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    pause: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="7" y="5.5" width="3.8" height="15" rx="1.2" fill="currentColor"/><rect x="15.2" y="5.5" width="3.8" height="15" rx="1.2" fill="currentColor"/></svg>`,
+    play: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M9 6.2v13.6L20.2 13 9 6.2z" fill="currentColor"/></svg>`,
+    target: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v2.2M8 12.3v2.2M1.5 8h2.2M12.3 8h2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   };
 
   function esc(s) {
@@ -45,42 +49,58 @@
 
   function formatTempo(t) {
     const a = t && t.length ? t : [3, 0, 1, 1];
-    return a.map((n, i) => `<b>${esc(n)}</b>${i < a.length - 1 ? "<i>|</i>" : ""}`).join("");
+    const [ecc, pause1, con, pause2] = [a[0], a[1], a[2], a[3]];
+    return `<span class="t-lbl">Tempo</span><span class="t-sym">←→</span><b>${esc(ecc)}</b><span class="t-bars">||</span><b>${esc(pause1)}</b><span class="t-sym">→←</span><b>${esc(con)}</b><span class="t-bars">||</span><b>${esc(pause2)}</b>`;
   }
 
   function suggestionLabel(ex) {
     return C().formatSetLabel(ex.suggestedReps, ex.suggestedWeight);
   }
 
-  function chipLabel(ex, set) {
-    if (set.done || set.reps != null || set.weight != null || (set.repsText && set.repsText !== "") || (set.weightText && set.weightText !== "")) {
-      const reps = set.reps != null ? set.reps : C().parseNum(set.repsText);
-      const weight = set.weight != null ? set.weight : C().parseNum(set.weightText);
-      if (reps != null || weight != null) return C().formatSetLabel(reps, weight);
-    }
-    return suggestionLabel(ex);
+  function overloadMark(sign) {
+    if (sign === "up") return { cls: "up", char: "↑" };
+    if (sign === "down") return { cls: "down", char: "↓" };
+    if (sign === "same") return { cls: "same", char: "=" };
+    return { cls: "check", char: "✓" };
   }
 
-  function chipClass(ex, set, exIndex, setIndex) {
-    const isEdit = editing && editing.exIndex === exIndex && editing.setIndex === setIndex;
-    if (isEdit) return "chip edit";
-    if (set.done) return "chip done";
-    return "chip ghost";
+  function chipInner(ex, set, exIndex, setIndex, workout) {
+    if (set.done) {
+      const sign = D().setOverload(ex, setIndex, workout && workout.sessionId);
+      const mark = overloadMark(sign);
+      const label = D().formatLogged(set.weight, set.reps);
+      return `<span>${esc(label)}</span><span class="badge ${mark.cls}" data-overload="${esc(sign || "none")}">${mark.char}</span>`;
+    }
+    const reps = ex.suggestedReps != null ? ex.suggestedReps : 8;
+    return esc(`${reps} reps`);
+  }
+
+  function chipClass(ex, set) {
+    return set.done ? "chip logged" : "chip pending";
   }
 
   function renderHeader() {
     const w = activeWorkout();
     let mid = "";
     let left = `<span class="icon-btn" aria-hidden="true"></span>`;
+    let extra = "";
     if (view === "workout" && w) {
-      const done = D().doneExerciseCount(w);
-      mid = `<div class="title-block"><h1>${esc(w.name)}</h1><div class="sub">${done} of ${w.exercises.length} exercises</div></div>`;
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div></div>`;
       left = `<button class="icon-btn" type="button" data-action="back" aria-label="Back to overview">${ICONS.back}</button>`;
+      const running = !w.completedAt && !w.timerPaused && w.timerStartedAt;
+      const icon = running ? ICONS.pause : ICONS.play;
+      const label = running ? "Pause workout timer" : "Resume workout timer";
+      extra = `<div class="workout-bar">
+        <h1>${esc(w.name)}</h1>
+        <button type="button" class="timer-btn${running ? "" : " paused"}" data-action="toggle-timer" data-testid="workout-timer" aria-label="${label}">
+          ${icon}<span data-timer-clock>${esc(D().formatTimer(D().timerMs(w)))}</span>
+        </button>
+      </div>`;
     } else {
       const week = D().get().week || 1;
       mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Week ${week}</div></div>`;
     }
-    headerEl().innerHTML = `<div class="header-row">${left}${mid}<button class="icon-btn" type="button" data-action="settings" aria-label="Settings">${ICONS.gear}</button></div>`;
+    headerEl().innerHTML = `<div class="header-row">${left}${mid}<button class="icon-btn" type="button" data-action="settings" aria-label="Settings">${ICONS.gear}</button></div>${extra}`;
   }
 
   function renderHome() {
@@ -113,80 +133,55 @@
     footerEl().innerHTML = `<button class="program" type="button" data-action="next-week" data-testid="next-program">Get your next program</button>`;
   }
 
-  function editorHtml(ex, exIndex, setIndex) {
-    const set = ex.sets[setIndex];
-    const sug = suggestionLabel(ex);
-    const repsPh = ex.suggestedReps == null ? "" : String(ex.suggestedReps).replace(".", ",");
-    const wtPh = ex.suggestedWeight == null ? "" : String(ex.suggestedWeight).replace(".", ",");
-    const repsVal = set.repsText || (set.reps != null ? String(set.reps).replace(".", ",") : "");
-    const wtVal = set.weightText || (set.weight != null ? String(set.weight).replace(".", ",") : "");
-    const focus = editing && editing.focus === "weight" ? "weight" : "reps";
-    return `<div class="fields" data-editor="${exIndex}-${setIndex}">
-      <label class="field${focus === "reps" ? " on" : ""}">
-        <em>Reps</em>
-        <input data-testid="reps-input" data-field="reps" data-ex="${exIndex}" data-set="${setIndex}"
-          inputmode="numeric" enterkeyhint="next" autocomplete="off" spellcheck="false"
-          value="${esc(repsVal)}" placeholder="${esc(repsPh)}" />
-      </label>
-      <label class="field${focus === "weight" ? " on" : ""}">
-        <em>Weight · kg</em>
-        <input data-testid="weight-input" data-field="weight" data-ex="${exIndex}" data-set="${setIndex}"
-          inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false"
-          value="${esc(wtVal)}" placeholder="${esc(wtPh)}" />
-      </label>
-    </div>
-    <div class="hint">Suggested ${esc(sug)}</div>
-    <div class="set-tools">
-      <button type="button" data-action="commit-set" data-ex="${exIndex}" data-set="${setIndex}">Mark set done</button>
-      <button type="button" data-action="add-set" data-ex="${exIndex}">+ Add set</button>
-      <button type="button" class="muted" data-action="remove-set" data-ex="${exIndex}">Remove set</button>
-    </div>`;
-  }
-
   function exerciseCard(ex, exIndex, workout) {
     const allDone = ex.sets.length && ex.sets.every((s) => s.done);
     const vol = D().exerciseVolume(ex);
     const target = D().targetVolume(ex);
     const pct = target > 0 ? Math.min(100, (vol / target) * 100) : (vol > 0 ? 100 : 0);
-    const volLabel = target > 0 && vol < target
-      ? `${C().formatVolume(vol).replace(" kg", "")} / ${C().formatVolume(target)}`
-      : C().formatVolume(vol);
-    const aim = ex.suggestedWeight != null ? `Aim for ${C().formatKg(ex.suggestedWeight)}` : (ex.suggestedReps != null ? `Aim for ${C().formatNumber(ex.suggestedReps)} reps` : "");
-    const cols = ex.sets.length > 3 ? " chips cols-4" : " chips";
+    const volLabel = D().formatVolumeKg(vol);
+    const aim = D().formatAim(ex.suggestedWeight) || (ex.suggestedReps != null ? `Aim for ${ex.suggestedReps} reps` : "");
     const chips = ex.sets.map((set, i) =>
-      `<button type="button" class="${chipClass(ex, set, exIndex, i)}" data-action="chip" data-ex="${exIndex}" data-set="${i}" data-testid="set-chip-${exIndex}-${i}">${esc(chipLabel(ex, set))}</button>`
+      `<button type="button" class="${chipClass(ex, set)}" data-action="chip" data-ex="${exIndex}" data-set="${i}" data-testid="set-chip-${exIndex}-${i}">${chipInner(ex, set, exIndex, i, workout)}</button>`
     ).join("");
-    const isEditingHere = editing && editing.exIndex === exIndex;
-    const tools = isEditingHere
-      ? editorHtml(ex, exIndex, editing.setIndex)
-      : `<div class="vol"><div class="vl">Volume</div><div class="track"><i data-volbar="${exIndex}" style="width:${pct}%"></i></div><div class="amt" data-volamt="${exIndex}">${esc(volLabel)}</div></div>
-         <div class="set-tools">
-           <button type="button" data-action="add-set" data-ex="${exIndex}">+ Add set</button>
-           <button type="button" class="muted" data-action="remove-set" data-ex="${exIndex}">Remove set</button>
-         </div>`;
-    const alt = ex.alt
-      ? `<button type="button" class="alt" data-action="alt" data-ex="${exIndex}" aria-label="Swap for ${esc(ex.alt)}"><span>${esc(ex.alt)}</span> ${ICONS.swap}</button>`
-      : `<button type="button" class="alt" data-action="alt" data-ex="${exIndex}" aria-label="Pick an alternative"><span>Alternative</span> ${ICONS.swap}</button>`;
+    const summary = D().exerciseOverloadSummary(ex, workout && workout.sessionId);
+    const summaryHtml = summary
+      ? `<div class="overload-line ${summary.sign}" data-testid="overload-summary-${exIndex}">${esc((summary.sign === "up" ? "↑ " : summary.sign === "down" ? "↓ " : "= ") + summary.text)}</div>`
+      : "";
+    const altName = ex.alt || "Alternative";
+    const alt = `<button type="button" class="alt" data-action="alt" data-ex="${exIndex}" aria-label="Swap for ${esc(altName)}"><span>${esc(altName)}</span><span class="alt-icons">${ICONS.clock}${ICONS.swap}</span></button>`;
     return `<div class="block" data-ex-block="${exIndex}" data-testid="exercise-card-${esc(ex.key)}">
       ${alt}
       <div class="card">
         <div class="top">
           <div class="thumb">${C().thumbMarkup(ex.thumb)}<div class="play">${C().playMarkup()}</div></div>
           <div class="body">
-            <h3>${esc(ex.name)}</h3>
-            <div class="tempo"><span class="lbl">Tempo</span><div class="beats">${formatTempo(ex.tempo)}</div></div>
-            <div class="actions">
-              <div class="ib-row">
-                <button type="button" class="ib" data-action="history" data-ex="${exIndex}">${ICONS.history} History</button>
-                <button type="button" class="ib" data-action="notes" data-ex="${exIndex}">${ICONS.notes} Notes</button>
-              </div>
+            <div class="name-row">
+              <h3>${esc(ex.name)}</h3>
               <span class="check" data-ex-check="${exIndex}">${allDone ? ICONS.checkFill : ICONS.checkEmpty}</span>
+            </div>
+            <div class="tempo-arrows">${formatTempo(ex.tempo)}</div>
+            <div class="actions-ref">
+              <button type="button" class="ib" data-action="history" data-ex="${exIndex}">${ICONS.history} History</button>
+              <button type="button" class="ib" data-action="notes" data-ex="${exIndex}">${ICONS.notes} Notes</button>
             </div>
           </div>
         </div>
-        <div class="set-head"><div class="sh">Set Tracking</div><div class="aim">${esc(aim)}</div></div>
-        <div class="${cols.trim()}" data-chips="${exIndex}">${chips}</div>
-        ${tools}
+        <div class="set-head"><div class="sh">Set Tracking</div></div>
+        <div class="track-row">
+          <div class="aim">${esc(aim)}</div>
+          <div class="chips row" data-chips="${exIndex}">${chips}</div>
+        </div>
+        ${summaryHtml}
+        <div class="vol">
+          <div class="vl">Volume</div>
+          <div class="track"><i data-volbar="${exIndex}" style="width:${pct}%"></i></div>
+          <div class="amt" data-volamt="${exIndex}">${esc(volLabel)}</div>
+          <span class="target" title="Target ${esc(D().formatVolumeKg(target))}" aria-label="Target ${esc(D().formatVolumeKg(target))}">${ICONS.target}</span>
+        </div>
+        <div class="set-tools">
+          <button type="button" data-action="add-set" data-ex="${exIndex}">+ Add set</button>
+          <button type="button" class="muted" data-action="remove-set" data-ex="${exIndex}">Remove set</button>
+        </div>
       </div>
     </div>`;
   }
@@ -198,20 +193,15 @@
       render();
       return;
     }
-    const done = D().doneExerciseCount(w);
-    const pct = w.exercises.length ? (done / w.exercises.length) * 100 : 0;
     contentEl().classList.add("has-footer");
     const cards = w.exercises.map((ex, i) => exerciseCard(ex, i, w)).join("");
     contentEl().innerHTML = `
-      <div class="progress"><div class="bar"><i data-progress-bar style="width:${pct}%"></i></div></div>
+      <h1 class="ex-heading">Exercises</h1>
       <div class="info">${ICONS.info}<span>Swipe left on the exercise tile to pick an alternative</span></div>
       <div class="stack" data-testid="exercise-stack">${cards}</div>`;
     footerEl().classList.remove("hidden");
     footerEl().innerHTML = `<button class="cta" type="button" data-action="finish" data-testid="finish-workout">Finish workout</button>`;
     bindSwipeExercises();
-    if (editing) {
-      focusEditor(false);
-    }
   }
 
   function render() {
@@ -235,8 +225,8 @@
     const set = ex.sets[setIndex];
     const el = contentEl().querySelector(`[data-testid="set-chip-${exIndex}-${setIndex}"]`);
     if (!el) return;
-    el.textContent = chipLabel(ex, set);
-    el.className = chipClass(ex, set, exIndex, setIndex);
+    el.innerHTML = chipInner(ex, set, exIndex, setIndex, w);
+    el.className = chipClass(ex, set);
   }
 
   function patchVolume(exIndex) {
@@ -247,78 +237,115 @@
     const vol = D().exerciseVolume(ex);
     const target = D().targetVolume(ex);
     const pct = target > 0 ? Math.min(100, (vol / target) * 100) : (vol > 0 ? 100 : 0);
-    const volLabel = target > 0 && vol < target
-      ? `${C().formatVolume(vol).replace(" kg", "")} / ${C().formatVolume(target)}`
-      : C().formatVolume(vol);
     const bar = contentEl().querySelector(`[data-volbar="${exIndex}"]`);
     const amt = contentEl().querySelector(`[data-volamt="${exIndex}"]`);
     if (bar) bar.style.width = `${pct}%`;
-    if (amt) amt.textContent = volLabel;
+    if (amt) amt.textContent = D().formatVolumeKg(vol);
     const allDone = ex.sets.length && ex.sets.every((s) => s.done);
     const check = contentEl().querySelector(`[data-ex-check="${exIndex}"]`);
     if (check) check.innerHTML = allDone ? ICONS.checkFill : ICONS.checkEmpty;
-    const done = D().doneExerciseCount(w);
-    const sub = headerEl().querySelector(".sub");
-    if (sub && view === "workout") sub.textContent = `${done} of ${w.exercises.length} exercises`;
-    const pbar = contentEl().querySelector("[data-progress-bar]");
-    if (pbar) pbar.style.width = `${w.exercises.length ? (done / w.exercises.length) * 100 : 0}%`;
   }
 
-  function openEditor(exIndex, setIndex, focus) {
+  function patchTimer() {
+    const clock = headerEl().querySelector("[data-timer-clock]");
     const w = activeWorkout();
-    if (!w) return;
-    const already = editing && editing.exIndex === exIndex && editing.setIndex === setIndex;
-    editing = { exIndex, setIndex, focus: focus || "reps" };
-    if (!already) {
-      renderWorkout();
-      renderHeader();
-    } else {
-      const fields = contentEl().querySelectorAll(".field");
-      fields.forEach((f) => f.classList.toggle("on", f.querySelector(`input[data-field="${editing.focus}"]`)));
-    }
-    focusEditor(true);
+    if (!clock || !w) return;
+    clock.textContent = D().formatTimer(D().timerMs(w));
   }
 
-  function focusEditor(scrollOnce) {
-    if (!editing) return;
-    const sel = `input[data-field="${editing.focus}"][data-ex="${editing.exIndex}"][data-set="${editing.setIndex}"]`;
-    const input = contentEl().querySelector(sel);
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    const len = input.value.length;
-    try { input.setSelectionRange(len, len); } catch (e) {}
-    if (scrollOnce) {
-      const wrap = contentEl();
-      const target = wrap.querySelector("[data-editor]") || wrap.querySelector(`[data-ex-block="${editing.exIndex}"]`);
-      if (target) {
-        const tr = target.getBoundingClientRect();
-        const cr = wrap.getBoundingClientRect();
-        if (tr.bottom > cr.bottom - 12 || tr.top < cr.top + 4) {
-          const delta = tr.bottom > cr.bottom ? (tr.bottom - cr.bottom + 16) : (tr.top - cr.top - 8);
-          wrap.scrollTop += delta;
-        }
-      }
-    }
-  }
-
-  function closeEditor() {
-    editing = null;
-    renderWorkout();
-    renderHeader();
-  }
-
-  function commitSet(exIndex, setIndex) {
+  function openTrackingSheet(exIndex, setIndex) {
     const w = activeWorkout();
     if (!w) return;
     const ex = w.exercises[exIndex];
-    const set = ex && ex.sets[setIndex];
-    if (!set) return;
-    D().updateSet(w.id, exIndex, setIndex, { done: true });
+    if (!ex) return;
+    editing = { exIndex, setIndex, selected: { [setIndex]: true }, focus: "reps" };
+    const repsPh = ex.suggestedReps == null ? "" : String(ex.suggestedReps);
+    const wtPh = ex.suggestedWeight == null ? "" : String(ex.suggestedWeight);
+    const pills = ex.sets.map((set, i) =>
+      `<button type="button" class="set-pick${i === setIndex ? " on" : ""}" data-action="toggle-track-set" data-set="${i}" data-testid="track-set-pill-${i}">Set ${i + 1}</button>`
+    ).join("");
+    showSheet(`<div class="sheet tracking" data-testid="sets-tracking">
+      <div class="handle"></div>
+      <h2>Sets Tracking</h2>
+      <div class="sheet-section">Select the sets to track</div>
+      <div class="set-picks">
+        ${pills}
+        <button type="button" class="select-all" data-action="select-all-sets" data-testid="select-all-sets">Select All</button>
+      </div>
+      <div class="sheet-section">Enter weights and reps</div>
+      <div class="fields">
+        <label class="field on">
+          <em>Reps</em>
+          <input data-testid="reps-input" data-field="reps" data-ex="${exIndex}"
+            inputmode="numeric" enterkeyhint="next" autocomplete="off" spellcheck="false"
+            value="" placeholder="${esc(repsPh)}" />
+        </label>
+        <label class="field">
+          <em>Weight (kg)</em>
+          <input data-testid="weight-input" data-field="weight" data-ex="${exIndex}"
+            inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false"
+            value="" placeholder="${esc(wtPh)}" />
+        </label>
+      </div>
+      <button type="button" class="track-cta" data-action="track-reps" data-testid="track-reps">Track Reps</button>
+    </div>`);
+    const repsInput = overlaysEl().querySelector('[data-testid="reps-input"]');
+    if (repsInput) repsInput.focus({ preventScroll: true });
+  }
+
+  function selectedSetIndexes() {
+    if (editing && editing.selected) {
+      return Object.keys(editing.selected).map(Number).filter((i) => editing.selected[i]).sort((a, b) => a - b);
+    }
+    return [];
+  }
+
+  function toggleTrackSet(setIndex) {
+    if (!editing) return;
+    if (!editing.selected) editing.selected = {};
+    if (editing.selected[setIndex]) delete editing.selected[setIndex];
+    else editing.selected[setIndex] = true;
+    overlaysEl().querySelectorAll("[data-action=toggle-track-set]").forEach((btn) => {
+      const i = Number(btn.dataset.set);
+      btn.classList.toggle("on", !!editing.selected[i]);
+    });
+  }
+
+  function selectAllSets() {
+    const w = activeWorkout();
+    if (!w || !editing) return;
+    const ex = w.exercises[editing.exIndex];
+    if (!ex) return;
+    const allOn = ex.sets.every((_, i) => editing.selected && editing.selected[i]);
+    editing.selected = {};
+    if (!allOn) ex.sets.forEach((_, i) => { editing.selected[i] = true; });
+    overlaysEl().querySelectorAll("[data-action=toggle-track-set]").forEach((btn) => {
+      const i = Number(btn.dataset.set);
+      btn.classList.toggle("on", !!editing.selected[i]);
+    });
+  }
+
+  function commitTrackedSets() {
+    const w = activeWorkout();
+    if (!w || !editing) return;
+    const ex = w.exercises[editing.exIndex];
+    if (!ex) return;
+    const indexes = selectedSetIndexes();
+    if (!indexes.length) return;
+    const repsEl = overlaysEl().querySelector('[data-testid="reps-input"]');
+    const wtEl = overlaysEl().querySelector('[data-testid="weight-input"]');
+    const reps = C().parseNum(repsEl && repsEl.value) ?? ex.suggestedReps;
+    const weight = C().parseNum(wtEl && wtEl.value) ?? ex.suggestedWeight;
+    if (reps == null && weight == null) return;
+    const exIndex = editing.exIndex;
+    D().trackSets(w.id, exIndex, indexes, reps, weight);
     editing = null;
+    closeSheet();
     renderWorkout();
     renderHeader();
-    const isLastOfLast = exIndex === w.exercises.length - 1 && setIndex === ex.sets.length - 1;
-    if (!isLastOfLast) startRest(exIndex, setIndex);
+    const last = indexes[indexes.length - 1];
+    const isLastOfLast = exIndex === w.exercises.length - 1 && last === ex.sets.length - 1;
+    if (!isLastOfLast) startRest(exIndex, last);
   }
 
   function startRest(exIndex, setIndex) {
@@ -633,15 +660,25 @@
   function openHistory(exIndex) {
     const w = activeWorkout();
     const ex = w.exercises[exIndex];
-    const rows = D().getHistory(ex.key).map((h) => {
-      const sets = (h.sets || []).map((s, i) => `Set ${i + 1} · ${C().formatSetLabel(s.reps, s.weight)}`).join("<br>");
+    const hist = D().getHistory(ex.key);
+    const rows = hist.map((h, idx) => {
+      const older = hist[idx + 1] || null;
+      const signs = D().sessionSetOverload(h, older);
+      const sets = (h.sets || []).map((s, i) => {
+        if (s.reps == null && s.weight == null) return "";
+        const sign = signs[i];
+        const mark = sign ? overloadMark(sign) : null;
+        const badge = mark ? `<span class="badge ${mark.cls}">${mark.char}</span>` : "";
+        return `<div class="set-line">Set ${i + 1} · ${esc(D().formatLogged(s.weight, s.reps))} ${badge}</div>`;
+      }).join("");
       const when = h.date ? new Date(h.date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
-      return `<div class="hist-item"><div class="when">${esc(when)}${h.workout ? " · " + esc(h.workout) : ""}</div><div class="sets">${sets}</div></div>`;
+      const week = h.week ? ` · Week ${esc(h.week)}` : "";
+      return `<div class="hist-item" data-testid="history-entry"><div class="when">${esc(when)}${h.workout ? " · " + esc(h.workout) : ""}${week}</div><div class="sets signs">${sets}</div></div>`;
     }).join("");
-    showSheet(`<div class="sheet">
+    showSheet(`<div class="sheet" data-testid="history-sheet">
       <div class="handle"></div>
       <h2>${esc(ex.name)}</h2>
-      <div class="sheet-body">${rows || `<div class="empty">No history yet. Finish a workout to log your sets.</div>`}</div>
+      <div class="sheet-body">${rows || `<div class="empty">No history yet. Track a set or finish a workout to log it.</div>`}</div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);
   }
@@ -877,10 +914,16 @@
     if (action === "open-workout") {
       activeWorkoutId = btn.dataset.id;
       D().get().activeWorkoutId = activeWorkoutId;
+      D().startTimer(activeWorkoutId);
       D().saveNow();
       view = "workout";
       editing = null;
       render();
+      return;
+    }
+    if (action === "toggle-timer") {
+      if (activeWorkoutId) D().toggleTimer(activeWorkoutId);
+      renderHeader();
       return;
     }
     if (action === "add-workout") { openAddWorkout(); return; }
@@ -892,8 +935,10 @@
     if (action === "rest-inc") { bumpRest(15); return; }
     if (action === "rest-dec") { bumpRest(-15); return; }
     if (action === "finish") { requestFinish(); return; }
-    if (action === "chip") { openEditor(exIndex, setIndex, "reps"); return; }
-    if (action === "commit-set") { commitSet(exIndex, setIndex); return; }
+    if (action === "chip") { openTrackingSheet(exIndex, setIndex); return; }
+    if (action === "toggle-track-set") { toggleTrackSet(setIndex); return; }
+    if (action === "select-all-sets") { selectAllSets(); return; }
+    if (action === "track-reps") { commitTrackedSets(); return; }
     if (action === "add-set") {
       D().addSet(activeWorkoutId, exIndex);
       render();
@@ -943,20 +988,13 @@
   function onInput(e) {
     const input = e.target;
     if (!input.dataset || !input.dataset.field) return;
-    const exIndex = Number(input.dataset.ex);
-    const setIndex = Number(input.dataset.set);
+    /* Values stay in the input until Track Reps. Do not re-render or replace the field. */
     const field = input.dataset.field;
-    if (field === "reps") {
-      D().updateSet(activeWorkoutId, exIndex, setIndex, { repsText: input.value });
-    } else if (field === "weight") {
-      D().updateSet(activeWorkoutId, exIndex, setIndex, { weightText: input.value });
-    }
     if (editing) editing.focus = field;
     const fields = input.closest(".fields");
     if (fields) {
       fields.querySelectorAll(".field").forEach((f) => f.classList.toggle("on", f.contains(input)));
     }
-    patchChip(exIndex, setIndex);
   }
 
   function onFocusIn(e) {
@@ -974,14 +1012,11 @@
     if (!input.dataset || !input.dataset.field) return;
     if (e.key === "Enter") {
       e.preventDefault();
-      const exIndex = Number(input.dataset.ex);
-      const setIndex = Number(input.dataset.set);
       if (input.dataset.field === "reps") {
-        editing = { exIndex, setIndex, focus: "weight" };
-        const next = contentEl().querySelector(`input[data-field="weight"][data-ex="${exIndex}"][data-set="${setIndex}"]`);
+        const next = overlaysEl().querySelector('input[data-field="weight"]') || contentEl().querySelector('input[data-field="weight"]');
         if (next) next.focus({ preventScroll: true });
       } else {
-        commitSet(exIndex, setIndex);
+        commitTrackedSets();
       }
     }
   }
@@ -992,7 +1027,10 @@
     if (s.activeWorkoutId && D().workoutById(s.activeWorkoutId)) {
       activeWorkoutId = s.activeWorkoutId;
       view = "workout";
+      const w = D().workoutById(activeWorkoutId);
+      if (w && !w.completedAt) D().startTimer(activeWorkoutId);
     }
+    setInterval(patchTimer, 1000);
     ensureOverlayHost();
     document.addEventListener("click", onClick);
     document.addEventListener("input", onInput, true);

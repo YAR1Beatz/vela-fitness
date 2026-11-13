@@ -67,14 +67,58 @@
       name: src.name,
       minutes: src.minutes || 60,
       completedAt: null,
+      sessionId: uid("ses"),
+      timerStartedAt: null,
+      timerAccumMs: 0,
+      timerPaused: true,
+      timerElapsedFinal: null,
       exercises: (src.exercises || []).map(buildExercise),
     };
+  }
+
+  function ensureSession(workout) {
+    if (workout && !workout.sessionId) workout.sessionId = uid("ses");
+    return workout && workout.sessionId;
+  }
+
+  function migrate(state) {
+    const ver = state.version || 1;
+    if (ver >= 2) {
+      (state.workouts || []).forEach((w) => {
+        if (!w.sessionId) w.sessionId = uid("ses");
+        if (w.timerAccumMs == null) w.timerAccumMs = 0;
+        if (w.timerPaused == null) w.timerPaused = true;
+        if (w.timerStartedAt === undefined) w.timerStartedAt = null;
+        if (w.timerElapsedFinal === undefined) w.timerElapsedFinal = null;
+      });
+      return state;
+    }
+    (state.workouts || []).forEach((w) => {
+      if (!w.sessionId) w.sessionId = uid("ses");
+      if (w.timerStartedAt === undefined) w.timerStartedAt = null;
+      if (w.timerAccumMs == null) w.timerAccumMs = 0;
+      if (w.timerPaused == null) w.timerPaused = true;
+      if (w.timerElapsedFinal === undefined) w.timerElapsedFinal = null;
+    });
+    Object.keys(state.history || {}).forEach((key) => {
+      (state.history[key] || []).forEach((h) => {
+        if (!h.sessionId) h.sessionId = uid("ses");
+        if (!h.date && h.datetime) h.date = String(h.datetime).slice(0, 10);
+        if (!Array.isArray(h.sets)) h.sets = [];
+        h.sets = h.sets.map((s) => ({
+          reps: s && s.reps != null ? s.reps : null,
+          weight: s && s.weight != null ? s.weight : null,
+        }));
+      });
+    });
+    state.version = 2;
+    return state;
   }
 
   function seedState() {
     const program = PROGRAM();
     return {
-      version: 1,
+      version: 2,
       programId: program.id,
       week: 1,
       restSeconds: program.restSeconds || 90,
@@ -106,6 +150,7 @@
       if (!state.lastLogged) state.lastLogged = {};
       if (!state.restSeconds) state.restSeconds = PROGRAM().restSeconds || 90;
       if (!state.week) state.week = 1;
+      migrate(state);
       return state;
     } catch (err) {
       state = seedState();
@@ -173,12 +218,48 @@
     notify();
   }
 
+  function upsertSessionHistory(w) {
+    if (!w) return;
+    ensureSession(w);
+    const stamp = w.completedAt || new Date().toISOString();
+    const day = stamp.slice(0, 10);
+    w.exercises.forEach((ex) => {
+      if (!ex.sets.some((st) => st.done)) return;
+      const entry = {
+        date: day,
+        datetime: stamp,
+        workout: w.name,
+        workoutId: w.id,
+        week: get().week,
+        sessionId: w.sessionId,
+        sets: ex.sets.map((st) =>
+          st.done ? { reps: st.reps, weight: st.weight } : { reps: null, weight: null }
+        ),
+      };
+      if (!state.history[ex.key]) state.history[ex.key] = [];
+      const i = state.history[ex.key].findIndex((h) => h.sessionId === w.sessionId);
+      if (i >= 0) state.history[ex.key][i] = entry;
+      else state.history[ex.key].unshift(entry);
+      const lastDone = [...ex.sets].reverse().find((st) => st.done);
+      if (lastDone) state.lastLogged[ex.key] = { reps: lastDone.reps, weight: lastDone.weight };
+    });
+  }
+
   function advanceWeek() {
     const s = get();
+    /* Flush any logged sets from this week into history before resetting. */
+    s.workouts.forEach((w) => {
+      if (w.exercises.some((ex) => ex.sets.some((st) => st.done))) upsertSessionHistory(w);
+    });
     s.week = (s.week || 1) + 1;
     s.activeWorkoutId = null;
     s.workouts.forEach((w) => {
       w.completedAt = null;
+      w.sessionId = uid("ses");
+      w.timerStartedAt = null;
+      w.timerAccumMs = 0;
+      w.timerPaused = true;
+      w.timerElapsedFinal = null;
       w.exercises.forEach((ex) => {
         const sug = suggestionFor(ex.name, ex.programReps, ex.programWeight);
         ex.suggestedReps = sug.reps;
@@ -228,25 +309,59 @@
     notify();
   }
 
+  function pauseTimer(workoutId) {
+    const w = workoutById(workoutId);
+    if (!w || w.timerPaused) return;
+    w.timerAccumMs = (w.timerAccumMs || 0) + (Date.now() - (w.timerStartedAt || Date.now()));
+    w.timerPaused = true;
+    w.timerStartedAt = null;
+    scheduleSave();
+  }
+
+  function startTimer(workoutId) {
+    const w = workoutById(workoutId);
+    if (!w || w.completedAt) return;
+    ensureSession(w);
+    if (w.timerPaused || !w.timerStartedAt) {
+      w.timerStartedAt = Date.now();
+      w.timerPaused = false;
+      if (w.timerAccumMs == null) w.timerAccumMs = 0;
+      scheduleSave();
+    }
+  }
+
+  function toggleTimer(workoutId) {
+    const w = workoutById(workoutId);
+    if (!w || w.completedAt) return;
+    if (w.timerPaused || !w.timerStartedAt) startTimer(workoutId);
+    else pauseTimer(workoutId);
+    saveNow();
+    return w;
+  }
+
+  function timerMs(workout) {
+    if (!workout) return 0;
+    if (workout.completedAt && workout.timerElapsedFinal != null) return workout.timerElapsedFinal;
+    let ms = workout.timerAccumMs || 0;
+    if (!workout.timerPaused && workout.timerStartedAt) ms += Date.now() - workout.timerStartedAt;
+    return Math.max(0, ms);
+  }
+
+  function formatTimer(ms) {
+    const total = Math.floor(Math.max(0, ms) / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
   function finishWorkout(id) {
     const w = workoutById(id);
     if (!w) return;
+    if (!w.timerPaused) pauseTimer(id);
+    w.timerElapsedFinal = w.timerAccumMs || 0;
     w.completedAt = new Date().toISOString();
-    const day = w.completedAt.slice(0, 10);
-    w.exercises.forEach((ex) => {
-      const doneSets = ex.sets
-        .filter((st) => st.done)
-        .map((st) => ({
-          reps: st.reps,
-          weight: st.weight,
-        }));
-      if (!doneSets.length) return;
-      const key = ex.key;
-      if (!state.history[key]) state.history[key] = [];
-      state.history[key].unshift({ date: day, sets: doneSets, workout: w.name });
-      const last = doneSets[doneSets.length - 1];
-      state.lastLogged[key] = { reps: last.reps, weight: last.weight };
-    });
+    upsertSessionHistory(w);
     state.activeWorkoutId = null;
     saveNow();
     notify();
@@ -343,6 +458,116 @@
     notify();
   }
 
+  function trackSets(workoutId, exIndex, setIndexes, reps, weight) {
+    const w = workoutById(workoutId);
+    if (!w) return;
+    const ex = w.exercises[exIndex];
+    if (!ex) return;
+    (setIndexes || []).forEach((i) => {
+      const st = ex.sets[i];
+      if (!st) return;
+      updateSet(workoutId, exIndex, i, { reps, weight, done: true });
+    });
+    upsertSessionHistory(w);
+    saveNow();
+    notify();
+    return ex;
+  }
+
+  function previousSession(exerciseKey, exceptSessionId) {
+    const list = get().history[exerciseKey] || [];
+    return list.find((h) => !exceptSessionId || h.sessionId !== exceptSessionId) || null;
+  }
+
+  /* Overload rule: compare this set to the same set number in the previous session.
+     Higher weight = up, lower weight = down, same weight = same,
+     except same weight with more reps = up, same weight with fewer reps = down. */
+  function compareSet(current, previous) {
+    if (!current || !previous) return null;
+    if (previous.weight == null && previous.reps == null) return null;
+    const cw = current.weight, pw = previous.weight;
+    const cr = current.reps, pr = previous.reps;
+    if (cw != null && pw != null) {
+      if (cw > pw) return "up";
+      if (cw < pw) return "down";
+      if (cr != null && pr != null && cr > pr) return "up";
+      if (cr != null && pr != null && cr < pr) return "down";
+      return "same";
+    }
+    if (cr != null && pr != null) {
+      if (cr > pr) return "up";
+      if (cr < pr) return "down";
+      return "same";
+    }
+    return null;
+  }
+
+  function setOverload(ex, setIndex, sessionId) {
+    const set = ex && ex.sets[setIndex];
+    if (!set || !set.done) return null;
+    const prev = previousSession(ex.key, sessionId);
+    if (!prev) return null;
+    return compareSet(set, (prev.sets || [])[setIndex]);
+  }
+
+  function sessionSetOverload(entry, older) {
+    if (!entry || !older) return [];
+    return (entry.sets || []).map((s, i) => compareSet(s, (older.sets || [])[i]));
+  }
+
+  function exerciseOverloadSummary(ex, sessionId) {
+    const prev = previousSession(ex.key, sessionId);
+    if (!prev || !ex) return null;
+    let dW = 0, nW = 0, dR = 0, nR = 0;
+    ex.sets.forEach((s, i) => {
+      if (!s.done) return;
+      const p = (prev.sets || [])[i];
+      if (!p) return;
+      if (s.weight != null && p.weight != null) {
+        dW += s.weight - p.weight;
+        nW += 1;
+      }
+      if (s.reps != null && p.reps != null) {
+        dR += s.reps - p.reps;
+        nR += 1;
+      }
+    });
+    if (!nW && !nR) return null;
+    const avgW = nW ? dW / nW : 0;
+    if (nW && Math.abs(avgW) > 1e-9) {
+      const sign = avgW > 0 ? "up" : "down";
+      const rounded = Math.round(avgW * 100) / 100;
+      const abs = Math.abs(rounded);
+      const num = Number.isInteger(abs) ? String(abs) : String(abs);
+      const prefix = rounded > 0 ? "+" : "−";
+      return { sign, deltaKg: avgW, text: `${prefix}${num} kg vs last week` };
+    }
+    if (dR > 0) return { sign: "up", deltaReps: dR, text: `+${dR} reps vs last week` };
+    if (dR < 0) return { sign: "down", deltaReps: dR, text: `${dR} reps vs last week` };
+    return { sign: "same", text: "Same as last week" };
+  }
+
+  function formatLogged(weight, reps) {
+    if (weight != null && weight !== "" && reps != null && reps !== "") {
+      return `${Number(weight).toFixed(2)}kg x ${reps}`;
+    }
+    if (reps != null && reps !== "") return `${reps} reps`;
+    if (weight != null && weight !== "") return `${Number(weight).toFixed(2)}kg`;
+    return "Set";
+  }
+
+  function formatAim(weight) {
+    if (weight == null || weight === "") return "";
+    const n = Number(weight);
+    if (Number.isNaN(n)) return "";
+    const s = Number.isInteger(n) ? String(n) : String(n);
+    return `Aim for ${s}kg`;
+  }
+
+  function formatVolumeKg(value) {
+    return `${Math.round(Number(value) || 0)}Kg`;
+  }
+
   function setNotes(exerciseKey, text) {
     const s = get();
     s.notes[exerciseKey] = text;
@@ -404,5 +629,21 @@
     doneExerciseCount,
     suggestionFor,
     uid,
+    ensureSession,
+    startTimer,
+    pauseTimer,
+    toggleTimer,
+    timerMs,
+    formatTimer,
+    trackSets,
+    upsertSessionHistory,
+    previousSession,
+    compareSet,
+    setOverload,
+    sessionSetOverload,
+    exerciseOverloadSummary,
+    formatLogged,
+    formatAim,
+    formatVolumeKg,
   };
 })(window);
