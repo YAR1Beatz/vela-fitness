@@ -212,6 +212,210 @@
     footerEl().innerHTML = "";
   }
 
+  function formatDeltaKg(delta) {
+    if (delta == null || !Number.isFinite(Number(delta))) return "";
+    const n = Number(delta);
+    const abs = C().formatNumber(Math.abs(n));
+    if (Math.abs(n) < 0.005) return "Same";
+    return `${n > 0 ? "+" : "−"}${abs} kg`;
+  }
+
+  function deltaClass(delta) {
+    if (delta == null || !Number.isFinite(Number(delta))) return "flat";
+    const n = Number(delta);
+    if (Math.abs(n) < 0.005) return "flat";
+    /* Lower body weight is shown in green, higher in red. */
+    return n < 0 ? "down" : "up";
+  }
+
+  function formatChartDate(ymd) {
+    if (!ymd) return "";
+    const d = new Date(`${ymd}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return ymd;
+    return d.toLocaleDateString("da-DK", { day: "numeric", month: "short" });
+  }
+
+  function smoothLinePath(pts) {
+    if (!pts.length) return "";
+    if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+    if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i += 1) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  }
+
+  function weightChartSvg(points) {
+    if (!points || points.length < 2) return "";
+    const W = 320, H = 148;
+    const padL = 8, padR = 36, padT = 14, padB = 24;
+    const innerW = W - padL - padR;
+    const innerH = H - padT - padB;
+    const t0 = Date.parse(points[0].date + "T12:00:00");
+    const t1 = Date.parse(points[points.length - 1].date + "T12:00:00");
+    const span = Math.max(1, t1 - t0);
+    const ys = points.map((p) => p.weight);
+    let minY = Math.min.apply(null, ys);
+    let maxY = Math.max.apply(null, ys);
+    if (maxY === minY) {
+      minY -= 0.75;
+      maxY += 0.75;
+    }
+    const pad = Math.max(0.3, (maxY - minY) * 0.16);
+    minY -= pad;
+    maxY += pad;
+    const ySpan = maxY - minY || 1;
+    const mapped = points.map((p) => {
+      const t = Date.parse(p.date + "T12:00:00");
+      const x = padL + ((t - t0) / span) * innerW;
+      const y = padT + (1 - (p.weight - minY) / ySpan) * innerH;
+      return { x: +x.toFixed(2), y: +y.toFixed(2), p };
+    });
+    const line = smoothLinePath(mapped);
+    const last = mapped[mapped.length - 1];
+    const first = mapped[0];
+    const area = `${line} L ${last.x} ${padT + innerH} L ${first.x} ${padT + innerH} Z`;
+    const dots = mapped.map((pt, i) => {
+      const r = i === mapped.length - 1 ? 4.2 : 2.6;
+      const cls = i === mapped.length - 1 ? "last" : "";
+      return `<circle class="${cls}" cx="${pt.x}" cy="${pt.y}" r="${r}" data-date="${esc(pt.p.date)}" data-kg="${esc(String(pt.p.weight))}"></circle>`;
+    }).join("");
+    const yTop = C().formatNumber(maxY - pad > 0 ? points.reduce((m, p) => Math.max(m, p.weight), -Infinity) : maxY);
+    const yBot = C().formatNumber(points.reduce((m, p) => Math.min(m, p.weight), Infinity));
+    const midI = Math.floor(mapped.length / 2);
+    const xLabels = [
+      { x: first.x, text: formatChartDate(points[0].date) },
+      mapped.length >= 3 ? { x: mapped[midI].x, text: formatChartDate(points[midI].date) } : null,
+      { x: last.x, text: formatChartDate(points[points.length - 1].date) },
+    ].filter(Boolean);
+    const xLabelEl = xLabels.map((l) => `<text class="x" x="${l.x}" y="${H - 6}" text-anchor="middle">${esc(l.text)}</text>`).join("");
+    return `<svg class="weight-svg" viewBox="0 0 ${W} ${H}" width="100%" height="148" role="img" aria-label="Body weight over time" data-testid="weight-chart" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="vela-weight-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1EE0C8" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#1EE0C8" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <line class="grid" x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" />
+      <line class="grid" x1="${padL}" y1="${padT + innerH}" x2="${W - padR}" y2="${padT + innerH}" />
+      <text class="y" x="${W - padR + 4}" y="${padT + 4}">${esc(yTop)}</text>
+      <text class="y" x="${W - padR + 4}" y="${padT + innerH + 4}">${esc(yBot)}</text>
+      <path class="area" d="${area}" fill="url(#vela-weight-fill)"></path>
+      <path class="line" d="${line}" fill="none"></path>
+      ${dots}
+      ${xLabelEl}
+    </svg>`;
+  }
+
+  function weightCardHtml() {
+    const series = D().bodyWeightSeries();
+    const range = series.range;
+    const ranges = ["1M", "3M", "All"].map((r) =>
+      `<button type="button" class="wrange${r === range ? " on" : ""}" data-action="weight-range" data-range="${r}" data-testid="weight-range-${r}">${r}</button>`
+    ).join("");
+    const logBtn = `<button type="button" class="weight-log" data-action="log-weight" data-testid="log-weight">${ICONS.plus} Log weight</button>`;
+    if (!series.all || series.all.length < 2) {
+      const current = series.current
+        ? `<div class="weight-now" data-testid="weight-current">${esc(C().formatNumber(series.current.weight))} <span>kg</span></div>
+           <p class="weight-empty-copy">Log one more weigh-in to see your trend.</p>`
+        : `<p class="weight-empty-copy" data-testid="weight-empty">Log at least two weigh-ins to see your trend. You can also add weight in Monthly Check-in.</p>`;
+      const one = series.current ? "" : `<div class="weight-now muted" data-testid="weight-current">— <span>kg</span></div>`;
+      return `<section class="dash-card weight-card" data-testid="weight-card">
+        <div class="weight-head">
+          <h2>Body weight</h2>
+          ${logBtn}
+        </div>
+        ${series.current ? current : one + current}
+        <div class="weight-ranges" data-testid="weight-ranges">${ranges}</div>
+      </section>`;
+    }
+    const cur = C().formatNumber(series.current.weight);
+    const bits = [];
+    if (series.vsPrev != null) {
+      bits.push(`<span class="wdelta ${deltaClass(series.vsPrev)}" data-testid="weight-delta-prev">${esc(formatDeltaKg(series.vsPrev))} vs last</span>`);
+    }
+    if (series.vsFirst != null && series.firstInRange && series.current && series.firstInRange.date !== series.current.date) {
+      bits.push(`<span class="wdelta ${deltaClass(series.vsFirst)}" data-testid="weight-delta-start">${esc(formatDeltaKg(series.vsFirst))} vs start</span>`);
+    }
+    const chart = weightChartSvg(series.points);
+    const sparse = series.points.length < 2
+      ? `<p class="weight-empty-copy" data-testid="weight-range-empty">Not enough weigh-ins in this period.</p>`
+      : chart;
+    return `<section class="dash-card weight-card" data-testid="weight-card">
+      <div class="weight-head">
+        <h2>Body weight</h2>
+        ${logBtn}
+      </div>
+      <div class="weight-now" data-testid="weight-current">${esc(cur)} <span>kg</span></div>
+      <div class="weight-deltas" data-testid="weight-delta">${bits.join("<span class='wd-dot'>·</span>")}</div>
+      <div class="weight-ranges" data-testid="weight-ranges">${ranges}</div>
+      <div class="weight-chart-wrap">${sparse}</div>
+    </section>`;
+  }
+
+  function refreshWeightCard() {
+    const next = weightCardHtml();
+    const root = contentEl();
+    const card = root && root.querySelector('[data-testid="weight-card"]');
+    if (!card) return;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = next.trim();
+    const fresh = wrap.firstElementChild;
+    if (fresh) card.replaceWith(fresh);
+  }
+
+  function openLogWeight() {
+    const series = D().bodyWeightSeries();
+    const today = D().copenhagenYMD();
+    const latest = series.current && series.current.weight != null
+      ? C().formatNumber(series.current.weight)
+      : "";
+    showSheet(`<div class="sheet" data-testid="log-weight-sheet">
+      <div class="handle"></div>
+      <h2>Log weight</h2>
+      <div class="sheet-body">
+        <label class="field-label">Date</label>
+        <input class="text-input" type="date" data-log-weight-date data-testid="log-weight-date" value="${esc(today)}" />
+        <label class="field-label">Body weight (kg)</label>
+        <input class="text-input" data-log-weight-input data-testid="log-weight-input" inputmode="decimal" placeholder="e.g. 82,5" value="${esc(latest)}" />
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" data-action="close-sheet">Cancel</button>
+        <button type="button" class="btn pri" data-action="save-log-weight" data-testid="save-log-weight">Save</button>
+      </div>
+    </div>`);
+    const input = overlaysEl().querySelector("[data-log-weight-input]");
+    if (input) {
+      input.focus();
+      input.select && input.select();
+    }
+  }
+
+  function commitLogWeight() {
+    const root = overlaysEl();
+    const input = root && root.querySelector("[data-log-weight-input]");
+    const dateEl = root && root.querySelector("[data-log-weight-date]");
+    const weight = C().parseNum(input && input.value);
+    if (weight == null) {
+      showToast("Add a body weight to save");
+      return;
+    }
+    D().logBodyWeight(weight, (dateEl && dateEl.value) || D().copenhagenYMD());
+    closeSheet();
+    if (view === "home" && tab === "home") refreshWeightCard();
+    else render();
+    showToast("Weight saved");
+  }
+
   function renderHome() {
     const s = D().get();
     contentEl().classList.remove("has-footer");
@@ -277,6 +481,7 @@
     const continued = !s.recoveryWeek && s.week > D().cycleWeeks() ? " · continued" : "";
     contentEl().innerHTML = `
       ${dash}
+      ${weightCardHtml()}
       <div class="section">
         <div class="plan-titles">
           <button type="button" class="program-name" data-action="choose-program" data-testid="program-name">${esc(D().programName())}</button>
@@ -2388,6 +2593,13 @@
     if (action === "change-days") { closeSheet(); openDaysSetup("settings"); return; }
     if (action === "choose-program") { closeSheet(); openProgramPicker(); return; }
     if (action === "select-program") { selectProgram(btn.dataset.program); return; }
+    if (action === "log-weight") { openLogWeight(); return; }
+    if (action === "save-log-weight") { commitLogWeight(); return; }
+    if (action === "weight-range") {
+      D().setWeightChartRange(btn.dataset.range);
+      refreshWeightCard();
+      return;
+    }
     if (action === "open-checkin") { openCheckIn(); return; }
     if (action === "save-checkin") { commitCheckIn(); return; }
     if (action === "open-pbs") { openPersonalBests(); return; }

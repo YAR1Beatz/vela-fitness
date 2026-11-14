@@ -1906,6 +1906,90 @@
     notify();
   }
 
+  function bodyWeightEntries() {
+    return (get().checkIns || [])
+      .filter((c) => c && c.weight != null && Number.isFinite(Number(c.weight)))
+      .map((c) => ({ id: c.id, date: c.date, weight: Number(c.weight) }))
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+
+  function weightChartRange() {
+    const r = get().weightChartRange;
+    return r === "1M" || r === "3M" || r === "All" ? r : "3M";
+  }
+
+  function setWeightChartRange(range) {
+    const s = get();
+    s.weightChartRange = range === "1M" || range === "3M" || range === "All" ? range : "3M";
+    scheduleSave();
+    return s.weightChartRange;
+  }
+
+  /* Log (or update) only body weight for a date, without wiping other check-in fields. */
+  function logBodyWeight(weight, date) {
+    const w = Number(weight);
+    if (!Number.isFinite(w)) return null;
+    const s = get();
+    if (!s.checkIns) s.checkIns = [];
+    const day = date || copenhagenYMD();
+    const i = s.checkIns.findIndex((c) => c.date === day);
+    if (i >= 0) {
+      s.checkIns[i] = Object.assign({}, s.checkIns[i], { weight: w, date: day });
+    } else {
+      s.checkIns.unshift({
+        id: uid("cin"),
+        date: day,
+        weight: w,
+        waist: null,
+        chest: null,
+        arms: null,
+        thighs: null,
+        note: "",
+        photo: null,
+      });
+    }
+    saveNow();
+    notify();
+    return true;
+  }
+
+  function bodyWeightSeries(range) {
+    const all = bodyWeightEntries();
+    const selected = range || weightChartRange();
+    const today = copenhagenYMD();
+    let start = null;
+    if (selected === "1M") start = addDaysYMD(today, -31);
+    else if (selected === "3M") start = addDaysYMD(today, -92);
+    let points = start ? all.filter((p) => p.date >= start) : all.slice();
+    /* Pull in the last reading before the window so a 1M/3M line isn't a lone dot. */
+    if (start && points.length) {
+      const before = all.filter((p) => p.date < start);
+      if (before.length && points[0].date !== before[before.length - 1].date) {
+        points = [before[before.length - 1]].concat(points);
+      }
+    } else if (start && !points.length) {
+      const before = all.filter((p) => p.date < start);
+      if (before.length) points = [before[before.length - 1]];
+    }
+    const current = all.length ? all[all.length - 1] : null;
+    const previous = all.length >= 2 ? all[all.length - 2] : null;
+    const firstInRange = points.length ? points[0] : null;
+    const first = all.length ? all[0] : null;
+    const vsPrev = current && previous ? current.weight - previous.weight : null;
+    const vsFirst = current && firstInRange ? current.weight - firstInRange.weight : null;
+    return {
+      all,
+      points,
+      range: selected,
+      current,
+      previous,
+      first,
+      firstInRange,
+      vsPrev,
+      vsFirst,
+    };
+  }
+
   function exerciseNameFromKey(key) {
     const list = (C().EXERCISES || []);
     const found = list.find((e) => C().slug(e.name) === key);
@@ -2145,6 +2229,11 @@
     listCheckIns,
     saveCheckIn,
     deleteCheckIn,
+    logBodyWeight,
+    bodyWeightEntries,
+    bodyWeightSeries,
+    weightChartRange,
+    setWeightChartRange,
     formatHoursSpent,
     copenhagenYMD,
     calendarWeekStart,

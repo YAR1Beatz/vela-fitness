@@ -1573,6 +1573,124 @@ input, textarea, select {
   color: var(--accent-ink);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
+
+/* Body weight card — sits under the consistency streak dashboard */
+.weight-card { margin-top: 0; }
+.weight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.weight-head h2 {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.weight-log {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent-dim);
+  color: var(--accent2);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.weight-log svg { width: 11px; height: 11px; }
+.weight-now {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.weight-now span {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.weight-now.muted { color: var(--faint); }
+.weight-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 12px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.wdelta.down { color: var(--up); }
+.wdelta.up { color: var(--down); }
+.wdelta.flat { color: var(--same); }
+.wd-dot { color: var(--faint); font-weight: 500; }
+.weight-ranges {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.wrange {
+  flex: 0 0 auto;
+  min-width: 44px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.wrange.on {
+  background: var(--accent-dim);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent2);
+}
+.weight-chart-wrap { margin: 0 -4px -4px; }
+.weight-svg { display: block; width: 100%; height: 148px; overflow: visible; }
+.weight-svg .line {
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.weight-svg circle {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 1.8;
+}
+.weight-svg circle.last {
+  fill: var(--accent);
+  stroke: var(--accent2);
+  stroke-width: 1.6;
+}
+.weight-svg .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.7;
+}
+.weight-svg text {
+  fill: var(--faint);
+  font-size: 9px;
+  font-weight: 560;
+  font-family: Outfit, "Plus Jakarta Sans", sans-serif;
+}
+.weight-svg text.y { text-anchor: start; }
+.weight-empty-copy {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
 button.program-name {
   font-size: 12px;
   font-weight: 650;
