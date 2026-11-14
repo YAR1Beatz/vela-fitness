@@ -116,6 +116,28 @@
     return PLAY;
   }
 
+  function photoFor(name) {
+    const photos = global.VELA_PHOTOS || {};
+    return photos[slug(name)] || null;
+  }
+
+  function photoMarkup(name, { mini = false, large = false } = {}) {
+    const photo = photoFor(name);
+    const fallback = thumbMarkup((findExercise(name) || {}).thumb || "generic");
+    if (!photo || !photo.frames || !photo.frames.length) return fallback;
+    const frames = photo.frames;
+    const cls = ["ex-photo", mini ? "mini" : "", large ? "large" : "", frames.length < 2 ? "single" : ""]
+      .filter(Boolean)
+      .join(" ");
+    const imgs = frames
+      .map((src, i) => {
+        const letter = i === 0 ? "a" : "b";
+        return `<img class="frame frame-${letter}" src="${src}" alt="" draggable="false">`;
+      })
+      .join("");
+    return `<div class="${cls}" data-frames="${frames.length}" data-testid="ex-photo">${imgs}</div>`;
+  }
+
   /* Danish-style numbers: 52,5 and 1.260 */
   function formatNumber(value, { decimals = "auto" } = {}) {
     if (value == null || value === "" || Number.isNaN(Number(value))) return "";
@@ -184,6 +206,8 @@
     findExercise,
     thumbMarkup,
     playMarkup,
+    photoFor,
+    photoMarkup,
     formatNumber,
     formatKg,
     formatVolume,

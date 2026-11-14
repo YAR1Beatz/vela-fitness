@@ -154,7 +154,7 @@
       ${alt}
       <div class="card">
         <div class="top">
-          <div class="thumb">${C().thumbMarkup(ex.thumb)}<div class="play">${C().playMarkup()}</div></div>
+          <button type="button" class="thumb" data-action="demo" data-ex="${exIndex}" data-testid="ex-demo-${exIndex}" aria-label="Show ${esc(ex.name)} demo">${C().photoMarkup(ex.name)}${C().photoFor(ex.name) ? `<div class="play">${C().playMarkup()}</div>` : ""}</button>
           <div class="body">
             <div class="name-row">
               <h3>${esc(ex.name)}</h3>
@@ -574,6 +574,22 @@
     undoTimer = setTimeout(() => el.classList.add("hidden"), 5000);
   }
 
+  function openDemo(exIndex) {
+    const w = activeWorkout();
+    const ex = w && w.exercises[exIndex];
+    if (!ex) return;
+    const photo = C().photoFor(ex.name);
+    const credit = photo
+      ? `${photo.author || "Unknown"} · ${photo.license || ""}${photo.match === "closest" ? " · closest match" : ""}`
+      : "";
+    showSheet(`<div class="demo-card" role="dialog" aria-modal="true" aria-label="${esc(ex.name)} demo" data-testid="exercise-demo">
+        <button type="button" class="tracking-close" data-action="close-sheet" data-testid="close-demo" aria-label="Close">Done ${ICONS.close}</button>
+        <div class="demo-photo">${C().photoMarkup(ex.name, { large: true })}</div>
+        <h2>${esc(ex.name)}</h2>
+        ${credit ? `<p class="demo-credit">${esc(credit)}</p>` : ""}
+      </div>`, { top: true });
+  }
+
   function openSettings() {
     const rest = D().get().restSeconds || 90;
     showSheet(`<div class="sheet">
@@ -593,6 +609,7 @@
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
         <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Edit program.js to change the default workouts.</p>
+        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);
@@ -610,7 +627,7 @@
   function openAddWorkout() {
     const items = C().EXERCISES.map((ex, i) =>
       `<label class="pick-item"><input type="checkbox" data-pick="${i}" hidden>
-       <span class="mini-thumb">${C().thumbMarkup(ex.thumb)}</span><span>${esc(ex.name)}</span></label>`
+       <span class="mini-thumb">${C().photoMarkup(ex.name, { mini: true })}</span><span>${esc(ex.name)}</span></label>`
     ).join("");
     showSheet(`<div class="sheet">
       <div class="handle"></div>
@@ -692,12 +709,12 @@
     const ex = w.exercises[exIndex];
     const items = C().EXERCISES.map((item, i) =>
       `<button type="button" class="pick-item${C().slug(item.name) === ex.key ? " on" : ""}" data-action="pick-alt" data-ex="${exIndex}" data-pick="${i}">
-        <span class="mini-thumb">${C().thumbMarkup(item.thumb)}</span><span>${esc(item.name)}</span>
+        <span class="mini-thumb">${C().photoMarkup(item.name, { mini: true })}</span><span>${esc(item.name)}</span>
       </button>`
     ).join("");
     const sug = ex.alt
       ? `<button type="button" class="pick-item on" data-action="use-suggested-alt" data-ex="${exIndex}">
-          <span class="mini-thumb">${C().thumbMarkup((C().findExercise(ex.alt) || {}).thumb || "generic")}</span>
+          <span class="mini-thumb">${C().photoMarkup(ex.alt, { mini: true })}</span>
           <span>Use ${esc(ex.alt)}</span>
         </button>`
       : "";
@@ -994,6 +1011,7 @@
       return;
     }
     if (action === "settings") { openSettings(); return; }
+    if (action === "demo") { openDemo(exIndex); return; }
     if (action === "close-sheet") { closeSheet(); D().saveNow(); return; }
     if (action === "open-workout") {
       activeWorkoutId = btn.dataset.id;
