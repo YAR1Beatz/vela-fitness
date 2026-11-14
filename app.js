@@ -33,6 +33,7 @@
     pause: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="7" y="5.5" width="3.8" height="15" rx="1.2" fill="currentColor"/><rect x="15.2" y="5.5" width="3.8" height="15" rx="1.2" fill="currentColor"/></svg>`,
     play: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M9 6.2v13.6L20.2 13 9 6.2z" fill="currentColor"/></svg>`,
     target: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v2.2M8 12.3v2.2M1.5 8h2.2M12.3 8h2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    close: `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M6 6l10 10M16 6 6 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   };
 
   function esc(s) {
@@ -265,8 +266,10 @@
       `<button type="button" class="set-pick${i === setIndex ? " on" : ""}" data-action="toggle-track-set" data-set="${i}" data-testid="track-set-pill-${i}">Set ${i + 1}</button>`
     ).join("");
     showSheet(`<div class="sheet tracking" data-testid="sets-tracking">
-      <div class="handle"></div>
-      <h2>Sets Tracking</h2>
+      <div class="tracking-head">
+        <h2>Sets Tracking</h2>
+        <button type="button" class="tracking-close" data-action="close-sheet" data-testid="close-tracking" aria-label="Done">Done ${ICONS.close}</button>
+      </div>
       <div class="sheet-section">Select the sets to track</div>
       <div class="set-picks">
         ${pills}
@@ -288,9 +291,17 @@
         </label>
       </div>
       <button type="button" class="track-cta" data-action="track-reps" data-testid="track-reps">Track Reps</button>
-    </div>`);
+    </div>`, { top: true });
+    lockBackgroundScroll();
+    startViewportPin();
     const repsInput = overlaysEl().querySelector('[data-testid="reps-input"]');
-    if (repsInput) repsInput.focus({ preventScroll: true });
+    /* Focus without letting iOS scroll the page behind the card. */
+    if (repsInput) {
+      requestAnimationFrame(() => {
+        repsInput.focus({ preventScroll: true });
+        pinTrackingToViewport();
+      });
+    }
   }
 
   function selectedSetIndexes() {
@@ -448,14 +459,87 @@
     }
   }
 
+  let viewportPin = null;
+  let lockedScroll = null;
+
+  function lockBackgroundScroll() {
+    const c = contentEl();
+    lockedScroll = c.scrollTop;
+    c.style.overflow = "hidden";
+  }
+
+  function unlockBackgroundScroll() {
+    const c = contentEl();
+    c.style.overflow = "";
+    if (lockedScroll != null) {
+      c.scrollTop = lockedScroll;
+      lockedScroll = null;
+    }
+  }
+
+  function applyTrackingViewport(height, offsetTop) {
+    const card = overlaysEl().querySelector(".sheet.tracking");
+    if (!card) return;
+    const app = document.getElementById("app");
+    const header = document.getElementById("header");
+    const appRect = app ? app.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+    const headerRect = header ? header.getBoundingClientRect() : { bottom: appRect.top };
+    const vvTop = offsetTop == null ? 0 : offsetTop;
+    const vvHeight = height == null ? window.innerHeight : height;
+    const vvBottom = vvTop + vvHeight;
+    /* Sit just below the header when there is room; otherwise pin to the visible top. */
+    const belowHeader = headerRect.bottom + 8;
+    const minCard = 260;
+    let viewTop = (vvBottom - belowHeader >= minCard) ? Math.max(vvTop + 8, belowHeader) : vvTop + 8;
+    const top = viewTop - appRect.top;
+    card.style.top = `${Math.max(8, top)}px`;
+    const visibleBottom = vvBottom - appRect.top;
+    card.style.maxHeight = `${Math.max(180, visibleBottom - Math.max(8, top) - 8)}px`;
+  }
+
+  function pinTrackingToViewport() {
+    if (!overlaysEl().querySelector(".sheet.tracking")) return;
+    const vv = window.visualViewport;
+    if (vv) applyTrackingViewport(vv.height, vv.offsetTop);
+    else applyTrackingViewport(window.innerHeight, 0);
+  }
+
+  function startViewportPin() {
+    stopViewportPin();
+    const handler = () => pinTrackingToViewport();
+    viewportPin = handler;
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", handler);
+      vv.addEventListener("scroll", handler);
+    }
+    window.addEventListener("resize", handler);
+    pinTrackingToViewport();
+  }
+
+  function stopViewportPin() {
+    if (!viewportPin) return;
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.removeEventListener("resize", viewportPin);
+      vv.removeEventListener("scroll", viewportPin);
+    }
+    window.removeEventListener("resize", viewportPin);
+    viewportPin = null;
+  }
+
   function closeSheet() {
+    stopViewportPin();
+    unlockBackgroundScroll();
     const host = overlaysEl().querySelector("[data-sheet-host]");
     if (host) host.innerHTML = "";
   }
 
-  function showSheet(html) {
+  function showSheet(html, opts) {
     ensureOverlayHost();
-    overlaysEl().querySelector("[data-sheet-host]").innerHTML = `<div class="overlay" data-overlay="sheet">${html}</div>`;
+    const top = opts && opts.top;
+    const cls = top ? "overlay overlay-top" : "overlay";
+    overlaysEl().querySelector("[data-sheet-host]").innerHTML = `<div class="${cls}" data-overlay="sheet">${html}</div>`;
   }
 
   function showConfirm({ title, body, confirm, danger, onConfirm }) {
@@ -1005,6 +1089,14 @@
     if (fields) {
       fields.querySelectorAll(".field").forEach((f) => f.classList.toggle("on", f.contains(input)));
     }
+    if (input.closest(".sheet.tracking")) {
+      const held = lockedScroll;
+      requestAnimationFrame(() => {
+        if (held != null) contentEl().scrollTop = held;
+        try { window.scrollTo(0, 0); } catch (err) {}
+        pinTrackingToViewport();
+      });
+    }
   }
 
   function onKeydown(e) {
@@ -1051,6 +1143,11 @@
     }
   }
 
-  window.VELA_APP = { render, get view() { return view; } };
+  window.VELA_APP = {
+    render,
+    get view() { return view; },
+    pinTrackingToViewport,
+    applyTrackingViewport,
+  };
   init();
 })();
