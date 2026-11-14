@@ -43,6 +43,8 @@
   --section-gap: 24px;
   --tabbar-h: 48px;
   --tabbar-space: calc(var(--tabbar-h) + var(--safe-bottom));
+  --app-height: 100%;
+  --viewport-bottom-shift: 0px;
 }
 
 * {
@@ -51,8 +53,16 @@
   padding: 0;
   touch-action: manipulation;
 }
+/* Do not use body { position:fixed; inset:0 } — in an iOS standalone PWA
+   that box is often ~100px shorter than the screen, which left a navy band
+   under a tab bar pinned to it. Match Budget Planner: in-flow height, no
+   dvh/svh, overscroll locked, scrolling happens inside .content. */
 html, body {
   height: 100%;
+  min-height: 100%;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: var(--app-height, -webkit-fill-available);
   width: 100%;
   max-width: 100%;
   overflow: hidden;
@@ -71,8 +81,7 @@ html, body {
   -webkit-touch-callout: none;
 }
 body {
-  position: fixed;
-  inset: 0;
+  position: static;
 }
 button, input, textarea, select {
   font: inherit;
@@ -92,15 +101,15 @@ input, textarea, select {
   -webkit-touch-callout: default;
 }
 
-/* Fill the fixed body (inset: 0). Do NOT use 100dvh — on an iOS standalone
-   PWA, dvh can be ~110px short, which left a navy band under the tab bar.
-   overflow:visible on #app: iOS paints overflow:hidden ancestors at a soft
-   scale, which blurred the VELA header (clip only .content). */
+/* overflow:visible on #app: iOS paints overflow:hidden ancestors at a soft
+   scale, which blurred the VELA header (clip only .content). Height follows
+   html/body (fill-available / --app-height), never 100dvh. */
 .app {
-  position: absolute;
-  inset: 0;
+  position: relative;
   width: 100%;
-  height: auto;
+  height: 100%;
+  min-height: 100%;
+  min-height: var(--app-height, 100%);
   max-width: 480px;
   margin: 0 auto;
   background: var(--bg);
@@ -756,10 +765,10 @@ input, textarea, select {
 .dialog p { font-size: 14px; color: var(--muted); line-height: 1.4; margin-bottom: 16px; }
 
 .toast {
-  position: absolute;
+  position: fixed;
   left: 16px;
   right: 16px;
-  bottom: calc(16px + var(--safe-bottom));
+  bottom: calc(16px + var(--safe-bottom) + var(--viewport-bottom-shift, 0px));
   z-index: 60;
   background: var(--card2);
   border: 1px solid var(--border);
@@ -1002,7 +1011,7 @@ input, textarea, select {
   border: 1px solid var(--border);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   padding: 12px 16px 14px;
-  max-height: calc(100dvh - var(--safe-top) - 16px);
+  max-height: calc(var(--app-height, 100%) - var(--safe-top) - 16px);
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -1665,20 +1674,24 @@ button.program-name {
   padding-bottom: calc(16px + var(--tabbar-space));
 }
 
-/* Fixed to the bottom of .app (which fills the screen). Only
-   env(safe-area-inset-bottom) sits under the icons — no extra band. */
+/* Pinned to the visual viewport, not to a sized #app box. Navy background
+   includes padding-bottom: env(safe-area-inset-bottom) so it covers down to
+   the home indicator. --viewport-bottom-shift corrects a short iOS layout
+   viewport (negative bottom reaches the real screen edge). */
 .tabbar {
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--viewport-bottom-shift, 0px);
+  width: 100%;
   flex: none;
   display: flex;
   align-items: stretch;
   justify-content: space-around;
   background: var(--bg);
   border-top: 1px solid var(--border);
-  padding: 8px 2px var(--safe-bottom);
+  padding: 8px 2px env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--safe-bottom);
   z-index: 28;
   min-height: 0;
   transform: none;
@@ -1718,7 +1731,7 @@ button.program-name {
 .tab-btn.on { color: var(--accent); }
 
 .toast {
-  bottom: calc(12px + max(var(--tabbar-space), var(--safe-bottom)));
+  bottom: calc(12px + max(var(--tabbar-space), var(--safe-bottom)) + var(--viewport-bottom-shift, 0px));
 }
 
 .home-next {
@@ -1963,3 +1976,25 @@ button.program-name {
 .block.review .set-tools,
 .block.review .alt,
 .block.review .more-btn { display: none; }
+
+@media (max-width: 389px) {
+  .dash-tiles { gap: 8px; }
+  .dash-tile { padding: 10px 4px 8px; min-height: 72px; }
+  .dash-tile b { font-size: 16px; flex-basis: 20px; line-height: 20px; }
+  .dash-tile span { font-size: 9px; min-height: 24px; }
+}
+.settings-version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.settings-version span { font-size: 15px; font-weight: 560; }
+.settings-version b { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+.settings-build {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--faint);
+}

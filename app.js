@@ -3,6 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
+  const VELA_VERSION = "11";
+  const VELA_CACHE = "vela-v11";
 
   let view = "home";
   let tab = "home";
@@ -22,6 +24,39 @@
   let restTimer = null;
   let undoTimer = null;
   let undoPayload = null;
+
+
+  function isStandalonePwa() {
+    return window.navigator.standalone === true
+      || window.matchMedia("(display-mode: standalone)").matches
+      || window.matchMedia("(display-mode: fullscreen)").matches;
+  }
+
+  /* iOS standalone PWAs often give a layout viewport ~100px shorter than the
+     screen (Safari chrome still subtracted). position:fixed; bottom:0 then
+     sits above a navy band. Prefer visualViewport, then screen.height when
+     running as a home-screen app. Playwright is not standalone, so this is
+     a no-op there. */
+  function syncShellViewport() {
+    const vv = window.visualViewport;
+    const layoutH = window.innerHeight || 0;
+    const visualH = vv ? vv.height : layoutH;
+    const visualBottom = vv ? (vv.offsetTop + vv.height) : layoutH;
+    let appH = Math.max(layoutH, visualH, visualBottom);
+    const portrait = (window.innerWidth || 0) <= (layoutH || window.innerWidth || 0);
+    if (!keyboardOpen && portrait && isStandalonePwa() && window.screen) {
+      const screenH = window.screen.height || 0;
+      const screenW = window.screen.width || 0;
+      const vw = window.innerWidth || 0;
+      const widthOk = !screenW || Math.abs(screenW - vw) <= 2
+        || Math.abs(Math.min(screenW, screenH) - vw) <= 2;
+      if (widthOk && screenH > appH + 24) appH = screenH;
+    }
+    const root = document.documentElement;
+    root.style.setProperty("--app-height", `${Math.round(appH)}px`);
+    const shift = Math.min(0, Math.round(layoutH - appH));
+    root.style.setProperty("--viewport-bottom-shift", `${shift}px`);
+  }
 
   const headerEl = () => document.getElementById("header");
   const contentEl = () => document.getElementById("content");
@@ -429,10 +464,12 @@
       open = !!focused;
     }
     if (open === keyboardOpen) {
+      syncShellViewport();
       syncChrome();
       return;
     }
     keyboardOpen = open;
+    syncShellViewport();
     syncChrome();
   }
 
@@ -707,6 +744,11 @@
         <button type="button" class="add" data-action="reset-program">Reset</button>
       </div>
       <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Bro Split 4-day, Bro Split 5-day and Max-OT each keep their own week and plan. History and last weights are shared, so overload still works if you switch.</p>
+      <div class="settings-version" data-testid="app-version">
+        <span>Version</span>
+        <b>${VELA_VERSION}</b>
+      </div>
+      <p class="settings-build">VELA ${VELA_VERSION} · ${VELA_CACHE}</p>
       <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
     </div>`;
   }
@@ -2510,17 +2552,42 @@
     document.addEventListener("touchmove", (event) => {
       if (event.touches && event.touches.length > 1) event.preventDefault();
     }, { passive: false });
+    syncShellViewport();
+    window.addEventListener("resize", syncShellViewport);
+    window.addEventListener("orientationchange", syncShellViewport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncShellViewport);
+      window.visualViewport.addEventListener("scroll", syncShellViewport);
+    }
     render();
     const flush = () => D().saveNow();
     window.addEventListener("pagehide", flush);
     window.addEventListener("beforeunload", flush);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flush();
+      else syncShellViewport();
     });
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
+      const watch = (reg) => {
+        if (!reg) return;
+        const ping = () => { try { reg.update(); } catch (e) {} };
+        ping();
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") ping();
+        });
+      };
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").then(watch).catch(() => {});
+      });
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.getRegistration().then(watch).catch(() => {});
+      }
     }
   }
 
@@ -2528,8 +2595,12 @@
     render,
     get view() { return view; },
     get tab() { return tab; },
+    version: VELA_VERSION,
+    cache: VELA_CACHE,
     pinTrackingToViewport,
     applyTrackingViewport,
+    syncShellViewport,
+    isStandalonePwa,
   };
   init();
 })();
