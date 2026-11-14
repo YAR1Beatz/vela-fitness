@@ -1129,6 +1129,13 @@
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", () => D().saveNow(), true);
     document.addEventListener("keydown", onKeydown);
+    /* Block pinch-zoom like a native iPhone app. */
+    ["gesturestart", "gesturechange", "gestureend"].forEach((type) => {
+      document.addEventListener(type, (event) => event.preventDefault(), { passive: false });
+    });
+    document.addEventListener("touchmove", (event) => {
+      if (event.touches && event.touches.length > 1) event.preventDefault();
+    }, { passive: false });
     render();
     const flush = () => D().saveNow();
     window.addEventListener("pagehide", flush);
