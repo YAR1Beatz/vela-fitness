@@ -32,7 +32,7 @@ window.VELA_PROGRAMS = {
       name: "Chest",
       minutes: 60,
       exercises: [
-        { name: "Barbell Bench Press", alt: "Incline Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 8, weight: 60, thumb: "bench" },
+        { name: "Flat Barbell Bench Press", alt: "Incline Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 8, weight: 60, thumb: "bench" },
         { name: "Incline Dumbbell Press", alt: "Incline Machine Press", tempo: [3, 0, 1, 1], sets: 3, reps: 10, weight: 24, thumb: "incline" },
         { name: "Chest Dip", alt: "Decline Bench Press", tempo: [3, 0, 1, 1], sets: 3, reps: 8, weight: null, thumb: "dip" },
         { name: "Cable Fly", alt: "Pec Deck", tempo: [3, 0, 2, 1], sets: 3, reps: 12, weight: 12.5, thumb: "fly" },
@@ -125,9 +125,10 @@ window.VELA_PROGRAMS = {
     defaultDays: 5,
     recoveryWeek: true,
     /* Seeded from Jeff Willet’s published Mass PROvisions Max-OT schedule
-       (AST Sports Science). Working sets only — warm-up / acclimation sets
-       mentioned in the table are not counted. Rep ranges are Max-OT 4–6
-       on heavy compounds, with the exceptions printed in the table. */
+       (AST Sports Science, https://ast-ss.com/mass-provisions-training-schedule/).
+       Names, order, sets and rep ranges follow that table. Working sets only —
+       warm-up / acclimation sets mentioned in the table are not counted.
+       Display names use the app’s singular style (the source often uses plurals). */
     workouts: [
       {
         id: "maxot-shoulders",
@@ -135,10 +136,10 @@ window.VELA_PROGRAMS = {
         dayLabel: "Monday",
         minutes: 60,
         exercises: [
-          { name: "Barbell Overhead Press", alt: "Seated Dumbbell Shoulder Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 35, thumb: "ohp" },
-          { name: "Seated Dumbbell Shoulder Press", alt: "Machine Shoulder Press", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 20, thumb: "ohp" },
-          { name: "Lateral Raise", alt: "Cable Lateral Raise", tempo: [2, 0, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 8, thumb: "lateral" },
-          { name: "Rear Delt Fly", alt: "Face Pull", tempo: [2, 0, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 8, thumb: "rear-delt" },
+          { name: "Standing Barbell Shoulder Press", alt: "Seated Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 35, thumb: "ohp" },
+          { name: "Seated Dumbbell Press", alt: "Machine Shoulder Press", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 20, thumb: "ohp" },
+          { name: "Side Lateral Dumbbell Raise", alt: "Cable Lateral Raise", tempo: [2, 0, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 8, thumb: "lateral" },
+          { name: "Rear Lateral Dumbbell Raise", alt: "Face Pull", tempo: [2, 0, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 8, thumb: "rear-delt" },
           { name: "Barbell Shrug", alt: "", tempo: [1, 1, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 60, thumb: "rdl" },
         ],
       },
@@ -148,7 +149,7 @@ window.VELA_PROGRAMS = {
         dayLabel: "Tuesday",
         minutes: 60,
         exercises: [
-          { name: "Single-Leg Leg Press Calf Raise", alt: "Standing Calf Raise", tempo: [2, 1, 2, 1], sets: 3, reps: 8, repsRange: "6-8", weight: 40, thumb: "calf" },
+          { name: "Calf Raises on Leg Press", alt: "Standing Calf Raise", tempo: [2, 1, 2, 1], sets: 3, reps: 8, repsRange: "6-8", weight: 40, thumb: "calf" },
           { name: "Seated Calf Raise", alt: "Standing Calf Raise", tempo: [2, 1, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 30, thumb: "calf" },
           { name: "Barbell Back Squat", alt: "Goblet Squat", tempo: [3, 1, 2, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 70, thumb: "rdl" },
           { name: "Front Squat", alt: "Hack Squat", tempo: [3, 1, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "rdl" },
@@ -164,10 +165,10 @@ window.VELA_PROGRAMS = {
           { name: "Swiss Ball Leg Raise", alt: "Hanging Leg Raise", tempo: [2, 0, 1, 1], sets: 2, reps: 15, repsRange: "15-20", weight: null, thumb: "generic" },
           { name: "Cable Crunch", alt: "Crunch", tempo: [2, 0, 2, 1], sets: 3, reps: 10, repsRange: "8-12", weight: 25, thumb: "cable" },
           { name: "Swiss Ball Crunch", alt: "Crunch", tempo: [2, 0, 1, 1], sets: 2, reps: 15, repsRange: "15-20", weight: null, thumb: "generic" },
-          { name: "Seated Cable Row", alt: "Chest-Supported Row", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "row" },
+          { name: "Cable Row", alt: "Chest-Supported Row", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "row" },
           { name: "Lat Pulldown", alt: "Pull-Up", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "pulldown" },
-          { name: "Chest-Supported Row", alt: "Barbell Bent-Over Row", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 40, thumb: "row" },
-          { name: "Pull-Up", alt: "Lat Pulldown", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "to failure", weight: null, thumb: "pulldown" },
+          { name: "Row Machine", alt: "Barbell Bent-Over Row", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 40, thumb: "row" },
+          { name: "Pull-Up", alt: "Lat Pulldown", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "to positive failure", weight: null, thumb: "pulldown" },
         ],
       },
       {
@@ -176,12 +177,12 @@ window.VELA_PROGRAMS = {
         dayLabel: "Thursday",
         minutes: 60,
         exercises: [
-          { name: "Incline Barbell Press", alt: "Incline Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 50, thumb: "incline" },
-          { name: "Barbell Bench Press", alt: "Flat Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 60, thumb: "bench" },
+          { name: "Incline Bench Press", alt: "Incline Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 50, thumb: "incline" },
+          { name: "Flat Barbell Bench Press", alt: "Flat Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 60, thumb: "bench" },
           { name: "Weighted Dip", alt: "Chest Dip", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 10, thumb: "dip" },
-          { name: "Incline Dumbbell Tricep Extension", alt: "Skull Crusher", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
-          { name: "Skull Crusher", alt: "Close-Grip Bench Press", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
-          { name: "Tricep Rope Pushdown", alt: "Overhead Rope Extension", tempo: [2, 0, 2, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 20, thumb: "pushdown" },
+          { name: "Incline Dumbbell Tricep Extension", alt: "Lying Tricep Extension", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
+          { name: "Lying Tricep Extension", alt: "Close-Grip Bench Press", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
+          { name: "Cable Pushdown", alt: "Overhead Rope Extension", tempo: [2, 0, 2, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 20, thumb: "pushdown" },
         ],
       },
       {
@@ -191,10 +192,10 @@ window.VELA_PROGRAMS = {
         minutes: 60,
         exercises: [
           { name: "Barbell Curl", alt: "EZ-Bar Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "curl" },
-          { name: "Alternating Dumbbell Curl", alt: "Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 12, thumb: "curl" },
+          { name: "Dumbbell Alternate Curl", alt: "Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 12, thumb: "curl" },
           { name: "Hammer Curl", alt: "Incline Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 12, thumb: "hammer" },
-          { name: "Barbell Wrist Curl", alt: "Dumbbell Wrist Curl", tempo: [2, 0, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 20, thumb: "curl" },
-          { name: "Dumbbell Wrist Curl", alt: "Barbell Wrist Curl", tempo: [2, 0, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 12, thumb: "curl" },
+          { name: "Barbell Wrist Curl", alt: "Standing Dumbbell Wrist Curl", tempo: [2, 0, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 20, thumb: "curl" },
+          { name: "Standing Dumbbell Wrist Curl", alt: "Barbell Wrist Curl", tempo: [2, 0, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 12, thumb: "curl" },
         ],
       },
     ],

@@ -1,6 +1,6 @@
 window.VELA_PHOTOS = {
   "barbell-bench-press": {
-    "name": "Barbell Bench Press",
+    "name": "Flat Barbell Bench Press",
     "frames": [
       "img/exercises/barbell-bench-press/0.webp",
       "img/exercises/barbell-bench-press/1.webp"
@@ -764,5 +764,33 @@ window.VELA_PHOTOS = {
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": "Closest licensed stills: Dumbbell Curl."
+  },
+  "flat-barbell-bench-press": {
+    "name": "Flat Barbell Bench Press",
+    "frames": [
+      "img/exercises/barbell-bench-press/0.webp",
+      "img/exercises/barbell-bench-press/1.webp"
+    ],
+    "match": "exact",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": ""
+  },
+  "lying-tricep-extension": {
+    "name": "Lying Tricep Extension",
+    "frames": [
+      "img/exercises/skull-crusher/0.webp",
+      "img/exercises/skull-crusher/1.webp"
+    ],
+    "match": "exact",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Same licensed stills as Skull Crusher (lying tricep extension)."
   }
 };

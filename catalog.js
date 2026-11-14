@@ -47,7 +47,7 @@
 
   /* Built-in library used by Swap / Add. Seed program exercises come first. */
   const EXERCISES = [
-    { name: "Barbell Bench Press", thumb: "bench", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 60, tempo: [3, 0, 1, 1] },
+    { name: "Flat Barbell Bench Press", aliases: ["Barbell Bench Press", "Flat Bench Press"], thumb: "bench", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 60, tempo: [3, 0, 1, 1] },
     { name: "Incline Dumbbell Press", thumb: "incline", category: "Chest", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
     { name: "Incline Machine Press", thumb: "incline", category: "Chest", equipment: "Machine", defaultReps: 10, defaultWeight: 40, tempo: [3, 0, 1, 1] },
     { name: "Chest Dip", thumb: "dip", category: "Chest", equipment: "Bodyweight", defaultReps: 8, defaultWeight: null, tempo: [3, 0, 1, 1] },
@@ -58,7 +58,7 @@
     { name: "Push-Up", thumb: "press", category: "Chest", equipment: "Bodyweight", defaultReps: 12, defaultWeight: null, tempo: [2, 0, 1, 1] },
     { name: "Overhead Cable Crossover", thumb: "cable", category: "Chest", equipment: "Cable", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 2, 1] },
     { name: "Low Cable Fly", thumb: "cable", category: "Chest", equipment: "Cable", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 2, 1] },
-    { name: "Incline Barbell Press", thumb: "incline", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Incline Barbell Press", aliases: ["Incline Bench Press"], thumb: "incline", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
     { name: "Flat Dumbbell Press", thumb: "bench", category: "Chest", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
     { name: "Dumbbell Fly", thumb: "fly", category: "Chest", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 12, tempo: [3, 0, 2, 1] },
     { name: "Smith Machine Bench Press", thumb: "bench", category: "Chest", equipment: "Smith", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
@@ -87,8 +87,8 @@
     { name: "Lat Pulldown", thumb: "pulldown", category: "Back", equipment: "Cable", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
     { name: "Pull-Up", thumb: "pulldown", category: "Back", equipment: "Bodyweight", defaultReps: 6, defaultWeight: null, tempo: [3, 0, 1, 1] },
     { name: "Chin-Up", thumb: "pulldown", category: "Back", equipment: "Bodyweight", defaultReps: 6, defaultWeight: null, tempo: [3, 0, 1, 1] },
-    { name: "Seated Cable Row", thumb: "row", category: "Back", equipment: "Cable", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
-    { name: "Chest-Supported Row", thumb: "row", category: "Back", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
+    { name: "Seated Cable Row", aliases: ["Cable Row", "Cable Rows"],  thumb: "row", category: "Back", equipment: "Cable", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Chest-Supported Row", aliases: ["Row Machine"], thumb: "row", category: "Back", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
     { name: "Single-Arm Dumbbell Row", thumb: "db-row", category: "Back", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
     { name: "Barbell Bent-Over Row", thumb: "db-row", category: "Back", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
     { name: "T-Bar Row", thumb: "db-row", category: "Back", equipment: "Barbell", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
@@ -98,14 +98,14 @@
     { name: "Reverse Hyper", thumb: "hyper", category: "Back", equipment: "Machine", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 1, 1] },
     { name: "Conventional Deadlift", thumb: "rdl", category: "Back", equipment: "Barbell", defaultReps: 5, defaultWeight: 80, tempo: [3, 1, 1, 1] },
 
-    { name: "Seated Dumbbell Shoulder Press", thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 20, tempo: [3, 0, 1, 1] },
+    { name: "Seated Dumbbell Shoulder Press", aliases: ["Seated Dumbbell Press"], thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 20, tempo: [3, 0, 1, 1] },
     { name: "Machine Shoulder Press", thumb: "ohp", category: "Shoulders", equipment: "Machine", defaultReps: 8, defaultWeight: 30, tempo: [3, 0, 1, 1] },
-    { name: "Barbell Overhead Press", thumb: "ohp", category: "Shoulders", equipment: "Barbell", defaultReps: 8, defaultWeight: 35, tempo: [3, 0, 1, 1] },
+    { name: "Barbell Overhead Press", aliases: ["Standing Barbell Shoulder Press"], thumb: "ohp", category: "Shoulders", equipment: "Barbell", defaultReps: 8, defaultWeight: 35, tempo: [3, 0, 1, 1] },
     { name: "Arnold Press", thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 14, tempo: [3, 0, 1, 1] },
-    { name: "Lateral Raise", thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Lateral Raise", aliases: ["Side Lateral Dumbbell Raise", "Side Lateral Dumbbell Raises"], thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
     { name: "Cable Lateral Raise", thumb: "lateral", category: "Shoulders", equipment: "Cable", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
     { name: "Front Raise", thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
-    { name: "Rear Delt Fly", thumb: "rear-delt", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Rear Delt Fly", aliases: ["Rear Lateral Dumbbell Raise", "Rear Lateral Dumbbell Raises"],  thumb: "rear-delt", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
     { name: "Face Pull", thumb: "face-pull", category: "Shoulders", equipment: "Cable", defaultReps: 15, defaultWeight: 15, tempo: [2, 0, 2, 1] },
     { name: "Barbell Shrug", thumb: "rdl", category: "Shoulders", equipment: "Barbell", defaultReps: 12, defaultWeight: 60, tempo: [1, 1, 1, 1] },
 
@@ -118,9 +118,10 @@
     { name: "Cable Curl", thumb: "curl", category: "Biceps", equipment: "Cable", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 1, 1] },
     { name: "Concentration Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 1, 1] },
 
-    { name: "Tricep Rope Pushdown", thumb: "pushdown", category: "Triceps", equipment: "Cable", defaultReps: 12, defaultWeight: 20, tempo: [2, 0, 2, 1] },
+    { name: "Tricep Rope Pushdown", aliases: ["Cable Pushdown", "Cable Pushdowns"], thumb: "pushdown", category: "Triceps", equipment: "Cable", defaultReps: 12, defaultWeight: 20, tempo: [2, 0, 2, 1] },
     { name: "Overhead Rope Extension", thumb: "overhead-tri", category: "Triceps", equipment: "Cable", defaultReps: 12, defaultWeight: 16, tempo: [3, 0, 2, 1] },
-    { name: "Skull Crusher", thumb: "skull", category: "Triceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Lying Tricep Extension", aliases: ["Lying Tricep Extensions", "Skull Crusher"], thumb: "skull", category: "Triceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Skull Crusher", aliases: ["Lying Tricep Extension"], thumb: "skull", category: "Triceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
     { name: "Close-Grip Bench Press", thumb: "bench", category: "Triceps", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
     { name: "Overhead Tricep Extension", thumb: "overhead-tri", category: "Triceps", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 12, tempo: [3, 0, 2, 1] },
     { name: "Diamond Push-Up", thumb: "press", category: "Triceps", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 1, 1] },
@@ -137,15 +138,15 @@
     { name: "Russian Twist", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 16, defaultWeight: null, tempo: [1, 0, 1, 0] },
     { name: "Pallof Press", thumb: "cable", category: "Core", equipment: "Cable", defaultReps: 10, defaultWeight: 15, tempo: [2, 1, 2, 1] },
     { name: "Dead Bug", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 2, 0] },
-    { name: "Single-Leg Leg Press Calf Raise", thumb: "calf", category: "Legs", sub: "Calves", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [2, 1, 2, 1] },
+    { name: "Single-Leg Leg Press Calf Raise", aliases: ["Calf Raises on Leg Press"], thumb: "calf", category: "Legs", sub: "Calves", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [2, 1, 2, 1] },
     { name: "Stiff-Leg Deadlift", thumb: "rdl", category: "Legs", sub: "Hamstrings", equipment: "Barbell", defaultReps: 6, defaultWeight: 60, tempo: [3, 1, 2, 1] },
     { name: "Swiss Ball Leg Raise", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
     { name: "Swiss Ball Crunch", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
     { name: "Weighted Dip", thumb: "dip", category: "Chest", equipment: "Bodyweight", defaultReps: 6, defaultWeight: 10, tempo: [3, 0, 1, 1] },
     { name: "Incline Dumbbell Tricep Extension", aliases: ["Incline Tricep Extension", "Incline Triceps Extension"], thumb: "skull", category: "Triceps", equipment: "Dumbbell", defaultReps: 6, defaultWeight: 25, tempo: [3, 0, 1, 1] },
-    { name: "Alternating Dumbbell Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 6, defaultWeight: 12, tempo: [3, 0, 1, 1] },
+    { name: "Alternating Dumbbell Curl", aliases: ["Dumbbell Alternate Curl", "Dumbbell Alternate Curls"], thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 6, defaultWeight: 12, tempo: [3, 0, 1, 1] },
     { name: "Barbell Wrist Curl", thumb: "curl", category: "Forearms", equipment: "Barbell", defaultReps: 8, defaultWeight: 20, tempo: [2, 0, 2, 1] },
-    { name: "Dumbbell Wrist Curl", thumb: "curl", category: "Forearms", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 12, tempo: [2, 0, 2, 1] },
+    { name: "Dumbbell Wrist Curl", aliases: ["Standing Dumbbell Wrist Curl", "Standing Dumbbell Wrist Curls"], thumb: "curl", category: "Forearms", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 12, tempo: [2, 0, 2, 1] },
   ];
 
     function slug(name) {
@@ -161,6 +162,31 @@
   const KEY_ALIASES = {
     "incline-tricep-extension": "incline-dumbbell-tricep-extension",
     "incline-triceps-extension": "incline-dumbbell-tricep-extension",
+    /* Flat bench — canonical new name, used in both programs. */
+    "barbell-bench-press": "flat-barbell-bench-press",
+    "flat-bench-press": "flat-barbell-bench-press",
+    /* Lying tricep extension is the Max-OT source name for what we had as Skull Crusher. */
+    "skull-crusher": "lying-tricep-extension",
+    "lying-tricep-extensions": "lying-tricep-extension",
+    /* Max-OT source names map onto existing catalog keys so photos + history follow. */
+    "standing-barbell-shoulder-press": "barbell-overhead-press",
+    "seated-dumbbell-press": "seated-dumbbell-shoulder-press",
+    "side-lateral-dumbbell-raise": "lateral-raise",
+    "side-lateral-dumbbell-raises": "lateral-raise",
+    "rear-lateral-dumbbell-raise": "rear-delt-fly",
+    "rear-lateral-dumbbell-raises": "rear-delt-fly",
+    "calf-raises-on-leg-press": "single-leg-leg-press-calf-raise",
+    "cable-row": "seated-cable-row",
+    "cable-rows": "seated-cable-row",
+    "row-machine": "chest-supported-row",
+    "incline-bench-press": "incline-barbell-press",
+    "cable-pushdown": "tricep-rope-pushdown",
+    "cable-pushdowns": "tricep-rope-pushdown",
+    "dumbbell-alternate-curl": "alternating-dumbbell-curl",
+    "dumbbell-alternate-curls": "alternating-dumbbell-curl",
+    "standing-dumbbell-wrist-curl": "dumbbell-wrist-curl",
+    "standing-dumbbell-wrist-curls": "dumbbell-wrist-curl",
+    "weighted-dips": "weighted-dip",
   };
 
   function canonicalKey(nameOrKey) {

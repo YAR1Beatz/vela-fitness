@@ -10,7 +10,7 @@ Cropped or resized copies are shared under the same license as the source.
 | Exercise | Match | Author | License | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Back Extension | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
-| Barbell Bench Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
+| Flat Barbell Bench Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Bulgarian Split Squat | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Standing dumbbell lunge video used; not a rear-foot-elevated split squat. |
 | Cable Fly | exact | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Single mid-rep still; no start/end pair. |
 | Cable Lateral Raise | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Dumbbell lateral raise video used; not a cable raise. |
@@ -51,6 +51,7 @@ Cropped or resized copies are shared under the same license as the source.
 | Seated Dumbbell Shoulder Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Seated Leg Curl | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Single-Arm Dumbbell Row | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
+| Lying Tricep Extension | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Same stills as Skull Crusher. |
 | Skull Crusher | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Smith Machine Squat | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Standing Calf Raise | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |

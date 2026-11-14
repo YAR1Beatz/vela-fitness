@@ -132,7 +132,7 @@
   function programHeroName(id) {
     return baseProgramId(id || activeProgramId()) === "max-ot"
       ? "Seated Dumbbell Shoulder Press"
-      : "Barbell Bench Press";
+      : "Flat Barbell Bench Press";
   }
 
   let state = null;
@@ -289,6 +289,35 @@
       });
       state.version = 6;
     }
+    if (state.version < 7) {
+      migrateExerciseKeys(state, {
+        "barbell-bench-press": "flat-barbell-bench-press",
+        "flat-bench-press": "flat-barbell-bench-press",
+        "skull-crusher": "lying-tricep-extension",
+        "lying-tricep-extensions": "lying-tricep-extension",
+      }, {
+        "Barbell Bench Press": "Flat Barbell Bench Press",
+        "Flat Bench Press": "Flat Barbell Bench Press",
+      });
+      /* Max-OT display names follow the AST source; Bro Split keeps its own names.
+         History stays linked because KEY_ALIASES point the new slugs at existing keys
+         (and skull-crusher logs merge into lying-tricep-extension). */
+      rewriteNamedProgramExercises(state, "max-ot", {
+        "Barbell Overhead Press": "Standing Barbell Shoulder Press",
+        "Seated Dumbbell Shoulder Press": "Seated Dumbbell Press",
+        "Lateral Raise": "Side Lateral Dumbbell Raise",
+        "Rear Delt Fly": "Rear Lateral Dumbbell Raise",
+        "Single-Leg Leg Press Calf Raise": "Calf Raises on Leg Press",
+        "Seated Cable Row": "Cable Row",
+        "Chest-Supported Row": "Row Machine",
+        "Incline Barbell Press": "Incline Bench Press",
+        "Skull Crusher": "Lying Tricep Extension",
+        "Tricep Rope Pushdown": "Cable Pushdown",
+        "Alternating Dumbbell Curl": "Dumbbell Alternate Curl",
+        "Dumbbell Wrist Curl": "Standing Dumbbell Wrist Curl",
+      });
+      state.version = 7;
+    }
     if (!state.sessions) state.sessions = [];
     if (!state.checkIns) state.checkIns = [];
     if (!state.programs) state.programs = {};
@@ -322,6 +351,31 @@
         if (ex && ex.alt && nameMap[ex.alt]) ex.alt = nameMap[ex.alt];
         if (ex && ex.key && keyMap[ex.key]) ex.key = keyMap[ex.key];
         else if (ex && ex.name) ex.key = canonKey(ex.name);
+      });
+    });
+  }
+
+  function rewriteNamedProgramExercises(state, programId, nameMap) {
+    const seen = new Set();
+    const slots = [];
+    if (state.programs && state.programs[programId] && state.programs[programId].workouts) {
+      slots.push(state.programs[programId].workouts);
+    }
+    if ((state.activeProgramId || state.programId) === programId && state.workouts) {
+      slots.push(state.workouts);
+    }
+    slots.forEach((workouts) => {
+      if (seen.has(workouts)) return;
+      seen.add(workouts);
+      (workouts || []).forEach((w) => {
+        (w.exercises || []).forEach((ex) => {
+          if (!ex) return;
+          if (nameMap[ex.name]) ex.name = nameMap[ex.name];
+          if (ex.name === "Pull-Up" && ex.repsRange === "to failure") {
+            ex.repsRange = "to positive failure";
+          }
+          if (ex.name) ex.key = canonKey(ex.name);
+        });
       });
     });
   }

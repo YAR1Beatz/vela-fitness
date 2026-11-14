@@ -274,7 +274,7 @@ def main():
         page.locator('[data-testid="workout-tile-maxot-shoulders"]').tap()
         page.wait_for_selector('[data-testid="exercise-stack"]')
         wo = page.inner_text("body")
-        check("Barbell Overhead Press" in wo, "standing barbell press seeded as Barbell Overhead Press")
+        check("Standing Barbell Shoulder Press" in wo, "standing barbell press seeded with the AST name")
         check("4–6" in wo or "4-6" in wo, "Max-OT aim shows 4–6 reps")
         check(page.evaluate("() => window.VELA_DATA.workoutById('maxot-shoulders').exercises[0].sets.length") == 3, "OHP has 3 working sets")
         page.locator('[data-action="back"]').tap()
