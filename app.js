@@ -7,6 +7,9 @@
   let view = "home";
   let activeWorkoutId = null;
   let editing = null;
+  let workoutEditMode = false;
+  let pickerState = null;
+  let daysSetupSource = null;
   let restTimer = null;
   let undoTimer = null;
   let undoPayload = null;
@@ -34,6 +37,9 @@
     play: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M9 6.2v13.6L20.2 13 9 6.2z" fill="currentColor"/></svg>`,
     target: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v2.2M8 12.3v2.2M1.5 8h2.2M12.3 8h2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
     close: `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M6 6l10 10M16 6 6 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    more: `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="5.5" cy="11" r="1.55" fill="currentColor"/><circle cx="11" cy="11" r="1.55" fill="currentColor"/><circle cx="16.5" cy="11" r="1.55" fill="currentColor"/></svg>`,
+    drag: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3.5 6h11M3.5 9h11M3.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+    trash: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.2 4.2h9.6M6.2 4.2V3h3.6v1.2M4.4 4.2 5 13h6l.6-8.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   };
 
   function esc(s) {
@@ -97,11 +103,22 @@
           ${icon}<span data-timer-clock>${esc(D().formatTimer(D().timerMs(w)))}</span>
         </button>
       </div>`;
+    } else if (view === "days-setup") {
+      mid = `<div class="brand"><div class="word logo-only">${ICONS.logo}</div></div>`;
     } else {
-      const week = D().get().week || 1;
-      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Week ${week}</div></div>`;
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub" data-testid="week-label">${esc(D().weekLabel())}</div></div>`;
     }
-    headerEl().innerHTML = `<div class="header-row">${left}${mid}<button class="icon-btn" type="button" data-action="settings" aria-label="Settings">${ICONS.gear}</button></div>${extra}`;
+    const right = view === "days-setup"
+      ? `<span class="icon-btn" aria-hidden="true"></span>`
+      : `<button class="icon-btn" type="button" data-action="settings" aria-label="Settings">${ICONS.gear}</button>`;
+    if (view === "days-setup") {
+      const canBack = daysSetupSource && daysSetupSource !== "first";
+      left = canBack
+        ? `<button class="icon-btn" type="button" data-action="setup-back" aria-label="Back">${ICONS.back}</button>`
+        : `<span class="icon-btn" aria-hidden="true"></span>`;
+      extra = `<div class="setup-progress" data-testid="days-setup-progress"><i></i></div>`;
+    }
+    headerEl().innerHTML = `<div class="header-row">${left}${mid}${right}</div>${extra}`;
   }
 
   function renderHome() {
@@ -125,7 +142,11 @@
     }).join("");
     contentEl().innerHTML = `
       <div class="section">
-        <h1>This Week's Plan</h1>
+        <div class="plan-titles">
+          <p class="program-name" data-testid="program-name">${esc(D().programName())}</p>
+          <h1>This Week's Plan</h1>
+          <p class="week-kicker" data-testid="week-plan-label">${esc(D().weekLabel())}${s.week > D().cycleWeeks() ? " · continued" : ""}</p>
+        </div>
         <button class="add" type="button" data-action="add-workout">${ICONS.plus} Add workout</button>
       </div>
       <div class="info">${ICONS.info}<span>Swipe left on the workout tile to delete</span></div>
@@ -134,12 +155,28 @@
     footerEl().innerHTML = `<button class="program" type="button" data-action="next-week" data-testid="next-program">Get your next program</button>`;
   }
 
+  function volumeBarPct(vol, targetKg, prev) {
+    const kg = vol && typeof vol === "object" ? (vol.kg || 0) : Number(vol) || 0;
+    const reps = vol && typeof vol === "object" ? (vol.repsOnly || 0) : 0;
+    if (targetKg > 0) return Math.min(100, (kg / targetKg) * 100);
+    if (prev && prev.kg > 0) return Math.min(100, (kg / prev.kg) * 100);
+    if (prev && prev.repsOnly > 0 && reps) return Math.min(100, (reps / prev.repsOnly) * 100);
+    return (kg > 0 || reps > 0) ? 100 : 0;
+  }
+
+  function volumeCompareHtml(cmp, testid) {
+    if (!cmp) return `<div class="vol-cmp first" data-testid="${esc(testid)}">First session</div>`;
+    return `<div class="vol-cmp ${esc(cmp.sign)}" data-testid="${esc(testid)}">${esc(cmp.text)}</div>`;
+  }
+
   function exerciseCard(ex, exIndex, workout) {
     const allDone = ex.sets.length && ex.sets.every((s) => s.done);
     const vol = D().exerciseVolume(ex);
     const target = D().targetVolume(ex);
-    const pct = target > 0 ? Math.min(100, (vol / target) * 100) : (vol > 0 ? 100 : 0);
+    const prevVol = D().previousExerciseVolume(ex, workout && workout.sessionId);
+    const pct = volumeBarPct(vol, target, prevVol);
     const volLabel = D().formatVolumeKg(vol);
+    const cmp = D().volumeCompare(vol, prevVol);
     const aim = D().formatAim(ex.suggestedWeight) || (ex.suggestedReps != null ? `Aim for ${ex.suggestedReps} reps` : "");
     const chips = ex.sets.map((set, i) =>
       `<button type="button" class="${chipClass(ex, set)}" data-action="chip" data-ex="${exIndex}" data-set="${i}" data-testid="set-chip-${exIndex}-${i}">${chipInner(ex, set, exIndex, i, workout)}</button>`
@@ -150,14 +187,23 @@
       : "";
     const altName = ex.alt || "Alternative";
     const alt = `<button type="button" class="alt" data-action="alt" data-ex="${exIndex}" aria-label="Swap for ${esc(altName)}"><span>${esc(altName)}</span><span class="alt-icons">${ICONS.clock}${ICONS.swap}</span></button>`;
-    return `<div class="block" data-ex-block="${exIndex}" data-testid="exercise-card-${esc(ex.key)}">
+    const editTools = workoutEditMode
+      ? `<div class="ex-edit-tools">
+           <button type="button" class="drag-handle" data-drag-handle data-ex="${exIndex}" data-testid="drag-handle-${exIndex}" aria-label="Reorder ${esc(ex.name)}">${ICONS.drag}</button>
+           <button type="button" class="remove-ex" data-action="remove-exercise" data-ex="${exIndex}" data-testid="remove-exercise-${exIndex}">${ICONS.trash} Remove</button>
+         </div>`
+      : "";
+    const more = `<button type="button" class="more-btn" data-action="ex-menu" data-ex="${exIndex}" data-testid="ex-menu-${exIndex}" aria-label="Exercise options">${ICONS.more}</button>`;
+    return `<div class="block${workoutEditMode ? " edit-mode" : ""}" data-ex-block="${exIndex}" data-testid="exercise-card-${esc(ex.key)}">
       ${alt}
+      ${editTools}
       <div class="card">
         <div class="top">
           <button type="button" class="thumb" data-action="demo" data-ex="${exIndex}" data-testid="ex-demo-${exIndex}" aria-label="Show ${esc(ex.name)} demo">${C().photoMarkup(ex.name)}${C().photoFor(ex.name) ? `<div class="play">${C().playMarkup()}</div>` : ""}</button>
           <div class="body">
             <div class="name-row">
               <h3>${esc(ex.name)}</h3>
+              ${more}
               <span class="check" data-ex-check="${exIndex}">${allDone ? ICONS.checkFill : ICONS.checkEmpty}</span>
             </div>
             <div class="tempo-arrows">${formatTempo(ex.tempo)}</div>
@@ -176,14 +222,30 @@
         <div class="vol">
           <div class="vl">Volume</div>
           <div class="track"><i data-volbar="${exIndex}" style="width:${pct}%"></i></div>
-          <div class="amt" data-volamt="${exIndex}">${esc(volLabel)}</div>
+          <div class="amt" data-volamt="${exIndex}" data-testid="volume-amt-${exIndex}">${esc(volLabel)}</div>
           <span class="target" title="Target ${esc(D().formatVolumeKg(target))}" aria-label="Target ${esc(D().formatVolumeKg(target))}">${ICONS.target}</span>
         </div>
+        <div class="vol-cmp-slot" data-volcmp="${exIndex}">${volumeCompareHtml(cmp, "volume-vs-last-" + exIndex)}</div>
         <div class="set-tools">
           <button type="button" data-action="add-set" data-ex="${exIndex}">+ Add set</button>
           <button type="button" class="muted" data-action="remove-set" data-ex="${exIndex}">Remove set</button>
         </div>
       </div>
+    </div>`;
+  }
+
+  function workoutVolumeBlock(w) {
+    const wVol = D().workoutVolume(w);
+    const prevW = D().previousWorkoutVolume(w);
+    const wCmp = D().volumeCompare(wVol, prevW);
+    const wPct = volumeBarPct(wVol, 0, prevW);
+    return `<div class="workout-vol" data-testid="workout-volume">
+      <div class="wv-row">
+        <div class="vl">Workout volume</div>
+        <div class="amt" data-testid="workout-volume-amt">${esc(D().formatVolumeKg(wVol))}</div>
+      </div>
+      <div class="track"><i data-workout-volbar style="width:${wPct}%"></i></div>
+      ${volumeCompareHtml(wCmp, "workout-volume-vs")}
     </div>`;
   }
 
@@ -196,13 +258,20 @@
     }
     contentEl().classList.add("has-footer");
     const cards = w.exercises.map((ex, i) => exerciseCard(ex, i, w)).join("");
+    const hint = workoutEditMode ? "Drag to reorder, or remove an exercise" : "Swipe left on the exercise tile to pick an alternative";
     contentEl().innerHTML = `
-      <h1 class="ex-heading">Exercises</h1>
-      <div class="info">${ICONS.info}<span>Swipe left on the exercise tile to pick an alternative</span></div>
-      <div class="stack" data-testid="exercise-stack">${cards}</div>`;
+      <div class="ex-head-row">
+        <h1 class="ex-heading">Exercises</h1>
+        <button type="button" class="btn-edit${workoutEditMode ? " on" : ""}" data-action="toggle-edit" data-testid="edit-workout">${workoutEditMode ? "Done" : "Edit"}</button>
+      </div>
+      <div class="info">${ICONS.info}<span>${hint}</span></div>
+      ${workoutVolumeBlock(w)}
+      <div class="stack" data-testid="exercise-stack">${cards}</div>
+      <button type="button" class="add-ex-btn" data-action="add-exercise" data-testid="add-exercise">${ICONS.plus} Add exercise</button>`;
     footerEl().classList.remove("hidden");
     footerEl().innerHTML = `<button class="cta" type="button" data-action="finish" data-testid="finish-workout">Finish workout</button>`;
     bindSwipeExercises();
+    bindExerciseReorder();
   }
 
   function render() {
@@ -210,12 +279,67 @@
     const typing = ae && ae.matches && ae.matches("input[data-field], textarea[data-notes]");
     if (typing) return;
     renderHeader();
-    if (view === "workout") renderWorkout();
+    if (view === "days-setup") renderDaysSetup();
+    else if (view === "workout") renderWorkout();
     else {
       contentEl().classList.add("has-footer");
       renderHome();
       bindSwipeWorkouts();
     }
+  }
+
+  function openDaysSetup(source) {
+    daysSetupSource = source || "settings";
+    view = "days-setup";
+    editing = null;
+    workoutEditMode = false;
+    render();
+  }
+
+  function renderDaysSetup() {
+    contentEl().classList.remove("has-footer");
+    footerEl().classList.add("hidden");
+    footerEl().innerHTML = "";
+    const current = D().get().daysPerWeek;
+    const opt = (n, label) =>
+      `<button type="button" class="days-card${current === n ? " on" : ""}" data-action="choose-days" data-days="${n}" data-testid="days-option-${n}">${esc(label)}</button>`;
+    contentEl().innerHTML = `
+      <div class="days-setup" data-testid="days-setup">
+        <h1>How often do you want to train?</h1>
+        <div class="days-options">
+          ${opt(4, "4x/week")}
+          ${opt(5, "5x/week")}
+        </div>
+      </div>`;
+  }
+
+  function chooseDays(days) {
+    const src = daysSetupSource || "settings";
+    const n = Number(days) === 5 ? 5 : 4;
+    if (src === "reset-cycle") {
+      D().resetCycle(n);
+      activeWorkoutId = null;
+      editing = null;
+      workoutEditMode = false;
+      stopRest(true);
+    } else if (src === "reset-program") {
+      D().resetToProgram(n);
+      activeWorkoutId = null;
+      editing = null;
+      workoutEditMode = false;
+      stopRest(true);
+    } else {
+      D().setDaysPerWeek(n);
+    }
+    daysSetupSource = null;
+    view = "home";
+    render();
+  }
+
+  function cancelDaysSetup() {
+    daysSetupSource = null;
+    view = "home";
+    render();
   }
 
   function patchChip(exIndex, setIndex) {
@@ -237,14 +361,19 @@
     if (!ex) return;
     const vol = D().exerciseVolume(ex);
     const target = D().targetVolume(ex);
-    const pct = target > 0 ? Math.min(100, (vol / target) * 100) : (vol > 0 ? 100 : 0);
+    const prevVol = D().previousExerciseVolume(ex, w.sessionId);
+    const pct = volumeBarPct(vol, target, prevVol);
     const bar = contentEl().querySelector(`[data-volbar="${exIndex}"]`);
     const amt = contentEl().querySelector(`[data-volamt="${exIndex}"]`);
     if (bar) bar.style.width = `${pct}%`;
     if (amt) amt.textContent = D().formatVolumeKg(vol);
+    const slot = contentEl().querySelector(`[data-volcmp="${exIndex}"]`);
+    if (slot) slot.innerHTML = volumeCompareHtml(D().volumeCompare(vol, prevVol), "volume-vs-last-" + exIndex);
     const allDone = ex.sets.length && ex.sets.every((s) => s.done);
     const check = contentEl().querySelector(`[data-ex-check="${exIndex}"]`);
     if (check) check.innerHTML = allDone ? ICONS.checkFill : ICONS.checkEmpty;
+    const host = contentEl().querySelector('[data-testid="workout-volume"]');
+    if (host) host.outerHTML = workoutVolumeBlock(w);
   }
 
   function patchTimer() {
@@ -605,10 +734,18 @@
           </div>
         </div>
         <div class="settings-row">
+          <span>Program</span>
+          <b data-testid="settings-program">${esc(D().programName())}</b>
+        </div>
+        <div class="settings-row">
+          <span>Training days</span>
+          <button type="button" class="add" data-action="change-days" data-testid="change-days">${esc((D().get().daysPerWeek || 4) + "x/week")}</button>
+        </div>
+        <div class="settings-row">
           <span>Default program</span>
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
-        <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Edit program.js to change the default workouts.</p>
+        <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. The Bro Split runs in 5-week cycles. Edit program.js to change the default workouts.</p>
         <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
@@ -705,40 +842,231 @@
   }
 
   function openAlt(exIndex) {
+    openLibraryPicker({ mode: "swap", exIndex });
+  }
+
+  function openLibraryPicker({ mode, exIndex }) {
     const w = activeWorkout();
-    const ex = w.exercises[exIndex];
-    const items = C().EXERCISES.map((item, i) =>
-      `<button type="button" class="pick-item${C().slug(item.name) === ex.key ? " on" : ""}" data-action="pick-alt" data-ex="${exIndex}" data-pick="${i}">
-        <span class="mini-thumb">${C().photoMarkup(item.name, { mini: true })}</span><span>${esc(item.name)}</span>
-      </button>`
-    ).join("");
-    const sug = ex.alt
-      ? `<button type="button" class="pick-item on" data-action="use-suggested-alt" data-ex="${exIndex}">
+    const ex = mode === "swap" && w ? w.exercises[exIndex] : null;
+    pickerState = {
+      mode,
+      exIndex,
+      category: ex ? C().categoryOf(ex.name) : "",
+      sub: "",
+      equipment: "",
+      query: "",
+    };
+    const title = mode === "add" ? "Add exercise" : "Swap exercise";
+    const sug = (mode === "swap" && ex && ex.alt)
+      ? `<button type="button" class="pick-item on" data-action="use-suggested-alt" data-ex="${exIndex}" data-testid="suggested-alt">
           <span class="mini-thumb">${C().photoMarkup(ex.alt, { mini: true })}</span>
           <span>Use ${esc(ex.alt)}</span>
         </button>`
       : "";
-    showSheet(`<div class="sheet">
+    showSheet(`<div class="sheet" data-testid="exercise-picker">
       <div class="handle"></div>
-      <h2>Alternative exercise</h2>
+      <h2>${esc(title)}</h2>
       <div class="sheet-body">
         ${sug}
-        <input class="search-input" data-filter placeholder="Search or type a custom name" style="margin-top:10px" />
-        <div class="pick-list" data-pick-list>${items}</div>
+        <input class="search-input" data-picker-search data-testid="picker-search" placeholder="Search exercises" autocomplete="off" enterkeyhint="search" />
+        <div class="chip-row" data-cat-chips data-testid="category-chips"></div>
+        <div class="chip-row sub" data-sub-chips data-testid="sub-chips"></div>
+        <div class="chip-row" data-equip-chips data-testid="equipment-chips"></div>
+        <div class="pick-list" data-pick-list data-testid="picker-list"></div>
         <label class="field-label">Custom</label>
-        <input class="text-input" data-custom-alt placeholder="Type an exercise name" />
+        <input class="text-input" data-custom-alt data-testid="custom-exercise" placeholder="Type an exercise name" />
       </div>
       <div class="sheet-actions">
         <button type="button" class="btn ghost" data-action="close-sheet">Cancel</button>
-        <button type="button" class="btn pri" data-action="apply-custom-alt" data-ex="${exIndex}">Use custom</button>
+        <button type="button" class="btn pri" data-action="apply-custom-alt" data-ex="${exIndex == null ? "" : exIndex}" data-testid="use-custom">Use custom</button>
       </div>
     </div>`);
-    const filter = overlaysEl().querySelector("[data-filter]");
-    filter.addEventListener("input", () => {
-      const q = filter.value.trim().toLowerCase();
-      overlaysEl().querySelectorAll("[data-pick-list] .pick-item").forEach((row) => {
-        const name = row.textContent.toLowerCase();
-        row.style.display = !q || name.includes(q) ? "" : "none";
+    const search = overlaysEl().querySelector("[data-picker-search]");
+    search.addEventListener("input", () => {
+      if (!pickerState) return;
+      pickerState.query = search.value;
+      paintPickerList();
+    });
+    overlaysEl().querySelector("[data-cat-chips]").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-cat]");
+      if (!btn || !pickerState) return;
+      pickerState.category = btn.dataset.cat;
+      pickerState.sub = "";
+      paintPickerChips();
+      paintPickerList();
+    });
+    overlaysEl().querySelector("[data-sub-chips]").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-sub]");
+      if (!btn || !pickerState) return;
+      pickerState.sub = btn.dataset.sub;
+      paintPickerChips();
+      paintPickerList();
+    });
+    overlaysEl().querySelector("[data-equip-chips]").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-equip]");
+      if (!btn || !pickerState) return;
+      pickerState.equipment = btn.dataset.equip;
+      paintPickerChips();
+      paintPickerList();
+    });
+    paintPickerChips();
+    paintPickerList();
+  }
+
+  function chipBtn(label, on, attrs) {
+    return `<button type="button" class="filter-chip${on ? " on" : ""}" ${attrs}>${esc(label)}</button>`;
+  }
+
+  function paintPickerChips() {
+    if (!pickerState) return;
+    const catHost = overlaysEl().querySelector("[data-cat-chips]");
+    const subHost = overlaysEl().querySelector("[data-sub-chips]");
+    const eqHost = overlaysEl().querySelector("[data-equip-chips]");
+    if (!catHost) return;
+    const cats = ["", ...C().CATEGORIES];
+    catHost.innerHTML = cats.map((c) =>
+      chipBtn(c || "All", pickerState.category === c, `data-cat="${esc(c)}" data-testid="cat-chip-${c || "all"}"`)
+    ).join("");
+    if (pickerState.category === "Legs") {
+      subHost.innerHTML = ["", ...C().LEG_SUBS].map((s) =>
+        chipBtn(s || "All", pickerState.sub === s, `data-sub="${esc(s)}" data-testid="sub-chip-${s || "all"}"`)
+      ).join("");
+      subHost.hidden = false;
+    } else {
+      subHost.innerHTML = "";
+      subHost.hidden = true;
+    }
+    eqHost.innerHTML = ["", ...C().EQUIPMENT].map((eq) =>
+      chipBtn(eq || "All gear", pickerState.equipment === eq, `data-equip="${esc(eq)}" data-testid="equip-chip-${eq || "all"}"`)
+    ).join("");
+    const selected = catHost.querySelector(".filter-chip.on");
+    if (selected && selected.scrollIntoView) {
+      selected.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" });
+    }
+  }
+
+  function paintPickerList() {
+    if (!pickerState) return;
+    const list = overlaysEl().querySelector("[data-pick-list]");
+    if (!list) return;
+    const items = C().filterExercises(pickerState);
+    const currentKey = (() => {
+      if (pickerState.mode !== "swap") return "";
+      const w = activeWorkout();
+      const ex = w && w.exercises[pickerState.exIndex];
+      return ex ? ex.key : "";
+    })();
+    list.innerHTML = items.map((item) => {
+      const key = C().slug(item.name);
+      const on = key === currentKey ? " on" : "";
+      return `<button type="button" class="pick-item${on}" data-action="pick-library" data-name="${esc(item.name)}" data-testid="picker-item-${esc(key)}">
+        <span class="mini-thumb">${C().photoMarkup(item.name, { mini: true })}</span>
+        <span class="pick-meta"><strong>${esc(item.name)}</strong><em>${esc(item.equipment)}${item.sub ? " · " + esc(item.sub) : ""}</em></span>
+      </button>`;
+    }).join("") || `<div class="empty-pick">No exercises match</div>`;
+  }
+
+  function applyLibraryPick(name) {
+    if (!pickerState) return;
+    if (pickerState.mode === "add") {
+      const catalog = C().findExercise(name);
+      D().addExercise(activeWorkoutId, {
+        name,
+        alt: "",
+        tempo: catalog && catalog.tempo,
+        thumb: catalog && catalog.thumb,
+        sets: 3,
+        reps: 10,
+        weight: catalog ? catalog.defaultWeight : null,
+      });
+      closeSheet();
+      pickerState = null;
+      render();
+      return;
+    }
+    applyAlt(pickerState.exIndex, name);
+  }
+
+  function openExMenu(exIndex) {
+    const w = activeWorkout();
+    const ex = w && w.exercises[exIndex];
+    if (!ex) return;
+    showSheet(`<div class="sheet" data-testid="ex-menu-sheet">
+      <div class="handle"></div>
+      <h2>${esc(ex.name)}</h2>
+      <div class="sheet-body">
+        <button type="button" class="pick-item" data-action="alt" data-ex="${exIndex}" data-testid="menu-swap">Swap exercise</button>
+        <button type="button" class="pick-item danger-item" data-action="remove-exercise" data-ex="${exIndex}" data-testid="menu-remove">Remove exercise</button>
+      </div>
+      <div class="sheet-actions"><button type="button" class="btn ghost" data-action="close-sheet">Cancel</button></div>
+    </div>`);
+  }
+
+  function requestRemoveExercise(exIndex) {
+    const w = activeWorkout();
+    const ex = w && w.exercises[exIndex];
+    if (!ex) return;
+    showConfirm({
+      title: `Remove ${ex.name}?`,
+      body: "It will be taken out of this workout. History stays saved if you add it back later.",
+      confirm: "Remove",
+      danger: true,
+      onConfirm: () => {
+        const removed = D().removeExercise(activeWorkoutId, exIndex);
+        render();
+        if (!removed) return;
+        showToast("Exercise removed", "Undo", () => {
+          D().restoreExercise(removed.workoutId, removed.exercise, removed.index);
+          render();
+        });
+      },
+    });
+  }
+
+  function bindExerciseReorder() {
+    if (!workoutEditMode) return;
+    const stack = contentEl().querySelector('[data-testid="exercise-stack"]');
+    if (!stack) return;
+    stack.querySelectorAll("[data-drag-handle]").forEach((handle) => {
+      handle.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const block = handle.closest("[data-ex-block]");
+        if (!block) return;
+        const blocks = [...stack.querySelectorAll("[data-ex-block]")];
+        const from = Number(block.getAttribute("data-ex-block"));
+        const startY = e.clientY;
+        const origTop = block.getBoundingClientRect().top;
+        block.classList.add("dragging");
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+        let currentTo = from;
+        const move = (ev) => {
+          const dy = ev.clientY - startY;
+          block.style.transform = `translateY(${dy}px)`;
+          const mid = origTop + dy + block.offsetHeight / 2;
+          let best = from;
+          let bestDist = Infinity;
+          blocks.forEach((b, i) => {
+            const r = b.getBoundingClientRect();
+            const d = Math.abs(mid - (r.top + r.height / 2));
+            if (d < bestDist) { bestDist = d; best = i; }
+          });
+          currentTo = best;
+        };
+        const end = () => {
+          block.classList.remove("dragging");
+          block.style.transform = "";
+          handle.removeEventListener("pointermove", move);
+          handle.removeEventListener("pointerup", end);
+          handle.removeEventListener("pointercancel", end);
+          if (currentTo !== from) {
+            D().moveExercise(activeWorkoutId, from, currentTo);
+            render();
+          }
+        };
+        handle.addEventListener("pointermove", move);
+        handle.addEventListener("pointerup", end);
+        handle.addEventListener("pointercancel", end);
       });
     });
   }
@@ -754,6 +1082,7 @@
       weight: catalog && catalog.defaultWeight,
     });
     closeSheet();
+    pickerState = null;
     editing = null;
     render();
   }
@@ -822,38 +1151,66 @@
     });
   }
 
+  function goToNextWeek() {
+    D().advanceWeek();
+    view = "home";
+    activeWorkoutId = null;
+    editing = null;
+    workoutEditMode = false;
+    stopRest(true);
+    render();
+  }
+
+  function openCyclePrompt() {
+    const name = D().programName();
+    const n = D().cycleWeeks();
+    showSheet(`<div class="dialog cycle-prompt" data-testid="cycle-prompt" role="dialog" aria-modal="true">
+      <h2>${esc(name)} — ${esc(n)} weeks done</h2>
+      <p>You can keep going with your current weights, or start Week 1 again. Training history and overload signs are kept either way.</p>
+      <div class="sheet-actions col">
+        <button type="button" class="btn pri" data-action="cycle-continue" data-testid="cycle-continue">Continue</button>
+        <button type="button" class="btn ghost" data-action="cycle-reset" data-testid="cycle-reset">Reset</button>
+      </div>
+    </div>`);
+  }
+
   function requestNextWeek() {
+    if (D().isCycleEnd()) {
+      openCyclePrompt();
+      return;
+    }
     const next = (D().get().week || 1) + 1;
     showConfirm({
-      title: `Start week ${next}?`,
+      title: `Start ${D().weekLabel(next)}?`,
       body: "Your workout list stays the same. Completion resets, and last logged weights become the new suggestions.",
-      confirm: `Start week ${next}`,
+      confirm: `Start ${D().weekLabel(next)}`,
       danger: false,
+      onConfirm: goToNextWeek,
+    });
+  }
+
+  function requestCycleReset() {
+    showConfirm({
+      title: "Start Week 1 again?",
+      body: "Training history and overload comparisons are kept. Last logged weights stay as your suggestions. You’ll pick 4 or 5 training days next.",
+      confirm: "Reset",
+      danger: true,
       onConfirm: () => {
-        D().advanceWeek();
-        view = "home";
-        activeWorkoutId = null;
-        editing = null;
-        stopRest(true);
-        render();
+        closeSheet();
+        openDaysSetup("reset-cycle");
       },
     });
   }
 
   function requestReset() {
     showConfirm({
-      title: "Reset to default program?",
-      body: "This week’s plan is replaced with the default VELA program. History and last logged weights are kept.",
+      title: "Reset to the default Bro Split?",
+      body: "This week’s plan is replaced with the default Bro Split. Training history, overload comparisons and last logged weights are kept. You’ll pick 4 or 5 training days next.",
       confirm: "Reset",
       danger: true,
       onConfirm: () => {
-        D().resetToProgram();
-        view = "home";
-        activeWorkoutId = null;
-        editing = null;
-        stopRest(true);
         closeSheet();
-        render();
+        openDaysSetup("reset-program");
       },
     });
   }
@@ -943,11 +1300,13 @@
   }
 
   function bindSwipeExercises() {
+    if (workoutEditMode) return;
     contentEl().querySelectorAll("[data-ex-block]").forEach((block) => {
       let startX = 0, startY = 0, tracking = false, decided = false, horizontal = false, dx = 0;
       const card = block.querySelector(".card");
       block.addEventListener("pointerdown", (e) => {
-        if (e.target.closest("input, textarea, button, a")) return;
+        if (workoutEditMode) return;
+        if (e.target.closest("input, textarea, button, a, [data-drag-handle]")) return;
         startX = e.clientX;
         startY = e.clientY;
         dx = 0;
@@ -1002,6 +1361,7 @@
 
     if (action === "back") {
       editing = null;
+      workoutEditMode = false;
       view = "home";
       D().get().activeWorkoutId = null;
       D().saveNow();
@@ -1011,6 +1371,11 @@
       return;
     }
     if (action === "settings") { openSettings(); return; }
+    if (action === "change-days") { closeSheet(); openDaysSetup("settings"); return; }
+    if (action === "choose-days") { chooseDays(btn.dataset.days); return; }
+    if (action === "setup-back") { cancelDaysSetup(); return; }
+    if (action === "cycle-continue") { closeSheet(); goToNextWeek(); return; }
+    if (action === "cycle-reset") { requestCycleReset(); return; }
     if (action === "demo") { openDemo(exIndex); return; }
     if (action === "close-sheet") { closeSheet(); D().saveNow(); return; }
     if (action === "open-workout") {
@@ -1020,6 +1385,7 @@
       D().saveNow();
       view = "workout";
       editing = null;
+      workoutEditMode = false;
       render();
       return;
     }
@@ -1060,6 +1426,15 @@
     if (action === "history") { openHistory(exIndex); return; }
     if (action === "notes") { openNotes(exIndex); return; }
     if (action === "alt") { openAlt(exIndex); return; }
+    if (action === "add-exercise") { openLibraryPicker({ mode: "add" }); return; }
+    if (action === "toggle-edit") { workoutEditMode = !workoutEditMode; render(); return; }
+    if (action === "ex-menu") { openExMenu(exIndex); return; }
+    if (action === "remove-exercise") { requestRemoveExercise(exIndex); return; }
+    if (action === "pick-library") {
+      const name = btn.dataset.name;
+      if (name) applyLibraryPick(name);
+      return;
+    }
     if (action === "use-suggested-alt") {
       const w = activeWorkout();
       const ex = w.exercises[exIndex];
@@ -1072,8 +1447,10 @@
       return;
     }
     if (action === "apply-custom-alt") {
-      const name = (overlaysEl().querySelector("[data-custom-alt]") || {}).value;
-      if (name && name.trim()) applyAlt(exIndex, name.trim());
+      const name = ((overlaysEl().querySelector("[data-custom-alt]") || {}).value || "").trim();
+      if (!name) return;
+      if (pickerState && pickerState.mode === "add") applyLibraryPick(name);
+      else applyAlt(exIndex, name);
       return;
     }
     if (action === "skip-rest") { stopRest(true); return; }
@@ -1134,7 +1511,10 @@
   function init() {
     D().load();
     const s = D().get();
-    if (s.activeWorkoutId && D().workoutById(s.activeWorkoutId)) {
+    if (s.daysPerWeek == null) {
+      view = "days-setup";
+      daysSetupSource = "first";
+    } else if (s.activeWorkoutId && D().workoutById(s.activeWorkoutId)) {
       activeWorkoutId = s.activeWorkoutId;
       view = "workout";
       const w = D().workoutById(activeWorkoutId);

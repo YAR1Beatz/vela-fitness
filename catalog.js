@@ -41,60 +41,105 @@
 
   const PLAY = `<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#07111F" fill-opacity="0.88"/><path d="M11.2 8.8v10.4L19.4 14 11.2 8.8z" fill="#1EE0C8"/></svg>`;
 
-  /* Built-in list used by Add workout and Swap. Seed exercises come first. */
+  const CATEGORIES = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Legs", "Core"];
+  const LEG_SUBS = ["Quads", "Hamstrings", "Glutes", "Calves"];
+  const EQUIPMENT = ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Smith"];
+
+  /* Built-in library used by Swap / Add. Seed program exercises come first. */
   const EXERCISES = [
-    { name: "Barbell Bench Press", thumb: "bench", defaultReps: 8, defaultWeight: 60, tempo: [3, 0, 1, 1] },
-    { name: "Incline Dumbbell Press", thumb: "incline", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
-    { name: "Incline Machine Press", thumb: "incline", defaultReps: 10, defaultWeight: 40, tempo: [3, 0, 1, 1] },
-    { name: "Chest Dip", thumb: "dip", defaultReps: 8, defaultWeight: null, tempo: [3, 0, 1, 1] },
-    { name: "Decline Bench Press", thumb: "bench", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
-    { name: "Cable Fly", thumb: "fly", defaultReps: 12, defaultWeight: 12.5, tempo: [3, 0, 2, 1] },
-    { name: "Pec Deck", thumb: "fly", defaultReps: 12, defaultWeight: 30, tempo: [3, 0, 2, 1] },
-    { name: "Machine Chest Press", thumb: "press", defaultReps: 10, defaultWeight: 50, tempo: [3, 0, 1, 1] },
-    { name: "Push-Up", thumb: "press", defaultReps: 12, defaultWeight: null, tempo: [2, 0, 1, 1] },
-    { name: "Overhead Cable Crossover", thumb: "cable", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 2, 1] },
-    { name: "Low Cable Fly", thumb: "cable", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 2, 1] },
-    { name: "Seated Leg Curl", thumb: "leg-curl", defaultReps: 8, defaultWeight: 52.5, tempo: [3, 0, 1, 1] },
-    { name: "Standing Leg Curl", thumb: "leg-curl", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
-    { name: "Leg Extension", thumb: "leg-extension", defaultReps: 15, defaultWeight: 70, tempo: [3, 0, 2, 1] },
-    { name: "Leg Press Machine", thumb: "press", defaultReps: 10, defaultWeight: 80, tempo: [3, 0, 2, 1] },
-    { name: "Romanian Deadlift", thumb: "rdl", defaultReps: 10, defaultWeight: 60, tempo: [3, 1, 2, 1] },
-    { name: "Smith Machine Squat", thumb: "rdl", defaultReps: 10, defaultWeight: 50, tempo: [3, 1, 2, 1] },
-    { name: "Walking Lunge", thumb: "lunge", defaultReps: 10, defaultWeight: 16, tempo: [3, 0, 1, 1] },
-    { name: "Bulgarian Split Squat", thumb: "lunge", defaultReps: 8, defaultWeight: 16, tempo: [3, 0, 1, 1] },
-    { name: "Hip Thrust", thumb: "hip-thrust", defaultReps: 10, defaultWeight: 60, tempo: [3, 1, 1, 1] },
-    { name: "Glute Bridge", thumb: "hip-thrust", defaultReps: 12, defaultWeight: 40, tempo: [2, 1, 1, 1] },
-    { name: "Standing Calf Raise", thumb: "calf", defaultReps: 12, defaultWeight: 40, tempo: [2, 1, 2, 1] },
-    { name: "Seated Calf Raise", thumb: "calf", defaultReps: 12, defaultWeight: 30, tempo: [2, 1, 2, 1] },
-    { name: "Lat Pulldown", thumb: "pulldown", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
-    { name: "Pull-Up", thumb: "pulldown", defaultReps: 6, defaultWeight: null, tempo: [3, 0, 1, 1] },
-    { name: "Seated Cable Row", thumb: "row", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
-    { name: "Chest-Supported Row", thumb: "row", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
-    { name: "Single-Arm Dumbbell Row", thumb: "db-row", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
-    { name: "T-Bar Row", thumb: "db-row", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
-    { name: "Face Pull", thumb: "face-pull", defaultReps: 15, defaultWeight: 15, tempo: [2, 0, 2, 1] },
-    { name: "Straight-Arm Pulldown", thumb: "pullover", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 2, 1] },
-    { name: "Dumbbell Pullover", thumb: "pullover", defaultReps: 12, defaultWeight: 16, tempo: [3, 0, 2, 1] },
-    { name: "Back Extension", thumb: "hyper", defaultReps: 12, defaultWeight: 15, tempo: [3, 0, 1, 1] },
-    { name: "Reverse Hyper", thumb: "hyper", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 1, 1] },
-    { name: "Seated Dumbbell Shoulder Press", thumb: "ohp", defaultReps: 8, defaultWeight: 20, tempo: [3, 0, 1, 1] },
-    { name: "Machine Shoulder Press", thumb: "ohp", defaultReps: 8, defaultWeight: 30, tempo: [3, 0, 1, 1] },
-    { name: "Lateral Raise", thumb: "lateral", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
-    { name: "Cable Lateral Raise", thumb: "lateral", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
-    { name: "Rear Delt Fly", thumb: "rear-delt", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
-    { name: "EZ-Bar Curl", thumb: "curl", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
-    { name: "Dumbbell Curl", thumb: "curl", defaultReps: 10, defaultWeight: 12, tempo: [3, 0, 1, 1] },
-    { name: "Hammer Curl", thumb: "hammer", defaultReps: 10, defaultWeight: 12, tempo: [3, 0, 1, 1] },
-    { name: "Incline Dumbbell Curl", thumb: "curl", defaultReps: 10, defaultWeight: 10, tempo: [3, 0, 1, 1] },
-    { name: "Tricep Rope Pushdown", thumb: "pushdown", defaultReps: 12, defaultWeight: 20, tempo: [2, 0, 2, 1] },
-    { name: "Overhead Rope Extension", thumb: "overhead-tri", defaultReps: 12, defaultWeight: 16, tempo: [2, 0, 2, 1] },
-    { name: "Skull Crusher", thumb: "skull", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
-    { name: "Close-Grip Bench Press", thumb: "bench", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
-    { name: "Overhead Tricep Extension", thumb: "overhead-tri", defaultReps: 12, defaultWeight: 12, tempo: [3, 0, 2, 1] },
-    { name: "Diamond Push-Up", thumb: "press", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Barbell Bench Press", thumb: "bench", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 60, tempo: [3, 0, 1, 1] },
+    { name: "Incline Dumbbell Press", thumb: "incline", category: "Chest", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
+    { name: "Incline Machine Press", thumb: "incline", category: "Chest", equipment: "Machine", defaultReps: 10, defaultWeight: 40, tempo: [3, 0, 1, 1] },
+    { name: "Chest Dip", thumb: "dip", category: "Chest", equipment: "Bodyweight", defaultReps: 8, defaultWeight: null, tempo: [3, 0, 1, 1] },
+    { name: "Decline Bench Press", thumb: "bench", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Cable Fly", thumb: "fly", category: "Chest", equipment: "Cable", defaultReps: 12, defaultWeight: 12.5, tempo: [3, 0, 2, 1] },
+    { name: "Pec Deck", thumb: "fly", category: "Chest", equipment: "Machine", defaultReps: 12, defaultWeight: 30, tempo: [3, 0, 2, 1] },
+    { name: "Machine Chest Press", thumb: "press", category: "Chest", equipment: "Machine", defaultReps: 10, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Push-Up", thumb: "press", category: "Chest", equipment: "Bodyweight", defaultReps: 12, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Overhead Cable Crossover", thumb: "cable", category: "Chest", equipment: "Cable", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 2, 1] },
+    { name: "Low Cable Fly", thumb: "cable", category: "Chest", equipment: "Cable", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 2, 1] },
+    { name: "Incline Barbell Press", thumb: "incline", category: "Chest", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Flat Dumbbell Press", thumb: "bench", category: "Chest", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
+    { name: "Dumbbell Fly", thumb: "fly", category: "Chest", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 12, tempo: [3, 0, 2, 1] },
+    { name: "Smith Machine Bench Press", thumb: "bench", category: "Chest", equipment: "Smith", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+
+    { name: "Seated Leg Curl", thumb: "leg-curl", category: "Legs", sub: "Hamstrings", equipment: "Machine", defaultReps: 8, defaultWeight: 52.5, tempo: [3, 0, 1, 1] },
+    { name: "Standing Leg Curl", thumb: "leg-curl", category: "Legs", sub: "Hamstrings", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
+    { name: "Lying Leg Curl", thumb: "leg-curl", category: "Legs", sub: "Hamstrings", equipment: "Machine", defaultReps: 10, defaultWeight: 40, tempo: [3, 0, 1, 1] },
+    { name: "Leg Extension", thumb: "leg-extension", category: "Legs", sub: "Quads", equipment: "Machine", defaultReps: 15, defaultWeight: 70, tempo: [3, 0, 2, 1] },
+    { name: "Leg Press Machine", thumb: "press", category: "Legs", sub: "Quads", equipment: "Machine", defaultReps: 10, defaultWeight: 80, tempo: [3, 0, 2, 1] },
+    { name: "Romanian Deadlift", thumb: "rdl", category: "Legs", sub: "Hamstrings", equipment: "Barbell", defaultReps: 10, defaultWeight: 60, tempo: [3, 1, 2, 1] },
+    { name: "Smith Machine Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Smith", defaultReps: 10, defaultWeight: 50, tempo: [3, 1, 2, 1] },
+    { name: "Barbell Back Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Barbell", defaultReps: 8, defaultWeight: 70, tempo: [3, 1, 2, 1] },
+    { name: "Front Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 1, 2, 1] },
+    { name: "Goblet Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 20, tempo: [3, 0, 2, 1] },
+    { name: "Hack Squat", thumb: "press", category: "Legs", sub: "Quads", equipment: "Machine", defaultReps: 10, defaultWeight: 60, tempo: [3, 0, 2, 1] },
+    { name: "Walking Lunge", thumb: "lunge", category: "Legs", sub: "Quads", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 16, tempo: [3, 0, 1, 1] },
+    { name: "Bulgarian Split Squat", thumb: "lunge", category: "Legs", sub: "Quads", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 16, tempo: [3, 0, 1, 1] },
+    { name: "Step-Up", thumb: "lunge", category: "Legs", sub: "Quads", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 16, tempo: [2, 0, 1, 1] },
+    { name: "Hip Thrust", thumb: "hip-thrust", category: "Legs", sub: "Glutes", equipment: "Barbell", defaultReps: 10, defaultWeight: 60, tempo: [3, 1, 1, 1] },
+    { name: "Glute Bridge", thumb: "hip-thrust", category: "Legs", sub: "Glutes", equipment: "Bodyweight", defaultReps: 12, defaultWeight: null, tempo: [2, 1, 1, 1] },
+    { name: "Cable Kickback", thumb: "hip-thrust", category: "Legs", sub: "Glutes", equipment: "Cable", defaultReps: 12, defaultWeight: 15, tempo: [2, 0, 2, 1] },
+    { name: "Standing Calf Raise", thumb: "calf", category: "Legs", sub: "Calves", equipment: "Machine", defaultReps: 12, defaultWeight: 40, tempo: [2, 1, 2, 1] },
+    { name: "Seated Calf Raise", thumb: "calf", category: "Legs", sub: "Calves", equipment: "Machine", defaultReps: 12, defaultWeight: 30, tempo: [2, 1, 2, 1] },
+    { name: "Dumbbell Calf Raise", thumb: "calf", category: "Legs", sub: "Calves", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 16, tempo: [2, 1, 2, 1] },
+
+    { name: "Lat Pulldown", thumb: "pulldown", category: "Back", equipment: "Cable", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Pull-Up", thumb: "pulldown", category: "Back", equipment: "Bodyweight", defaultReps: 6, defaultWeight: null, tempo: [3, 0, 1, 1] },
+    { name: "Chin-Up", thumb: "pulldown", category: "Back", equipment: "Bodyweight", defaultReps: 6, defaultWeight: null, tempo: [3, 0, 1, 1] },
+    { name: "Seated Cable Row", thumb: "row", category: "Back", equipment: "Cable", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Chest-Supported Row", thumb: "row", category: "Back", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
+    { name: "Single-Arm Dumbbell Row", thumb: "db-row", category: "Back", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 24, tempo: [3, 0, 1, 1] },
+    { name: "Barbell Bent-Over Row", thumb: "db-row", category: "Back", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "T-Bar Row", thumb: "db-row", category: "Back", equipment: "Barbell", defaultReps: 8, defaultWeight: 40, tempo: [3, 0, 1, 1] },
+    { name: "Straight-Arm Pulldown", thumb: "pullover", category: "Back", equipment: "Cable", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 2, 1] },
+    { name: "Dumbbell Pullover", thumb: "pullover", category: "Back", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 16, tempo: [3, 0, 2, 1] },
+    { name: "Back Extension", thumb: "hyper", category: "Back", equipment: "Bodyweight", defaultReps: 12, defaultWeight: 15, tempo: [3, 0, 1, 1] },
+    { name: "Reverse Hyper", thumb: "hyper", category: "Back", equipment: "Machine", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 1, 1] },
+    { name: "Conventional Deadlift", thumb: "rdl", category: "Back", equipment: "Barbell", defaultReps: 5, defaultWeight: 80, tempo: [3, 1, 1, 1] },
+
+    { name: "Seated Dumbbell Shoulder Press", thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 20, tempo: [3, 0, 1, 1] },
+    { name: "Machine Shoulder Press", thumb: "ohp", category: "Shoulders", equipment: "Machine", defaultReps: 8, defaultWeight: 30, tempo: [3, 0, 1, 1] },
+    { name: "Barbell Overhead Press", thumb: "ohp", category: "Shoulders", equipment: "Barbell", defaultReps: 8, defaultWeight: 35, tempo: [3, 0, 1, 1] },
+    { name: "Arnold Press", thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 14, tempo: [3, 0, 1, 1] },
+    { name: "Lateral Raise", thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Cable Lateral Raise", thumb: "lateral", category: "Shoulders", equipment: "Cable", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Front Raise", thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Rear Delt Fly", thumb: "rear-delt", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Face Pull", thumb: "face-pull", category: "Shoulders", equipment: "Cable", defaultReps: 15, defaultWeight: 15, tempo: [2, 0, 2, 1] },
+    { name: "Barbell Shrug", thumb: "rdl", category: "Shoulders", equipment: "Barbell", defaultReps: 12, defaultWeight: 60, tempo: [1, 1, 1, 1] },
+
+    { name: "EZ-Bar Curl", thumb: "curl", category: "Biceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Barbell Curl", thumb: "curl", category: "Biceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Dumbbell Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 12, tempo: [3, 0, 1, 1] },
+    { name: "Hammer Curl", thumb: "hammer", category: "Biceps", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 12, tempo: [3, 0, 1, 1] },
+    { name: "Incline Dumbbell Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 10, tempo: [3, 0, 1, 1] },
+    { name: "Preacher Curl", thumb: "curl", category: "Biceps", equipment: "Machine", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Cable Curl", thumb: "curl", category: "Biceps", equipment: "Cable", defaultReps: 12, defaultWeight: 20, tempo: [3, 0, 1, 1] },
+    { name: "Concentration Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 10, tempo: [3, 0, 1, 1] },
+
+    { name: "Tricep Rope Pushdown", thumb: "pushdown", category: "Triceps", equipment: "Cable", defaultReps: 12, defaultWeight: 20, tempo: [2, 0, 2, 1] },
+    { name: "Overhead Rope Extension", thumb: "overhead-tri", category: "Triceps", equipment: "Cable", defaultReps: 12, defaultWeight: 16, tempo: [3, 0, 2, 1] },
+    { name: "Skull Crusher", thumb: "skull", category: "Triceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Close-Grip Bench Press", thumb: "bench", category: "Triceps", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 0, 1, 1] },
+    { name: "Overhead Tricep Extension", thumb: "overhead-tri", category: "Triceps", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 12, tempo: [3, 0, 2, 1] },
+    { name: "Diamond Push-Up", thumb: "press", category: "Triceps", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Tricep Kickback", thumb: "pushdown", category: "Triceps", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
+    { name: "Bench Dip", thumb: "dip", category: "Triceps", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 1, 1] },
+
+    { name: "Plank", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 30, defaultWeight: null, tempo: [1, 0, 1, 0] },
+    { name: "Side Plank", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 30, defaultWeight: null, tempo: [1, 0, 1, 0] },
+    { name: "Crunch", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Hanging Leg Raise", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Hanging Knee Raise", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 12, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Cable Crunch", thumb: "cable", category: "Core", equipment: "Cable", defaultReps: 12, defaultWeight: 25, tempo: [2, 0, 2, 1] },
+    { name: "Ab Wheel Rollout", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 8, defaultWeight: null, tempo: [3, 0, 2, 1] },
+    { name: "Russian Twist", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 16, defaultWeight: null, tempo: [1, 0, 1, 0] },
+    { name: "Pallof Press", thumb: "cable", category: "Core", equipment: "Cable", defaultReps: 10, defaultWeight: 15, tempo: [2, 1, 2, 1] },
+    { name: "Dead Bug", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 2, 0] },
   ];
 
-  function slug(name) {
+    function slug(name) {
     return String(name || "")
       .trim()
       .toLowerCase()
@@ -106,6 +151,25 @@
   function findExercise(name) {
     const key = slug(name);
     return EXERCISES.find((e) => slug(e.name) === key) || null;
+  }
+
+  function categoryOf(name) {
+    const ex = findExercise(name);
+    return (ex && ex.category) || "Chest";
+  }
+
+  function filterExercises({ category, sub, equipment, query } = {}) {
+    const q = String(query || "").trim().toLowerCase();
+    return EXERCISES.filter((e) => {
+      if (category && e.category !== category) return false;
+      if (category === "Legs" && sub && e.sub !== sub) return false;
+      if (equipment && e.equipment !== equipment) return false;
+      if (q) {
+        const hay = [e.name, e.category, e.sub || "", e.equipment].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
   }
 
   function thumbMarkup(key) {
@@ -202,8 +266,13 @@
   global.VELA_CATALOG = {
     THUMBS,
     EXERCISES,
+    CATEGORIES,
+    LEG_SUBS,
+    EQUIPMENT,
     slug,
     findExercise,
+    categoryOf,
+    filterExercises,
     thumbMarkup,
     playMarkup,
     photoFor,

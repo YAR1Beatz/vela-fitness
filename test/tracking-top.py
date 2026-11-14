@@ -27,6 +27,15 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+
+def choose_days_if_needed(page, days=4):
+    """First-launch Bro Split setup must be dismissed so older tests reach the plan."""
+    sel = '[data-testid="days-setup"]'
+    if page.locator(sel).count():
+        page.locator(f'[data-testid="days-option-{days}"]').tap()
+        page.wait_for_selector(sel, state="detached")
+        page.wait_for_selector('[data-testid="week-plan"]')
+
 def start_server():
     handler = functools.partial(Quiet, directory=str(ROOT))
     httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
@@ -63,6 +72,7 @@ def main():
         )
         page = context.new_page()
         page.goto(url, wait_until="networkidle")
+        choose_days_if_needed(page)
         page.wait_for_selector('[data-testid="week-plan"]')
         page.locator('[data-testid="workout-tile-chest"]').tap()
         page.wait_for_selector('[data-testid="exercise-stack"]')

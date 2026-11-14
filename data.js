@@ -81,46 +81,63 @@
     return workout && workout.sessionId;
   }
 
+  function ensureWorkoutFields(w) {
+    if (!w.sessionId) w.sessionId = uid("ses");
+    if (w.timerAccumMs == null) w.timerAccumMs = 0;
+    if (w.timerPaused == null) w.timerPaused = true;
+    if (w.timerStartedAt === undefined) w.timerStartedAt = null;
+    if (w.timerElapsedFinal === undefined) w.timerElapsedFinal = null;
+    (w.exercises || []).forEach((ex) => {
+      if (!ex.id) ex.id = uid("ex");
+      if (!ex.key && ex.name) ex.key = C().slug(ex.name);
+    });
+  }
+
   function migrate(state) {
     const ver = state.version || 1;
-    if (ver >= 2) {
-      (state.workouts || []).forEach((w) => {
-        if (!w.sessionId) w.sessionId = uid("ses");
-        if (w.timerAccumMs == null) w.timerAccumMs = 0;
-        if (w.timerPaused == null) w.timerPaused = true;
-        if (w.timerStartedAt === undefined) w.timerStartedAt = null;
-        if (w.timerElapsedFinal === undefined) w.timerElapsedFinal = null;
+    if (ver < 2) {
+      Object.keys(state.history || {}).forEach((key) => {
+        (state.history[key] || []).forEach((h) => {
+          if (!h.sessionId) h.sessionId = uid("ses");
+          if (!h.date && h.datetime) h.date = String(h.datetime).slice(0, 10);
+          if (!Array.isArray(h.sets)) h.sets = [];
+          h.sets = h.sets.map((s) => ({
+            reps: s && s.reps != null ? s.reps : null,
+            weight: s && s.weight != null ? s.weight : null,
+          }));
+        });
       });
-      return state;
+      state.version = 2;
     }
-    (state.workouts || []).forEach((w) => {
-      if (!w.sessionId) w.sessionId = uid("ses");
-      if (w.timerStartedAt === undefined) w.timerStartedAt = null;
-      if (w.timerAccumMs == null) w.timerAccumMs = 0;
-      if (w.timerPaused == null) w.timerPaused = true;
-      if (w.timerElapsedFinal === undefined) w.timerElapsedFinal = null;
-    });
-    Object.keys(state.history || {}).forEach((key) => {
-      (state.history[key] || []).forEach((h) => {
-        if (!h.sessionId) h.sessionId = uid("ses");
-        if (!h.date && h.datetime) h.date = String(h.datetime).slice(0, 10);
-        if (!Array.isArray(h.sets)) h.sets = [];
-        h.sets = h.sets.map((s) => ({
-          reps: s && s.reps != null ? s.reps : null,
-          weight: s && s.weight != null ? s.weight : null,
-        }));
-      });
-    });
-    state.version = 2;
+    if (state.version < 3) {
+      /* v3: workout edits (add/swap/remove/reorder) are the source of truth
+         and already carry into future weeks via advanceWeek. No data rewrite. */
+      state.version = 3;
+    }
+    if (state.version < 4) {
+      const program = PROGRAM();
+      state.programId = state.programId || program.id || "bro-split";
+      state.cycleWeeks = program.cycleWeeks || 5;
+      /* Existing installs already have a 4-day plan; don't force the setup step. */
+      if (state.daysPerWeek == null) {
+        const hasDelts = (state.workouts || []).some((w) => w.id === "delts");
+        state.daysPerWeek = hasDelts ? 5 : 4;
+      }
+      state.version = 4;
+    }
+    if (state.cycleWeeks == null) state.cycleWeeks = (PROGRAM().cycleWeeks || 5);
+    (state.workouts || []).forEach(ensureWorkoutFields);
     return state;
   }
 
   function seedState() {
     const program = PROGRAM();
     return {
-      version: 2,
+      version: 4,
       programId: program.id,
       week: 1,
+      cycleWeeks: program.cycleWeeks || 5,
+      daysPerWeek: null,
       restSeconds: program.restSeconds || 90,
       activeWorkoutId: null,
       workouts: program.workouts.map(buildWorkout),
@@ -128,6 +145,197 @@
       notes: {},
       lastLogged: {},
     };
+  }
+
+  function cycleWeeks() {
+    return get().cycleWeeks || PROGRAM().cycleWeeks || 5;
+  }
+
+  function isCycleEnd(week) {
+    const w = week == null ? (get().week || 1) : week;
+    const n = cycleWeeks();
+    return n > 0 && w > 0 && w % n === 0;
+  }
+
+  function weekLabel(week) {
+    const w = week == null ? (get().week || 1) : week;
+    const n = cycleWeeks();
+    if (w <= n) return `Week ${w} of ${n}`;
+    return `Week ${w}`;
+  }
+
+  function programName() {
+    return (PROGRAM() && PROGRAM().name) || "Bro Split";
+  }
+
+  function shoulderNameSet() {
+    const five = PROGRAM().fiveDay || {};
+    const names = five.shoulderNames || [];
+    return new Set(names.map((n) => C().slug(n)));
+  }
+
+  function isShoulderExercise(ex) {
+    if (!ex || !ex.name) return false;
+    if (shoulderNameSet().has(C().slug(ex.name))) return true;
+    const cat = C().findExercise(ex.name);
+    return !!(cat && cat.category === "Shoulders");
+  }
+
+  function applySuggestions(workout) {
+    (workout.exercises || []).forEach((ex) => {
+      const sug = suggestionFor(ex.name, ex.programReps, ex.programWeight);
+      ex.suggestedReps = sug.reps;
+      ex.suggestedWeight = sug.weight;
+    });
+  }
+
+  function resetWorkoutSession(w) {
+    w.completedAt = null;
+    w.sessionId = uid("ses");
+    w.timerStartedAt = null;
+    w.timerAccumMs = 0;
+    w.timerPaused = true;
+    w.timerElapsedFinal = null;
+    w.exercises.forEach((ex) => {
+      const sug = suggestionFor(ex.name, ex.programReps, ex.programWeight);
+      ex.suggestedReps = sug.reps;
+      ex.suggestedWeight = sug.weight;
+      ex.sets = ex.sets.map(() => emptySet());
+    });
+  }
+
+  function flushLoggedSessions() {
+    const s = get();
+    s.workouts.forEach((w) => {
+      if (w.exercises.some((ex) => ex.sets.some((st) => st.done))) upsertSessionHistory(w);
+    });
+  }
+
+  function armsAndDeltsTemplates() {
+    const program = PROGRAM();
+    const arms4 = (program.workouts || []).find((w) => w.id === "arms");
+    const five = program.fiveDay || {};
+    return {
+      arms4,
+      armsName4: (five.armsDay4Name) || (arms4 && arms4.name) || "Biceps, Triceps & Delts",
+      armsName5: five.armsName || "Arms (Biceps & Triceps)",
+      deltsSrc: five.delts || { id: "delts", name: "Delts", minutes: 60, extras: [] },
+    };
+  }
+
+  function buildDeltsFromArms(arms) {
+    const { deltsSrc } = armsAndDeltsTemplates();
+    const moved = (arms.exercises || []).filter(isShoulderExercise);
+    const extras = (deltsSrc.extras || []).filter((src) => {
+      const key = C().slug(src.name);
+      return !moved.some((ex) => ex.key === key);
+    }).map(buildExercise);
+    const exercises = moved.concat(extras);
+    const delts = buildWorkout({
+      id: deltsSrc.id || "delts",
+      name: deltsSrc.name || "Delts",
+      minutes: deltsSrc.minutes || 60,
+      exercises: [],
+    });
+    delts.exercises = exercises;
+    applySuggestions(delts);
+    return delts;
+  }
+
+  function setDaysPerWeek(days, { rebuild } = {}) {
+    const s = get();
+    const next = Number(days) === 5 ? 5 : 4;
+    if (rebuild) {
+      const keptHistory = s.history;
+      const keptNotes = s.notes;
+      const keptLast = s.lastLogged;
+      const week = 1;
+      const rest = s.restSeconds;
+      state = seedState();
+      state.history = keptHistory;
+      state.notes = keptNotes;
+      state.lastLogged = keptLast;
+      state.restSeconds = rest;
+      state.week = week;
+      state.daysPerWeek = next;
+      if (next === 5) applyFiveDaySplit(state);
+      state.workouts.forEach((w) => {
+        w.exercises.forEach((ex) => {
+          const sug = suggestionFor(ex.name, ex.programReps, ex.programWeight);
+          ex.suggestedReps = sug.reps;
+          ex.suggestedWeight = sug.weight;
+          if (keptNotes[ex.key]) ex.notes = keptNotes[ex.key];
+        });
+      });
+      saveNow();
+      notify();
+      return state;
+    }
+    if (s.daysPerWeek === next) {
+      saveNow();
+      return s;
+    }
+    if (next === 5) applyFiveDaySplit(s);
+    else applyFourDayMerge(s);
+    s.daysPerWeek = next;
+    saveNow();
+    notify();
+    return s;
+  }
+
+  function applyFiveDaySplit(s) {
+    const { armsName5 } = armsAndDeltsTemplates();
+    const list = s.workouts || [];
+    let arms = list.find((w) => w.id === "arms");
+    if (!arms) return;
+    if (list.some((w) => w.id === "delts")) {
+      arms.name = armsName5;
+      return;
+    }
+    const kept = (arms.exercises || []).filter((ex) => !isShoulderExercise(ex));
+    const delts = buildDeltsFromArms(arms);
+    arms.exercises = kept;
+    arms.name = armsName5;
+    const idx = list.indexOf(arms);
+    list.splice(idx + 1, 0, delts);
+  }
+
+  function applyFourDayMerge(s) {
+    const { armsName4 } = armsAndDeltsTemplates();
+    const list = s.workouts || [];
+    const arms = list.find((w) => w.id === "arms");
+    const dIdx = list.findIndex((w) => w.id === "delts");
+    if (dIdx < 0) {
+      if (arms) arms.name = armsName4;
+      return;
+    }
+    const delts = list[dIdx];
+    if (arms) {
+      const have = new Set((arms.exercises || []).map((ex) => ex.key));
+      (delts.exercises || []).forEach((ex) => {
+        if (!have.has(ex.key)) {
+          arms.exercises.push(ex);
+          have.add(ex.key);
+        }
+      });
+      arms.name = armsName4;
+    } else {
+      delts.id = "arms";
+      delts.name = armsName4;
+      return;
+    }
+    list.splice(dIdx, 1);
+  }
+
+  function resetCycle(days) {
+    const s = get();
+    flushLoggedSessions();
+    if (days) setDaysPerWeek(days);
+    s.week = 1;
+    s.activeWorkoutId = null;
+    s.workouts.forEach(resetWorkoutSession);
+    saveNow();
+    notify();
   }
 
   function load() {
@@ -150,6 +358,7 @@
       if (!state.lastLogged) state.lastLogged = {};
       if (!state.restSeconds) state.restSeconds = PROGRAM().restSeconds || 90;
       if (!state.week) state.week = 1;
+      if (state.cycleWeeks == null) state.cycleWeeks = (PROGRAM().cycleWeeks || 5);
       migrate(state);
       return state;
     } catch (err) {
@@ -197,25 +406,9 @@
     return get().workouts.find((w) => w.id === id) || null;
   }
 
-  function resetToProgram() {
-    const keptHistory = state ? state.history : {};
-    const keptNotes = state ? state.notes : {};
-    const keptLast = state ? state.lastLogged : {};
-    state = seedState();
-    state.history = keptHistory;
-    state.notes = keptNotes;
-    state.lastLogged = keptLast;
-    /* Re-apply last-logged suggestions onto the fresh seed. */
-    state.workouts.forEach((w) => {
-      w.exercises.forEach((ex) => {
-        const sug = suggestionFor(ex.name, ex.programReps, ex.programWeight);
-        ex.suggestedReps = sug.reps;
-        ex.suggestedWeight = sug.weight;
-        if (keptNotes[ex.key]) ex.notes = keptNotes[ex.key];
-      });
-    });
-    saveNow();
-    notify();
+  function resetToProgram(days) {
+    const chosen = days || (state && state.daysPerWeek) || 4;
+    setDaysPerWeek(chosen, { rebuild: true });
   }
 
   function upsertSessionHistory(w) {
@@ -247,26 +440,10 @@
 
   function advanceWeek() {
     const s = get();
-    /* Flush any logged sets from this week into history before resetting. */
-    s.workouts.forEach((w) => {
-      if (w.exercises.some((ex) => ex.sets.some((st) => st.done))) upsertSessionHistory(w);
-    });
+    flushLoggedSessions();
     s.week = (s.week || 1) + 1;
     s.activeWorkoutId = null;
-    s.workouts.forEach((w) => {
-      w.completedAt = null;
-      w.sessionId = uid("ses");
-      w.timerStartedAt = null;
-      w.timerAccumMs = 0;
-      w.timerPaused = true;
-      w.timerElapsedFinal = null;
-      w.exercises.forEach((ex) => {
-        const sug = suggestionFor(ex.name, ex.programReps, ex.programWeight);
-        ex.suggestedReps = sug.reps;
-        ex.suggestedWeight = sug.weight;
-        ex.sets = ex.sets.map(() => emptySet());
-      });
-    });
+    s.workouts.forEach(resetWorkoutSession);
     saveNow();
     notify();
   }
@@ -444,16 +621,67 @@
     const catalog = C().findExercise(name);
     const src = {
       name,
-      alt: alt != null ? alt : prev.alt,
-      tempo: tempo || (catalog && catalog.tempo) || prev.tempo,
-      sets: sets || prev.sets.length,
-      reps: reps != null ? reps : (catalog && catalog.defaultReps) || prev.programReps,
-      weight: weight !== undefined ? weight : (catalog && catalog.defaultWeight) || prev.programWeight,
+      alt: alt != null ? alt : "",
+      tempo: tempo || (catalog && catalog.tempo) || [3, 0, 1, 1],
+      sets: sets || (prev.sets && prev.sets.length) || 3,
+      reps: reps != null ? reps : (catalog && catalog.defaultReps) || 10,
+      weight: weight !== undefined ? weight : (catalog ? catalog.defaultWeight : null),
       thumb: thumb || (catalog && catalog.thumb) || "generic",
     };
     const next = buildExercise(src);
     next.id = prev.id;
     w.exercises[exIndex] = next;
+    saveNow();
+    notify();
+    return next;
+  }
+
+  function addExercise(workoutId, { name, alt, tempo, thumb, sets, reps, weight } = {}) {
+    const w = workoutById(workoutId);
+    if (!w) return null;
+    const catalog = name ? C().findExercise(name) : null;
+    const src = {
+      name: name || "Exercise",
+      alt: alt || "",
+      tempo: tempo || (catalog && catalog.tempo) || [3, 0, 1, 1],
+      sets: sets || 3,
+      reps: reps != null ? reps : 10,
+      weight: weight !== undefined ? weight : (catalog ? catalog.defaultWeight : null),
+      thumb: thumb || (catalog && catalog.thumb) || "generic",
+    };
+    const ex = buildExercise(src);
+    w.exercises.push(ex);
+    saveNow();
+    notify();
+    return ex;
+  }
+
+  function removeExercise(workoutId, exIndex) {
+    const w = workoutById(workoutId);
+    if (!w || !w.exercises[exIndex]) return null;
+    const removed = { workoutId, index: exIndex, exercise: w.exercises[exIndex] };
+    w.exercises.splice(exIndex, 1);
+    saveNow();
+    notify();
+    return removed;
+  }
+
+  function restoreExercise(workoutId, exercise, index) {
+    const w = workoutById(workoutId);
+    if (!w || !exercise) return;
+    const i = Math.max(0, Math.min(index == null ? w.exercises.length : index, w.exercises.length));
+    w.exercises.splice(i, 0, exercise);
+    saveNow();
+    notify();
+  }
+
+  function moveExercise(workoutId, from, to) {
+    const w = workoutById(workoutId);
+    if (!w) return;
+    const list = w.exercises;
+    if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return;
+    const [item] = list.splice(from, 1);
+    list.splice(to, 0, item);
     saveNow();
     notify();
   }
@@ -482,14 +710,18 @@
   /* Overload rule: compare this set to the same set number in the previous session.
      Higher weight = up, lower weight = down, same weight = same,
      except same weight with more reps = up, same weight with fewer reps = down. */
+  function kgEqual(a, b) {
+    return Math.abs(Number(a) - Number(b)) < 0.005;
+  }
+
   function compareSet(current, previous) {
     if (!current || !previous) return null;
     if (previous.weight == null && previous.reps == null) return null;
     const cw = current.weight, pw = previous.weight;
     const cr = current.reps, pr = previous.reps;
     if (cw != null && pw != null) {
-      if (cw > pw) return "up";
-      if (cw < pw) return "down";
+      if (!kgEqual(cw, pw) && cw > pw) return "up";
+      if (!kgEqual(cw, pw) && cw < pw) return "down";
       if (cr != null && pr != null && cr > pr) return "up";
       if (cr != null && pr != null && cr < pr) return "down";
       return "same";
@@ -583,19 +815,114 @@
     return (get().history[exerciseKey] || []).slice();
   }
 
+  /* Logged volume only: untracked / suggested values are not counted.
+     Bodyweight (no kg) contributes a reps total instead of a misleading 0Kg. */
+  function setsVolume(sets) {
+    let kg = 0;
+    let repsOnly = 0;
+    (sets || []).forEach((st) => {
+      if (!st || (st.done === false)) return;
+      /* History rows have no `done` flag; treat a row as logged if it has reps or weight. */
+      const logged = st.done === true || (st.done == null && (st.reps != null || st.weight != null));
+      if (!logged) return;
+      const r = st.reps == null ? 0 : Number(st.reps);
+      if (!Number.isFinite(r) || r <= 0) return;
+      if (st.weight != null && Number(st.weight) > 0) kg += r * Number(st.weight);
+      else repsOnly += r;
+    });
+    return { kg, repsOnly };
+  }
+
+  function addVolumes(a, b) {
+    return { kg: (a && a.kg || 0) + (b && b.kg || 0), repsOnly: (a && a.repsOnly || 0) + (b && b.repsOnly || 0) };
+  }
+
+  function formatVolumeParts(vol) {
+    const kg = vol && vol.kg ? vol.kg : 0;
+    const reps = vol && vol.repsOnly ? vol.repsOnly : 0;
+    const kgLabel = kg ? `${Math.round(kg)}Kg` : "";
+    const repLabel = reps ? `${Math.round(reps)} reps` : "";
+    if (kgLabel && repLabel) return `${kgLabel} + ${repLabel}`;
+    if (kgLabel) return kgLabel;
+    if (repLabel) return repLabel;
+    return "0Kg";
+  }
+
+  function formatVolumeKg(value) {
+    if (value && typeof value === "object") return formatVolumeParts(value);
+    return `${Math.round(Number(value) || 0)}Kg`;
+  }
+
+  function volumeCompare(current, previous) {
+    if (!previous) return null;
+    const ck = current && current.kg || 0;
+    const pk = previous.kg || 0;
+    const cr = current && current.repsOnly || 0;
+    const pr = previous.repsOnly || 0;
+    if (!pk && !pr) return null;
+    if (pk || ck) {
+      if (!kgEqual(ck, pk) && ck > pk) return { sign: "up", text: `↑ +${Math.round(ck - pk)}Kg vs last`, delta: ck - pk };
+      if (!kgEqual(ck, pk) && ck < pk) return { sign: "down", text: `↓ ${Math.round(ck - pk)}Kg vs last`, delta: ck - pk };
+      if (cr > pr) return { sign: "up", text: `↑ +${Math.round(cr - pr)} reps vs last`, delta: 0 };
+      if (cr < pr) return { sign: "down", text: `↓ ${Math.round(cr - pr)} reps vs last`, delta: 0 };
+      return { sign: "same", text: "Same volume as last", delta: 0 };
+    }
+    if (cr > pr) return { sign: "up", text: `↑ +${Math.round(cr - pr)} reps vs last`, delta: 0 };
+    if (cr < pr) return { sign: "down", text: `↓ ${Math.round(cr - pr)} reps vs last`, delta: 0 };
+    return { sign: "same", text: "Same volume as last", delta: 0 };
+  }
+
   function exerciseVolume(ex) {
-    return ex.sets.reduce((sum, st) => {
-      if (!st.done) return sum;
-      const r = st.reps || 0;
-      const w = st.weight || 0;
-      return sum + r * w;
-    }, 0);
+    return setsVolume(ex && ex.sets);
+  }
+
+  function exerciseVolumeKg(ex) {
+    return exerciseVolume(ex).kg;
+  }
+
+  function previousExerciseVolume(ex, sessionId) {
+    const prev = previousSession(ex && ex.key, sessionId);
+    if (!prev) return null;
+    return setsVolume(prev.sets);
   }
 
   function targetVolume(ex) {
     const r = ex.suggestedReps || 0;
     const w = ex.suggestedWeight || 0;
-    return r * w * ex.sets.length;
+    if (!w) return 0;
+    return r * w * (ex.sets && ex.sets.length || 0);
+  }
+
+  function workoutVolume(workout) {
+    return (workout && workout.exercises || []).reduce((sum, ex) => addVolumes(sum, exerciseVolume(ex)), { kg: 0, repsOnly: 0 });
+  }
+
+  function previousWorkoutSession(workout) {
+    if (!workout) return null;
+    let best = null;
+    Object.keys(get().history || {}).forEach((key) => {
+      (get().history[key] || []).forEach((h) => {
+        if (h.sessionId === workout.sessionId) return;
+        if (h.workoutId && h.workoutId !== workout.id) return;
+        if (!h.workoutId && h.workout && h.workout !== workout.name) return;
+        if (!best || (h.datetime || h.date || "") > (best.datetime || best.date || "")) {
+          best = { sessionId: h.sessionId, datetime: h.datetime || h.date };
+        }
+      });
+    });
+    return best;
+  }
+
+  function previousWorkoutVolume(workout) {
+    const prev = previousWorkoutSession(workout);
+    if (!prev) return null;
+    let total = { kg: 0, repsOnly: 0 };
+    Object.keys(get().history || {}).forEach((key) => {
+      (get().history[key] || []).forEach((h) => {
+        if (h.sessionId === prev.sessionId) total = addVolumes(total, setsVolume(h.sets));
+      });
+    });
+    return total;
   }
 
   function doneExerciseCount(workout) {
@@ -611,6 +938,13 @@
     onChange,
     workoutById,
     resetToProgram,
+    resetCycle,
+    setDaysPerWeek,
+    isCycleEnd,
+    weekLabel,
+    programName,
+    cycleWeeks,
+    isShoulderExercise,
     advanceWeek,
     setRestSeconds,
     addWorkout,
@@ -622,10 +956,21 @@
     addSet,
     removeSet,
     swapExercise,
+    addExercise,
+    removeExercise,
+    restoreExercise,
+    moveExercise,
     setNotes,
     getHistory,
     exerciseVolume,
+    exerciseVolumeKg,
+    previousExerciseVolume,
     targetVolume,
+    workoutVolume,
+    previousWorkoutVolume,
+    volumeCompare,
+    setsVolume,
+    formatVolumeParts,
     doneExerciseCount,
     suggestionFor,
     uid,

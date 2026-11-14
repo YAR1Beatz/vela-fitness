@@ -111,6 +111,15 @@ def track_one(page, set_index, reps, weight):
         page.wait_for_selector('[data-testid="rest-timer"]', state="detached")
 
 
+
+def choose_days_if_needed(page, days=4):
+    """First-launch Bro Split setup must be dismissed so older tests reach the plan."""
+    sel = '[data-testid="days-setup"]'
+    if page.locator(sel).count():
+        page.locator(f'[data-testid="days-option-{days}"]').tap()
+        page.wait_for_selector(sel, state="detached")
+        page.wait_for_selector('[data-testid="week-plan"]')
+
 def launch_context(p):
     browser = p.chromium.launch(
         executable_path="/usr/bin/google-chrome",
@@ -136,6 +145,7 @@ def main():
         browser, context = launch_context(p)
         page = context.new_page()
         page.goto(url, wait_until="networkidle")
+        choose_days_if_needed(page)
         page.wait_for_selector('[data-testid="week-plan"]')
 
         text = page.inner_text("body")
@@ -265,6 +275,7 @@ def main():
         client = lag_page.context.new_cdp_session(lag_page)
         client.send("Emulation.setCPUThrottlingRate", {"rate": THROTTLE})
         lag_page.goto(url, wait_until="networkidle")
+        choose_days_if_needed(lag_page)
         lag_page.wait_for_timeout(200)
         if lag_page.locator('[data-testid="workout-tile-legs-2"]').count():
             lag_page.locator('[data-testid="workout-tile-legs-2"]').tap()

@@ -1,5 +1,5 @@
 /* ========================================================================
- * VELA default program — THE file to edit when the exact exercise list
+ * VELA Bro Split program — THE file to edit when the exact exercise list
  * arrives. Change workouts, exercises, alternatives, tempo, sets, reps
  * and suggested weights here. Nothing else in the app needs to change.
  *
@@ -17,9 +17,14 @@
  * ======================================================================== */
 
 window.VELA_PROGRAM = {
-  id: "vela-default",
-  name: "VELA Program",
+  id: "bro-split",
+  name: "Bro Split",
   restSeconds: 90,
+  cycleWeeks: 5,
+  defaultDays: 4,
+  /* 4-day layout: Chest, Legs, Back, Biceps+Triceps+Delts.
+     5-day layout splits shoulder work out of Arms into a Delts day
+     and adds a few extra shoulder lifts (see fiveDay). */
   workouts: [
     {
       id: "chest",
@@ -78,4 +83,32 @@ window.VELA_PROGRAM = {
       ],
     },
   ],
+  /* Used when the plan is 5x/week. Shoulder lifts currently on the Arms
+     day move to Delts; extras fill the session to about 5–6 exercises. */
+  fiveDay: {
+    armsName: "Arms (Biceps & Triceps)",
+    armsDay4Name: "Biceps, Triceps & Delts",
+    delts: {
+      id: "delts",
+      name: "Delts",
+      minutes: 60,
+      extras: [
+        { name: "Arnold Press", alt: "Barbell Overhead Press", tempo: [3, 0, 1, 1], sets: 3, reps: 10, weight: 14, thumb: "ohp" },
+        { name: "Front Raise", alt: "Cable Lateral Raise", tempo: [2, 0, 2, 1], sets: 3, reps: 12, weight: 8, thumb: "lateral" },
+        { name: "Barbell Shrug", alt: "Face Pull", tempo: [1, 1, 1, 1], sets: 3, reps: 12, weight: 60, thumb: "rdl" },
+      ],
+    },
+    /* Names that count as shoulder work when splitting the Arms day. */
+    shoulderNames: [
+      "Seated Dumbbell Shoulder Press",
+      "Machine Shoulder Press",
+      "Barbell Overhead Press",
+      "Arnold Press",
+      "Lateral Raise",
+      "Cable Lateral Raise",
+      "Front Raise",
+      "Rear Delt Fly",
+      "Barbell Shrug",
+    ],
+  },
 };

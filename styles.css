@@ -1154,3 +1154,209 @@ input, textarea, select {
   color: var(--faint);
   line-height: 1.4;
 }
+
+/* v6: library picker, edit mode, volume vs last session */
+.ex-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 10px;
+}
+.ex-head-row .ex-heading { margin: 0; }
+.btn-edit {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 650;
+  padding: 6px 4px;
+}
+.btn-edit.on { color: var(--text); }
+.workout-vol {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px 10px;
+  margin: 4px 0 12px;
+}
+.workout-vol .wv-row,
+.workout-vol .track { display: flex; align-items: center; gap: 8px; }
+.workout-vol .vl {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.workout-vol .amt { margin-left: auto; font-size: 13px; font-weight: 650; color: var(--muted); }
+.workout-vol .track { margin-top: 8px; }
+.vol-cmp, .vol-cmp-slot .vol-cmp {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.vol-cmp.up { color: var(--up); }
+.vol-cmp.down { color: var(--down); }
+.vol-cmp.same, .vol-cmp.first { color: var(--same); }
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.filter-chip.on {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.pick-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pick-meta strong { font-size: 14px; font-weight: 650; }
+.pick-meta em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 500; }
+.empty-pick { color: var(--muted); font-size: 14px; padding: 16px 8px; text-align: center; }
+.more-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  border-radius: 8px;
+}
+.more-btn:active { background: var(--accent-dim); color: var(--accent); }
+.ex-edit-tools {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 2;
+}
+.ex-edit-tools > button { pointer-events: auto; }
+.drag-handle {
+  width: 36px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  touch-action: none;
+}
+.remove-ex {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.block.edit-mode { padding-top: 32px; }
+.block.edit-mode .alt { visibility: hidden; }
+.block.dragging { z-index: 4; }
+.block.dragging .card { box-shadow: var(--shadow); }
+.pick-item.danger-item { color: var(--danger); border-color: var(--danger-bg); }
+.add-ex-btn {
+  width: 100%;
+  margin: 12px 0 8px;
+  padding: 14px 12px;
+  border: 1.5px dashed var(--border);
+  border-radius: 16px;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(30, 224, 200, 0.05);
+}
+.add-ex-btn:active { background: var(--accent-dim); }
+
+/* Bro Split: week plan titles + 4/5-day setup + cycle prompt */
+.plan-titles { min-width: 0; flex: 1; }
+.program-name {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 2px;
+}
+.week-kicker {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 560;
+  color: var(--muted);
+}
+.word.logo-only { letter-spacing: 0; }
+.word.logo-only .logo-mark { width: 22px; height: 22px; }
+.setup-progress {
+  height: 4px;
+  margin: 0 20px 10px;
+  background: #1A3048;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.setup-progress > i {
+  display: block;
+  height: 100%;
+  width: 70%;
+  background: var(--accent);
+  border-radius: 99px;
+}
+.days-setup { padding-top: 10px; }
+.days-setup h1 {
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 8px 0 28px;
+}
+.days-options { display: flex; flex-direction: column; gap: 12px; }
+.days-card {
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1.5px solid var(--card);
+  border-radius: 16px;
+  padding: 18px 20px;
+  font-size: 16px;
+  font-weight: 560;
+  color: var(--text);
+}
+.days-card:active { background: var(--card2); }
+.days-card.on {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+.sheet-actions.col {
+  flex-direction: column;
+  align-items: stretch;
+}
+.sheet-actions.col .btn { width: 100%; }
