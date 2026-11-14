@@ -16,7 +16,8 @@
  *   thumb   – illustration key (see catalog.js THUMBS)
  * ======================================================================== */
 
-window.VELA_PROGRAM = {
+window.VELA_PROGRAMS = {
+  "bro-split": {
   id: "bro-split",
   name: "Bro Split",
   restSeconds: 90,
@@ -111,4 +112,93 @@ window.VELA_PROGRAM = {
       "Barbell Shrug",
     ],
   },
+
+  },
+
+  "max-ot": {
+    id: "max-ot",
+    name: "Max-OT",
+    author: "Jeff Willet",
+    source: "https://ast-ss.com/mass-provisions-training-schedule/",
+    restSeconds: 180,
+    cycleWeeks: 8,
+    defaultDays: 5,
+    recoveryWeek: true,
+    /* Seeded from Jeff Willet’s published Mass PROvisions Max-OT schedule
+       (AST Sports Science). Working sets only — warm-up / acclimation sets
+       mentioned in the table are not counted. Rep ranges are Max-OT 4–6
+       on heavy compounds, with the exceptions printed in the table. */
+    workouts: [
+      {
+        id: "maxot-shoulders",
+        name: "Shoulders & Traps",
+        dayLabel: "Monday",
+        minutes: 60,
+        exercises: [
+          { name: "Barbell Overhead Press", alt: "Seated Dumbbell Shoulder Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 35, thumb: "ohp" },
+          { name: "Seated Dumbbell Shoulder Press", alt: "Machine Shoulder Press", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 20, thumb: "ohp" },
+          { name: "Lateral Raise", alt: "Cable Lateral Raise", tempo: [2, 0, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 8, thumb: "lateral" },
+          { name: "Rear Delt Fly", alt: "Face Pull", tempo: [2, 0, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 8, thumb: "rear-delt" },
+          { name: "Barbell Shrug", alt: "", tempo: [1, 1, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 60, thumb: "rdl" },
+        ],
+      },
+      {
+        id: "maxot-legs",
+        name: "Calves & Legs",
+        dayLabel: "Tuesday",
+        minutes: 60,
+        exercises: [
+          { name: "Single-Leg Leg Press Calf Raise", alt: "Standing Calf Raise", tempo: [2, 1, 2, 1], sets: 3, reps: 8, repsRange: "6-8", weight: 40, thumb: "calf" },
+          { name: "Seated Calf Raise", alt: "Standing Calf Raise", tempo: [2, 1, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 30, thumb: "calf" },
+          { name: "Barbell Back Squat", alt: "Goblet Squat", tempo: [3, 1, 2, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 70, thumb: "rdl" },
+          { name: "Front Squat", alt: "Hack Squat", tempo: [3, 1, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "rdl" },
+          { name: "Stiff-Leg Deadlift", alt: "Romanian Deadlift", tempo: [3, 1, 2, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 60, thumb: "rdl" },
+        ],
+      },
+      {
+        id: "maxot-back",
+        name: "Abs & Back",
+        dayLabel: "Wednesday",
+        minutes: 60,
+        exercises: [
+          { name: "Swiss Ball Leg Raise", alt: "Hanging Leg Raise", tempo: [2, 0, 1, 1], sets: 2, reps: 15, repsRange: "15-20", weight: null, thumb: "generic" },
+          { name: "Cable Crunch", alt: "Crunch", tempo: [2, 0, 2, 1], sets: 3, reps: 10, repsRange: "8-12", weight: 25, thumb: "cable" },
+          { name: "Swiss Ball Crunch", alt: "Crunch", tempo: [2, 0, 1, 1], sets: 2, reps: 15, repsRange: "15-20", weight: null, thumb: "generic" },
+          { name: "Seated Cable Row", alt: "Chest-Supported Row", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "row" },
+          { name: "Lat Pulldown", alt: "Pull-Up", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 50, thumb: "pulldown" },
+          { name: "Chest-Supported Row", alt: "Barbell Bent-Over Row", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 40, thumb: "row" },
+          { name: "Pull-Up", alt: "Lat Pulldown", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "to failure", weight: null, thumb: "pulldown" },
+        ],
+      },
+      {
+        id: "maxot-chest",
+        name: "Chest & Triceps",
+        dayLabel: "Thursday",
+        minutes: 60,
+        exercises: [
+          { name: "Incline Barbell Press", alt: "Incline Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 50, thumb: "incline" },
+          { name: "Barbell Bench Press", alt: "Flat Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 60, thumb: "bench" },
+          { name: "Weighted Dip", alt: "Chest Dip", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 10, thumb: "dip" },
+          { name: "Incline Tricep Extension", alt: "Skull Crusher", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
+          { name: "Skull Crusher", alt: "Close-Grip Bench Press", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
+          { name: "Tricep Rope Pushdown", alt: "Overhead Rope Extension", tempo: [2, 0, 2, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 20, thumb: "pushdown" },
+        ],
+      },
+      {
+        id: "maxot-arms",
+        name: "Biceps & Forearms",
+        dayLabel: "Friday",
+        minutes: 60,
+        exercises: [
+          { name: "Barbell Curl", alt: "EZ-Bar Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "curl" },
+          { name: "Alternating Dumbbell Curl", alt: "Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 12, thumb: "curl" },
+          { name: "Hammer Curl", alt: "Incline Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 12, thumb: "hammer" },
+          { name: "Barbell Wrist Curl", alt: "Dumbbell Wrist Curl", tempo: [2, 0, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 20, thumb: "curl" },
+          { name: "Dumbbell Wrist Curl", alt: "Barbell Wrist Curl", tempo: [2, 0, 2, 1], sets: 2, reps: 8, repsRange: "6-8", weight: 12, thumb: "curl" },
+        ],
+      },
+    ],
+  },
 };
+
+window.VELA_PROGRAM = window.VELA_PROGRAMS["bro-split"];

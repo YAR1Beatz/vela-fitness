@@ -40,6 +40,8 @@
     more: `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="5.5" cy="11" r="1.55" fill="currentColor"/><circle cx="11" cy="11" r="1.55" fill="currentColor"/><circle cx="16.5" cy="11" r="1.55" fill="currentColor"/></svg>`,
     drag: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3.5 6h11M3.5 9h11M3.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
     trash: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.2 4.2h9.6M6.2 4.2V3h3.6v1.2M4.4 4.2 5 13h6l.6-8.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    flame: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.8s1.4 2.2 1.4 4.2c0 1.2-.6 2.2-1.4 2.2S10.6 8.2 10.6 7c0-1.4.6-2.8 1.4-4.2z" fill="currentColor" opacity=".9"/><path d="M12 22c-3.7 0-6.2-2.8-6.2-6.3 0-2.6 1.5-4.6 2.8-6.2.4 1.8 1.5 3 2.8 3.2-1-2.6.2-4.8 2.1-6.7 2.3 1.6 4.7 3.8 4.7 7.2C18.2 19.2 15.7 22 12 22z" fill="currentColor"/></svg>`,
+    tape: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5h16v3.2H4V8.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.2 8.5v3.2M9.1 8.5v3.2M12 8.5v3.2M14.9 8.5v3.2M17.8 8.5v3.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 11.7 7 19.2h10L16 11.7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   };
 
   function esc(s) {
@@ -124,35 +126,85 @@
   function renderHome() {
     const s = D().get();
     contentEl().classList.add("has-footer");
-    const tiles = s.workouts.map((w) => {
+    const stats = D().weekStats();
+    const due = D().checkInDue();
+    const segs = Array.from({ length: stats.planned }, (_, i) =>
+      `<i class="${i < stats.filled ? "on" : ""}"></i>`
+    ).join("");
+    const dash = `<section class="dash-card" data-testid="stats-card">
+      <div class="streak-row">
+        <div class="streak-flame" data-testid="streak-weeks">
+          ${ICONS.flame}
+          <b>${esc(stats.streak)}</b>
+          <span>weeks</span>
+        </div>
+        <div class="streak-copy">
+          <h2>Consistency streak</h2>
+          <p data-testid="streak-subtitle">${esc(stats.subtitle)}</p>
+          <div class="seg-bar" data-testid="streak-bar" style="--segs:${Math.max(1, stats.planned)}">${segs || "<i></i>"}</div>
+        </div>
+      </div>
+      <p class="dash-scope">${esc(stats.scopeLabel)}</p>
+      <div class="dash-tiles">
+        <div class="dash-tile" data-testid="tile-volume">
+          <b>${esc(Math.round(stats.volumeKg))}</b><span>Volume kg</span>
+        </div>
+        <button type="button" class="dash-tile" data-action="open-pbs" data-testid="tile-pbs">
+          <b>${esc(stats.personalBests)}</b><span>Personal bests</span>
+        </button>
+        <div class="dash-tile" data-testid="tile-workouts">
+          <b>${esc(stats.workoutsCompleted)}</b><span>Workouts completed</span>
+        </div>
+        <div class="dash-tile" data-testid="tile-hours">
+          <b>${esc(stats.hoursLabel)}</b><span>Hours spent</span>
+        </div>
+      </div>
+      <div class="checkin-row" data-testid="checkin-row">
+        <span class="checkin-ico">${ICONS.tape}</span>
+        <span class="checkin-lbl">Monthly Check-in</span>
+        <button type="button" class="checkin-btn${due ? " due" : ""}" data-action="open-checkin" data-testid="checkin-button">${due ? "Check-in" : "View"}</button>
+      </div>
+    </section>`;
+    const tiles = (s.recoveryWeek ? "" : s.workouts.map((w) => {
       const n = w.exercises.length;
       const done = !!w.completedAt;
       const mark = done
         ? `<div class="mark" aria-label="Done">${ICONS.checkFill}</div>`
         : `<div class="mark chev">${ICONS.chev}</div>`;
+      const sub = w.dayLabel ? `${esc(w.dayLabel)} · ` : "";
       return `<div class="swipe-row" data-swipe="workout" data-id="${esc(w.id)}">
         <button type="button" class="swipe-actions" data-action="delete-workout" data-id="${esc(w.id)}">Delete</button>
         <div class="swipe-front">
           <button type="button" class="tile${done ? " done" : ""}" data-action="open-workout" data-id="${esc(w.id)}" data-testid="workout-tile-${esc(w.id)}">
-            <div class="meta"><h2>${esc(w.name)}</h2><p>${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes)} mins</p></div>
+            <div class="meta"><h2>${esc(w.name)}</h2><p>${sub}${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes)} mins</p></div>
             ${mark}
           </button>
         </div>
       </div>`;
-    }).join("");
+    }).join(""));
+    const recovery = s.recoveryWeek
+      ? `<div class="recovery-card" data-testid="recovery-week">${ICONS.info}<div><b>Recovery week</b><p>Max-OT prescribes a week off after 8 weeks of heavy training. History and last weights are kept. Start your next cycle when you’re ready.</p></div></div>`
+      : "";
+    const continued = !s.recoveryWeek && s.week > D().cycleWeeks() ? " · continued" : "";
     contentEl().innerHTML = `
+      ${dash}
       <div class="section">
         <div class="plan-titles">
-          <p class="program-name" data-testid="program-name">${esc(D().programName())}</p>
+          <button type="button" class="program-name" data-action="choose-program" data-testid="program-name">${esc(D().programName())}</button>
           <h1>This Week's Plan</h1>
-          <p class="week-kicker" data-testid="week-plan-label">${esc(D().weekLabel())}${s.week > D().cycleWeeks() ? " · continued" : ""}</p>
+          <p class="week-kicker" data-testid="week-plan-label">${esc(D().weekLabel())}${continued}</p>
         </div>
-        <button class="add" type="button" data-action="add-workout">${ICONS.plus} Add workout</button>
+        ${s.recoveryWeek ? "" : `<button class="add" type="button" data-action="add-workout">${ICONS.plus} Add workout</button>`}
       </div>
-      <div class="info">${ICONS.info}<span>Swipe left on the workout tile to delete</span></div>
-      <div class="tiles" data-testid="week-plan">${tiles || `<div class="empty">No workouts this week. Tap Add workout to start.</div>`}</div>`;
+      ${recovery}
+      ${s.recoveryWeek ? "" : `<div class="info">${ICONS.info}<span>Swipe left on the workout tile to delete</span></div>
+      <div class="tiles" data-testid="week-plan">${tiles || `<div class="empty">No workouts this week. Tap Add workout to start.</div>`}</div>`}`;
+    if (s.recoveryWeek) {
+      contentEl().insertAdjacentHTML("beforeend", `<div class="tiles" data-testid="week-plan" hidden></div>`);
+    }
     footerEl().classList.remove("hidden");
-    footerEl().innerHTML = `<button class="program" type="button" data-action="next-week" data-testid="next-program">Get your next program</button>`;
+    const footerLbl = s.recoveryWeek ? "Start next cycle" : "Get your next program";
+    footerEl().innerHTML = `<button class="program" type="button" data-action="next-week" data-testid="next-program">${footerLbl}</button>`;
   }
 
   function volumeBarPct(vol, targetKg, prev) {
@@ -177,7 +229,7 @@
     const pct = volumeBarPct(vol, target, prevVol);
     const volLabel = D().formatVolumeKg(vol);
     const cmp = D().volumeCompare(vol, prevVol);
-    const aim = D().formatAim(ex.suggestedWeight) || (ex.suggestedReps != null ? `Aim for ${ex.suggestedReps} reps` : "");
+    const aim = D().formatAim(ex.suggestedWeight, ex.repsRange, ex.suggestedReps) || (ex.suggestedReps != null ? `Aim for ${ex.suggestedReps} reps` : "");
     const chips = ex.sets.map((set, i) =>
       `<button type="button" class="${chipClass(ex, set)}" data-action="chip" data-ex="${exIndex}" data-set="${i}" data-testid="set-chip-${exIndex}-${i}">${chipInner(ex, set, exIndex, i, workout)}</button>`
     ).join("");
@@ -719,7 +771,177 @@
       </div>`, { top: true });
   }
 
+
+  function openProgramPicker() {
+    const current = D().activeProgramId();
+    const items = D().listPrograms().map((p) => {
+      const on = p.id === current ? " on" : "";
+      const meta = p.id === "max-ot"
+        ? "Jeff Willet · 8 weeks + recovery · 5 days · 3 min rest"
+        : "5-week cycle · 4 or 5 days";
+      return `<button type="button" class="pick-item${on}" data-action="select-program" data-program="${esc(p.id)}" data-testid="program-option-${esc(p.id)}">
+        <span class="pick-meta"><strong>${esc(p.name)}</strong><em>${esc(meta)}</em></span>
+      </button>`;
+    }).join("");
+    showSheet(`<div class="sheet" data-testid="program-picker">
+      <div class="handle"></div>
+      <h2>Program</h2>
+      <div class="sheet-body">${items}
+        <p class="empty" style="text-align:left;padding:8px 0 0">Switching keeps each program’s week and plan. History stays shared, so overload signs still work.</p>
+      </div>
+      <div class="sheet-actions"><button type="button" class="btn ghost" data-action="close-sheet">Cancel</button></div>
+    </div>`);
+  }
+
+  function selectProgram(id) {
+    if (!id) return;
+    D().switchProgram(id);
+    view = "home";
+    activeWorkoutId = null;
+    editing = null;
+    workoutEditMode = false;
+    closeSheet();
+    /* Bro Split first-time still needs a days choice if never set. */
+    if (id === "bro-split" && D().get().daysPerWeek == null) {
+      openDaysSetup("settings");
+      return;
+    }
+    render();
+  }
+
+  function openPersonalBests() {
+    const stats = D().weekStats();
+    const rows = (stats.pbList || []).map((pb) => {
+      const name = pb.key.replace(/-/g, " ");
+      const prev = pb.previous ? ` (was ${pb.previous}kg)` : " (first heavy set)";
+      return `<div class="hist-item"><div class="when">${esc(name)}</div><div class="sets">${esc(pb.weight)}kg${esc(prev)}</div></div>`;
+    }).join("") || `<p class="empty">No new heaviest-weight sets this week.</p>`;
+    showSheet(`<div class="sheet" data-testid="pb-sheet">
+      <div class="handle"></div>
+      <h2>Personal bests</h2>
+      <div class="sheet-body">
+        <p class="empty" style="text-align:left">A personal best is the heaviest weight you’ve logged for an exercise. This list is new PBs this week.</p>
+        ${rows}
+      </div>
+      <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
+    </div>`);
+  }
+
+  function openCheckIn() {
+    const list = D().listCheckIns();
+    const today = D().copenhagenYMD();
+    const latest = list[0];
+    const history = list.map((c) => {
+      const bits = [`${c.weight != null ? c.weight + " kg" : "—"}`];
+      if (c.waist) bits.push(`waist ${c.waist}`);
+      if (c.chest) bits.push(`chest ${c.chest}`);
+      if (c.arms) bits.push(`arms ${c.arms}`);
+      if (c.thighs) bits.push(`thighs ${c.thighs}`);
+      const photo = c.photo ? `<img class="checkin-thumb" src="${c.photo}" alt="">` : "";
+      return `<div class="hist-item" data-testid="checkin-entry">
+        <div class="when">${esc(c.date)}${photo}</div>
+        <div class="sets">${esc(bits.join(" · "))}${c.note ? " · " + esc(c.note) : ""}</div>
+      </div>`;
+    }).join("") || `<p class="empty">No check-ins yet.</p>`;
+    showSheet(`<div class="sheet" data-testid="checkin-sheet">
+      <div class="handle"></div>
+      <h2>Monthly Check-in</h2>
+      <div class="sheet-body">
+        <label class="field-label">Date</label>
+        <input class="text-input" type="date" data-cin-date value="${esc(today)}" />
+        <label class="field-label">Body weight (kg)</label>
+        <input class="text-input" data-cin-weight inputmode="decimal" placeholder="e.g. 82,5" value="${latest && latest.weight != null ? esc(String(latest.weight).replace(".", ",")) : ""}" />
+        <div class="measure-grid">
+          <label>Waist (cm)<input class="text-input" data-cin-waist inputmode="decimal" placeholder="Optional" /></label>
+          <label>Chest (cm)<input class="text-input" data-cin-chest inputmode="decimal" placeholder="Optional" /></label>
+          <label>Arms (cm)<input class="text-input" data-cin-arms inputmode="decimal" placeholder="Optional" /></label>
+          <label>Thighs (cm)<input class="text-input" data-cin-thighs inputmode="decimal" placeholder="Optional" /></label>
+        </div>
+        <label class="field-label">Note</label>
+        <textarea class="text-input" data-cin-note rows="3" placeholder="How the month felt"></textarea>
+        <label class="field-label">Progress photo (saved on this phone)</label>
+        <input class="text-input" type="file" accept="image/*" data-cin-photo />
+        <div class="checkin-preview" data-cin-preview></div>
+        <h3 class="checkin-hist-title">History</h3>
+        ${history}
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" data-action="close-sheet">Close</button>
+        <button type="button" class="btn pri" data-action="save-checkin" data-testid="save-checkin">Save check-in</button>
+      </div>
+    </div>`);
+    const file = overlaysEl().querySelector("[data-cin-photo]");
+    if (file) {
+      file.addEventListener("change", () => {
+        const f = file.files && file.files[0];
+        if (!f) return;
+        resizeCheckInPhoto(f, (url) => {
+          file.dataset.ready = url || "";
+          const prev = overlaysEl().querySelector("[data-cin-preview]");
+          if (prev) prev.innerHTML = url ? `<img class="checkin-preview-img" src="${url}" alt="Preview">` : "";
+        });
+      });
+    }
+  }
+
+  function resizeCheckInPhoto(file, done) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 800;
+        let w = img.width, h = img.height;
+        if (w > max || h > max) {
+          const scale = max / Math.max(w, h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        done(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      img.onerror = () => done(null);
+      img.src = reader.result;
+    };
+    reader.onerror = () => done(null);
+    reader.readAsDataURL(file);
+  }
+
+  function commitCheckIn() {
+    const root = overlaysEl();
+    const num = (sel) => {
+      const el = root.querySelector(sel);
+      const v = C().parseNum(el && el.value);
+      return v;
+    };
+    const dateEl = root.querySelector("[data-cin-date]");
+    const noteEl = root.querySelector("[data-cin-note]");
+    const photoEl = root.querySelector("[data-cin-photo]");
+    const weight = num("[data-cin-weight]");
+    if (weight == null) {
+      showToast("Add a body weight to save");
+      return;
+    }
+    D().saveCheckIn({
+      date: (dateEl && dateEl.value) || D().copenhagenYMD(),
+      weight,
+      waist: num("[data-cin-waist]"),
+      chest: num("[data-cin-chest]"),
+      arms: num("[data-cin-arms]"),
+      thighs: num("[data-cin-thighs]"),
+      note: (noteEl && noteEl.value) || "",
+      photo: (photoEl && photoEl.dataset.ready) || null,
+    });
+    closeSheet();
+    render();
+    showToast("Check-in saved");
+  }
+
   function openSettings() {
+
     const rest = D().get().restSeconds || 90;
     showSheet(`<div class="sheet">
       <div class="handle"></div>
@@ -735,17 +957,19 @@
         </div>
         <div class="settings-row">
           <span>Program</span>
-          <b data-testid="settings-program">${esc(D().programName())}</b>
+          <button type="button" class="add" data-action="choose-program" data-testid="settings-program">${esc(D().programName())}</button>
         </div>
-        <div class="settings-row">
+        ${D().activeProgramId() === "max-ot"
+          ? `<div class="settings-row"><span>Training days</span><b>5x/week · Mon–Fri</b></div>`
+          : `<div class="settings-row">
           <span>Training days</span>
           <button type="button" class="add" data-action="change-days" data-testid="change-days">${esc((D().get().daysPerWeek || 4) + "x/week")}</button>
-        </div>
+        </div>`}
         <div class="settings-row">
           <span>Default program</span>
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
-        <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. The Bro Split runs in 5-week cycles. Edit program.js to change the default workouts.</p>
+        <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Each program has its own week and plan. History and last weights are shared, so overload still works if you switch. Edit program.js to change the default workouts.</p>
         <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
@@ -1164,17 +1388,36 @@
   function openCyclePrompt() {
     const name = D().programName();
     const n = D().cycleWeeks();
+    const maxot = D().activeProgramId() === "max-ot";
+    const restBtn = maxot
+      ? `<button type="button" class="btn pri" data-action="cycle-recover" data-testid="cycle-recover">Take recovery week</button>`
+      : "";
+    const cont = maxot ? "Start a new cycle" : "Continue";
+    const body = maxot
+      ? "Max-OT prescribes a recovery week after 8 to 10 weeks of heavy training. You can take that week off now, start a new cycle with your current weights, or return to Week 1. History and overload signs are kept either way."
+      : "You can keep going with your current weights, or start Week 1 again. Training history and overload signs are kept either way.";
     showSheet(`<div class="dialog cycle-prompt" data-testid="cycle-prompt" role="dialog" aria-modal="true">
       <h2>${esc(name)} — ${esc(n)} weeks done</h2>
-      <p>You can keep going with your current weights, or start Week 1 again. Training history and overload signs are kept either way.</p>
+      <p>${esc(body)}</p>
       <div class="sheet-actions col">
-        <button type="button" class="btn pri" data-action="cycle-continue" data-testid="cycle-continue">Continue</button>
+        ${restBtn}
+        <button type="button" class="btn ${maxot ? "ghost" : "pri"}" data-action="cycle-continue" data-testid="cycle-continue">${esc(cont)}</button>
         <button type="button" class="btn ghost" data-action="cycle-reset" data-testid="cycle-reset">Reset</button>
       </div>
     </div>`);
   }
 
   function requestNextWeek() {
+    if (D().get().recoveryWeek) {
+      showConfirm({
+        title: "Start the next cycle?",
+        body: "Week 1 begins again with your current exercises and last logged weights. History is kept.",
+        confirm: "Start next cycle",
+        danger: false,
+        onConfirm: goToNextWeek,
+      });
+      return;
+    }
     if (D().isCycleEnd()) {
       openCyclePrompt();
       return;
@@ -1372,6 +1615,22 @@
     }
     if (action === "settings") { openSettings(); return; }
     if (action === "change-days") { closeSheet(); openDaysSetup("settings"); return; }
+    if (action === "choose-program") { closeSheet(); openProgramPicker(); return; }
+    if (action === "select-program") { selectProgram(btn.dataset.program); return; }
+    if (action === "open-checkin") { openCheckIn(); return; }
+    if (action === "save-checkin") { commitCheckIn(); return; }
+    if (action === "open-pbs") { openPersonalBests(); return; }
+    if (action === "cycle-recover") {
+      closeSheet();
+      D().startRecoveryWeek();
+      view = "home";
+      activeWorkoutId = null;
+      editing = null;
+      workoutEditMode = false;
+      stopRest(true);
+      render();
+      return;
+    }
     if (action === "choose-days") { chooseDays(btn.dataset.days); return; }
     if (action === "setup-back") { cancelDaysSetup(); return; }
     if (action === "cycle-continue") { closeSheet(); goToNextWeek(); return; }

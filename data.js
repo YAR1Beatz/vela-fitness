@@ -3,7 +3,86 @@
   const STORAGE_KEY = "vela-fitness-v1";
   const SAVE_DELAY = 280;
   const C = () => global.VELA_CATALOG;
-  const PROGRAM = () => global.VELA_PROGRAM;
+  const PROGRAMS = () => global.VELA_PROGRAMS || { [((global.VELA_PROGRAM || {}).id || "bro-split")]: global.VELA_PROGRAM };
+  const PROGRAM = () => {
+    const all = PROGRAMS();
+    const id = (state && (state.activeProgramId || state.programId)) || "bro-split";
+    return all[id] || all["bro-split"] || global.VELA_PROGRAM;
+  };
+
+  function listPrograms() {
+    const all = PROGRAMS();
+    return Object.keys(all).map((id) => ({ id, name: all[id].name, author: all[id].author || "", cycleWeeks: all[id].cycleWeeks, defaultDays: all[id].defaultDays, restSeconds: all[id].restSeconds }));
+  }
+
+  function programFields(p) {
+    return {
+      week: p.week || 1,
+      cycleWeeks: p.cycleWeeks,
+      daysPerWeek: p.daysPerWeek,
+      restSeconds: p.restSeconds,
+      activeWorkoutId: p.activeWorkoutId || null,
+      workouts: p.workouts,
+      recoveryWeek: !!p.recoveryWeek,
+    };
+  }
+
+  function seedProgramFields(id) {
+    const prev = state;
+    const all = PROGRAMS();
+    const program = all[id];
+    if (!program) return null;
+    /* buildExercise reads lastLogged from state — keep current shared history. */
+    const fields = {
+      week: 1,
+      cycleWeeks: program.cycleWeeks || 8,
+      daysPerWeek: program.defaultDays != null ? program.defaultDays : (id === "bro-split" ? null : program.workouts.length),
+      restSeconds: program.restSeconds || 90,
+      activeWorkoutId: null,
+      workouts: program.workouts.map(buildWorkout),
+      recoveryWeek: false,
+    };
+    return fields;
+  }
+
+  function syncUp(s) {
+    if (!s || !s.programs || !s.activeProgramId) return;
+    const p = s.programs[s.activeProgramId] || (s.programs[s.activeProgramId] = {});
+    p.week = s.week;
+    p.cycleWeeks = s.cycleWeeks;
+    p.daysPerWeek = s.daysPerWeek;
+    p.restSeconds = s.restSeconds;
+    p.activeWorkoutId = s.activeWorkoutId;
+    p.workouts = s.workouts;
+    p.recoveryWeek = !!s.recoveryWeek;
+  }
+
+  function syncDown(s) {
+    const p = s.programs && s.programs[s.activeProgramId];
+    if (!p) return;
+    s.week = p.week || 1;
+    s.cycleWeeks = p.cycleWeeks;
+    s.daysPerWeek = p.daysPerWeek;
+    s.restSeconds = p.restSeconds;
+    s.activeWorkoutId = p.activeWorkoutId || null;
+    s.workouts = p.workouts;
+    s.recoveryWeek = !!p.recoveryWeek;
+    s.programId = s.activeProgramId;
+  }
+
+  function switchProgram(id) {
+    const s = get();
+    const all = PROGRAMS();
+    if (!all[id]) return s;
+    if ((s.activeProgramId || s.programId) === id) return s;
+    syncUp(s);
+    if (!s.programs[id]) s.programs[id] = seedProgramFields(id);
+    s.activeProgramId = id;
+    syncDown(s);
+    saveNow();
+    notify();
+    return s;
+  }
 
   let state = null;
   let saveTimer = null;
@@ -57,6 +136,7 @@
       suggestedWeight: suggested.weight,
       programReps: src.reps,
       programWeight: src.weight,
+      repsRange: src.repsRange || "",
       sets: makeSets(src.sets || 3, suggested.reps, suggested.weight),
     };
   }
@@ -65,6 +145,7 @@
     return {
       id: src.id || uid("wo"),
       name: src.name,
+      dayLabel: src.dayLabel || "",
       minutes: src.minutes || 60,
       completedAt: null,
       sessionId: uid("ses"),
@@ -126,24 +207,63 @@
       state.version = 4;
     }
     if (state.cycleWeeks == null) state.cycleWeeks = (PROGRAM().cycleWeeks || 5);
+    if (state.version < 5) {
+      const id = state.activeProgramId || state.programId || "bro-split";
+      state.activeProgramId = id;
+      state.programId = id;
+      if (!state.programs) state.programs = {};
+      if (!state.programs[id]) {
+        state.programs[id] = {
+          week: state.week || 1,
+          cycleWeeks: state.cycleWeeks,
+          daysPerWeek: state.daysPerWeek,
+          restSeconds: state.restSeconds,
+          activeWorkoutId: state.activeWorkoutId || null,
+          workouts: state.workouts,
+          recoveryWeek: false,
+        };
+      }
+      if (!state.sessions) state.sessions = [];
+      if (!state.checkIns) state.checkIns = [];
+      state.version = 5;
+    }
+    if (!state.sessions) state.sessions = [];
+    if (!state.checkIns) state.checkIns = [];
+    if (!state.programs) state.programs = {};
+    if (!state.activeProgramId) state.activeProgramId = state.programId || "bro-split";
+    /* Keep the active program object pointing at the same workouts array. */
+    if (state.programs[state.activeProgramId]) {
+      if (!state.programs[state.activeProgramId].workouts) {
+        state.programs[state.activeProgramId].workouts = state.workouts;
+      }
+    }
     (state.workouts || []).forEach(ensureWorkoutFields);
     return state;
   }
 
   function seedState() {
-    const program = PROGRAM();
-    return {
-      version: 4,
-      programId: program.id,
+    const program = PROGRAMS()["bro-split"] || PROGRAM();
+    const workouts = program.workouts.map(buildWorkout);
+    const fields = {
       week: 1,
       cycleWeeks: program.cycleWeeks || 5,
       daysPerWeek: null,
       restSeconds: program.restSeconds || 90,
       activeWorkoutId: null,
-      workouts: program.workouts.map(buildWorkout),
+      workouts,
+      recoveryWeek: false,
+    };
+    return {
+      version: 5,
+      programId: "bro-split",
+      activeProgramId: "bro-split",
+      ...fields,
+      programs: { "bro-split": fields },
       history: {},
       notes: {},
       lastLogged: {},
+      sessions: [],
+      checkIns: [],
     };
   }
 
@@ -152,13 +272,17 @@
   }
 
   function isCycleEnd(week) {
-    const w = week == null ? (get().week || 1) : week;
+    const s = get();
+    if (s.recoveryWeek) return false;
+    const w = week == null ? (s.week || 1) : week;
     const n = cycleWeeks();
     return n > 0 && w > 0 && w % n === 0;
   }
 
   function weekLabel(week) {
-    const w = week == null ? (get().week || 1) : week;
+    const s = get();
+    if (s.recoveryWeek) return "Recovery week";
+    const w = week == null ? (s.week || 1) : week;
     const n = cycleWeeks();
     if (w <= n) return `Week ${w} of ${n}`;
     return `Week ${w}`;
@@ -166,6 +290,10 @@
 
   function programName() {
     return (PROGRAM() && PROGRAM().name) || "Bro Split";
+  }
+
+  function activeProgramId() {
+    return get().activeProgramId || get().programId || "bro-split";
   }
 
   function shoulderNameSet() {
@@ -378,6 +506,7 @@
       saveTimer = null;
     }
     try {
+      syncUp(state);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (err) {
       /* quota or private mode — keep going in memory */
@@ -424,6 +553,7 @@
         workout: w.name,
         workoutId: w.id,
         week: get().week,
+        programId: activeProgramId(),
         sessionId: w.sessionId,
         sets: ex.sets.map((st) =>
           st.done ? { reps: st.reps, weight: st.weight } : { reps: null, weight: null }
@@ -436,12 +566,56 @@
       const lastDone = [...ex.sets].reverse().find((st) => st.done);
       if (lastDone) state.lastLogged[ex.key] = { reps: lastDone.reps, weight: lastDone.weight };
     });
+    recordSession(w);
+  }
+
+  function recordSession(w) {
+    if (!w) return;
+    const logged = (w.exercises || []).some((ex) => (ex.sets || []).some((st) => st.done));
+    if (!logged && !w.completedAt) return;
+    const stamp = w.completedAt || new Date().toISOString();
+    const vol = workoutVolume(w);
+    const entry = {
+      programId: activeProgramId(),
+      workoutId: w.id,
+      workoutName: w.name,
+      week: get().week,
+      sessionId: w.sessionId,
+      date: stamp.slice(0, 10),
+      datetime: stamp,
+      durationMs: timerMs(w) || 0,
+      volumeKg: vol && vol.kg || 0,
+      completed: !!w.completedAt || logged,
+    };
+    if (!state.sessions) state.sessions = [];
+    const i = state.sessions.findIndex((s) => s.sessionId === w.sessionId);
+    if (i >= 0) state.sessions[i] = Object.assign({}, state.sessions[i], entry);
+    else state.sessions.unshift(entry);
+  }
+
+  function startRecoveryWeek() {
+    const s = get();
+    flushLoggedSessions();
+    s.recoveryWeek = true;
+    s.activeWorkoutId = null;
+    s.workouts.forEach(resetWorkoutSession);
+    saveNow();
+    notify();
   }
 
   function advanceWeek() {
     const s = get();
     flushLoggedSessions();
-    s.week = (s.week || 1) + 1;
+    if (s.recoveryWeek) {
+      s.recoveryWeek = false;
+      s.week = 1;
+    } else if (isCycleEnd(s.week) && PROGRAM().recoveryWeek) {
+      /* Max-OT: after the last training week, caller may send us here via Continue
+         (new cycle) or startRecoveryWeek(). Continue skips the rest week. */
+      s.week = 1;
+    } else {
+      s.week = (s.week || 1) + 1;
+    }
     s.activeWorkoutId = null;
     s.workouts.forEach(resetWorkoutSession);
     saveNow();
@@ -788,12 +962,16 @@
     return "Set";
   }
 
-  function formatAim(weight) {
-    if (weight == null || weight === "") return "";
-    const n = Number(weight);
-    if (Number.isNaN(n)) return "";
-    const s = Number.isInteger(n) ? String(n) : String(n);
-    return `Aim for ${s}kg`;
+  function formatAim(weight, repsRange, reps) {
+    const parts = [];
+    if (repsRange === "to failure") parts.push("to failure");
+    else if (repsRange) parts.push(`${String(repsRange).replace("-", "–")} reps`);
+    if (weight != null && weight !== "") {
+      const n = Number(weight);
+      if (!Number.isNaN(n)) parts.push(`${Number.isInteger(n) ? String(n) : String(n)}kg`);
+    }
+    if (!parts.length) return "";
+    return `Aim for ${parts.join(" · ")}`;
   }
 
   function formatVolumeKg(value) {
@@ -925,7 +1103,327 @@
     return total;
   }
 
-  function doneExerciseCount(workout) {
+
+  /* --- Calendar week (Monday start) in Europe/Copenhagen --- */
+  function copenhagenYMD(date) {
+    const d = date ? new Date(date) : new Date();
+    const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Copenhagen", year: "numeric", month: "2-digit", day: "2-digit" });
+    return fmt.format(d); /* YYYY-MM-DD */
+  }
+
+  function addDaysYMD(ymd, days) {
+    const [y, m, d] = ymd.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + days));
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getUTCDate()).padStart(2, "0");
+    return `${dt.getUTCFullYear()}-${mm}-${dd}`;
+  }
+
+  function calendarWeekStart(ymd) {
+    const [y, m, d] = (ymd || copenhagenYMD()).split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const dow = dt.getUTCDay();
+    const offset = dow === 0 ? 6 : dow - 1;
+    return addDaysYMD(ymd || copenhagenYMD(), -offset);
+  }
+
+  function inCalendarWeek(dateStr, start) {
+    if (!dateStr) return false;
+    const day = String(dateStr).slice(0, 10);
+    return day >= start && day < addDaysYMD(start, 7);
+  }
+
+  function plannedWorkouts() {
+    const s = get();
+    if (s.daysPerWeek) return s.daysPerWeek;
+    const n = (s.workouts || []).length;
+    return n || (PROGRAM().defaultDays || 4);
+  }
+
+  function sessionDate(ses) {
+    return (ses.date || (ses.datetime || "").slice(0, 10) || "");
+  }
+
+  function derivedSessions() {
+    const s = get();
+    const byId = {};
+    (s.sessions || []).forEach((ses) => {
+      if (ses && ses.sessionId) byId[ses.sessionId] = Object.assign({}, ses);
+    });
+    Object.keys(s.history || {}).forEach((key) => {
+      (s.history[key] || []).forEach((h) => {
+        if (!h || !h.sessionId) return;
+        const existing = byId[h.sessionId];
+        const vol = setsVolume(h.sets || []);
+        if (!existing) {
+          byId[h.sessionId] = {
+            programId: h.programId || "bro-split",
+            workoutId: h.workoutId,
+            workoutName: h.workout,
+            week: h.week,
+            sessionId: h.sessionId,
+            date: h.date || (h.datetime || "").slice(0, 10),
+            datetime: h.datetime || h.date,
+            durationMs: 0,
+            volumeKg: vol.kg || 0,
+            completed: true,
+          };
+        } else {
+          existing.volumeKg = (existing.volumeKg || 0) + (vol.kg || 0) > existing.volumeKg
+            ? existing.volumeKg /* already the workout total if recorded */
+            : existing.volumeKg;
+          if (!existing.programId) existing.programId = h.programId || "bro-split";
+        }
+      });
+    });
+    /* Current in-progress / finished workouts this week not yet flushed. */
+    (s.workouts || []).forEach((w) => {
+      if (!w.sessionId) return;
+      const logged = (w.exercises || []).some((ex) => (ex.sets || []).some((st) => st.done));
+      if (!logged && !w.completedAt) return;
+      const vol = workoutVolume(w);
+      const stamp = w.completedAt || new Date().toISOString();
+      const prev = byId[w.sessionId];
+      byId[w.sessionId] = Object.assign({}, prev, {
+        programId: activeProgramId(),
+        workoutId: w.id,
+        workoutName: w.name,
+        week: s.week,
+        sessionId: w.sessionId,
+        date: stamp.slice(0, 10),
+        datetime: stamp,
+        durationMs: (prev && prev.durationMs) || timerMs(w) || 0,
+        volumeKg: vol.kg || 0,
+        completed: !!w.completedAt || logged,
+      });
+    });
+    return Object.values(byId);
+  }
+
+  function sessionsInWeek(start, programId) {
+    return derivedSessions().filter((ses) => {
+      if (programId && (ses.programId || "bro-split") !== programId) return false;
+      return inCalendarWeek(sessionDate(ses), start) && ses.completed;
+    });
+  }
+
+  function uniqueWorkouts(sessions) {
+    const seen = new Set();
+    sessions.forEach((ses) => {
+      const key = ses.sessionId || `${ses.workoutId}-${ses.date}`;
+      seen.add(key);
+    });
+    return seen.size;
+  }
+
+  function weekHasQuota(start, planned, programId) {
+    return uniqueWorkouts(sessionsInWeek(start, programId)) >= planned;
+  }
+
+  /* Heaviest logged weight ever for an exercise (bodyweight / null ignored). */
+  function personalBestWeight(exerciseKey) {
+    let best = null;
+    (get().history[exerciseKey] || []).forEach((h) => {
+      (h.sets || []).forEach((st) => {
+        if (st && st.weight != null && Number(st.weight) > 0) {
+          const w = Number(st.weight);
+          if (best == null || w > best) best = w;
+        }
+      });
+    });
+    (get().workouts || []).forEach((wo) => {
+      (wo.exercises || []).forEach((ex) => {
+        if (ex.key !== exerciseKey) return;
+        (ex.sets || []).forEach((st) => {
+          if (st.done && st.weight != null && Number(st.weight) > 0) {
+            const w = Number(st.weight);
+            if (best == null || w > best) best = w;
+          }
+        });
+      });
+    });
+    return best;
+  }
+
+  function personalBestsThisWeek(start, programId) {
+    /* A PB is a logged set this week whose weight is the exercise's all-time heaviest
+       and is strictly heavier than any set logged before this week. */
+    const s = get();
+    const keys = new Set();
+    const beforeMax = {};
+    const weekMax = {};
+    Object.keys(s.history || {}).forEach((key) => {
+      (s.history[key] || []).forEach((h) => {
+        if (programId && h.programId && h.programId !== programId) return;
+        const inWeek = inCalendarWeek(h.date || (h.datetime || "").slice(0, 10), start);
+        (h.sets || []).forEach((st) => {
+          if (st == null || st.weight == null || !(Number(st.weight) > 0)) return;
+          const w = Number(st.weight);
+          if (inWeek) weekMax[key] = Math.max(weekMax[key] || 0, w);
+          else beforeMax[key] = Math.max(beforeMax[key] || 0, w);
+        });
+      });
+    });
+    (s.workouts || []).forEach((wo) => {
+      (wo.exercises || []).forEach((ex) => {
+        (ex.sets || []).forEach((st) => {
+          if (!st.done || st.weight == null || !(Number(st.weight) > 0)) return;
+          weekMax[ex.key] = Math.max(weekMax[ex.key] || 0, Number(st.weight));
+        });
+      });
+    });
+    const list = [];
+    Object.keys(weekMax).forEach((key) => {
+      const prev = beforeMax[key] || 0;
+      if (weekMax[key] > prev) {
+        keys.add(key);
+        list.push({ key, name: key, weight: weekMax[key], previous: prev || null });
+      }
+    });
+    return list;
+  }
+
+  function thisWeekVolume(start, programId) {
+    /* Prefer per-exercise history (accurate kg) plus current unflushed sets. */
+    let kg = 0;
+    let repsOnly = 0;
+    const s = get();
+    const counted = new Set();
+    Object.keys(s.history || {}).forEach((key) => {
+      (s.history[key] || []).forEach((h) => {
+        if (programId && h.programId && h.programId !== programId) return;
+        if (!inCalendarWeek(h.date || (h.datetime || "").slice(0, 10), start)) return;
+        const id = `${h.sessionId}:${key}`;
+        if (counted.has(id)) return;
+        counted.add(id);
+        const v = setsVolume(h.sets || []);
+        kg += v.kg;
+        repsOnly += v.repsOnly;
+      });
+    });
+    (s.workouts || []).forEach((wo) => {
+      const already = (wo.exercises || []).some((ex) =>
+        (s.history[ex.key] || []).some((h) => h.sessionId === wo.sessionId)
+      );
+      if (already) return;
+      const v = workoutVolume(wo);
+      kg += v.kg;
+      repsOnly += v.repsOnly;
+    });
+    return { kg, repsOnly };
+  }
+
+  function formatHoursSpent(ms) {
+    const total = Math.max(0, Math.round((ms || 0) / 60000));
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return `${h}:${String(m).padStart(2, "0")}`;
+  }
+
+  function weekStats(now) {
+    const s = get();
+    const programId = activeProgramId();
+    const start = calendarWeekStart(copenhagenYMD(now));
+    const planned = plannedWorkouts();
+    const sessions = sessionsInWeek(start, programId);
+    const completed = uniqueWorkouts(sessions);
+    const remaining = Math.max(0, planned - completed);
+    const vol = thisWeekVolume(start, programId);
+    const pbs = personalBestsThisWeek(start, programId);
+    const hoursMs = sessions.reduce((sum, ses) => sum + (ses.durationMs || 0), 0);
+    /* Current in-progress timer counts toward hours if the workout has logged work. */
+    (s.workouts || []).forEach((w) => {
+      if (w.completedAt) return;
+      const logged = (w.exercises || []).some((ex) => (ex.sets || []).some((st) => st.done));
+      if (!logged && !w.timerStartedAt && !w.timerAccumMs) return;
+      if (sessions.some((ses) => ses.sessionId === w.sessionId && ses.durationMs)) return;
+      if (logged) hoursMs; /* already in derived sessions */
+    });
+
+    /* Streak: consecutive calendar weeks (before this one) that hit the quota.
+       This week, if still in progress, does not break it. If this week already
+       hit the quota, it is included. */
+    let streak = 0;
+    const thisHit = completed >= planned && planned > 0;
+    let cursor = thisHit ? start : addDaysYMD(start, -7);
+    /* If this week hasn't hit yet, start from last week. */
+    if (!thisHit) {
+      /* don't start counting from a future/empty last week with no data? still check */
+    }
+    for (let i = 0; i < 104; i += 1) {
+      if (weekHasQuota(cursor, planned, programId)) streak += 1;
+      else break;
+      cursor = addDaysYMD(cursor, -7);
+    }
+
+    let subtitle;
+    if (!planned) subtitle = "No workouts planned this week";
+    else if (remaining === 0) subtitle = "Week complete";
+    else if (remaining === 1) subtitle = "Complete 1 more workout this week";
+    else subtitle = `Complete ${remaining} more workouts this week`;
+
+    return {
+      scope: "this week",
+      scopeLabel: "This week",
+      weekStart: start,
+      programId,
+      planned,
+      completed,
+      remaining,
+      filled: Math.min(planned, completed),
+      streak,
+      subtitle,
+      volumeKg: vol.kg,
+      volumeLabel: formatVolumeParts(vol),
+      personalBests: pbs.length,
+      pbList: pbs,
+      pbRule: "heaviest weight",
+      workoutsCompleted: completed,
+      hoursMs,
+      hoursLabel: formatHoursSpent(hoursMs),
+    };
+  }
+
+  function checkInDue(now) {
+    const month = copenhagenYMD(now).slice(0, 7);
+    return !(get().checkIns || []).some((c) => (c.date || "").slice(0, 7) === month);
+  }
+
+  function listCheckIns() {
+    return (get().checkIns || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }
+
+  function saveCheckIn(entry) {
+    const s = get();
+    if (!s.checkIns) s.checkIns = [];
+    const date = entry.date || copenhagenYMD();
+    const next = {
+      id: entry.id || uid("cin"),
+      date,
+      weight: entry.weight != null ? Number(entry.weight) : null,
+      waist: entry.waist != null && entry.waist !== "" ? Number(entry.waist) : null,
+      chest: entry.chest != null && entry.chest !== "" ? Number(entry.chest) : null,
+      arms: entry.arms != null && entry.arms !== "" ? Number(entry.arms) : null,
+      thighs: entry.thighs != null && entry.thighs !== "" ? Number(entry.thighs) : null,
+      note: entry.note || "",
+      photo: entry.photo || null,
+    };
+    const i = s.checkIns.findIndex((c) => c.date === date || c.id === next.id);
+    if (i >= 0) s.checkIns[i] = Object.assign({}, s.checkIns[i], next, { id: s.checkIns[i].id });
+    else s.checkIns.unshift(next);
+    saveNow();
+    notify();
+    return next;
+  }
+
+  function deleteCheckIn(id) {
+    const s = get();
+    s.checkIns = (s.checkIns || []).filter((c) => c.id !== id);
+    saveNow();
+    notify();
+  }
+
+    function doneExerciseCount(workout) {
     return workout.exercises.filter((ex) => ex.sets.length && ex.sets.every((s) => s.done)).length;
   }
 
@@ -943,8 +1441,22 @@
     isCycleEnd,
     weekLabel,
     programName,
+    activeProgramId,
     cycleWeeks,
     isShoulderExercise,
+    listPrograms,
+    switchProgram,
+    startRecoveryWeek,
+    weekStats,
+    personalBestWeight,
+    checkInDue,
+    listCheckIns,
+    saveCheckIn,
+    deleteCheckIn,
+    formatHoursSpent,
+    copenhagenYMD,
+    calendarWeekStart,
+    plannedWorkouts,
     advanceWeek,
     setRestSeconds,
     addWorkout,

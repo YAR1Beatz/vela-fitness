@@ -664,5 +664,75 @@ window.VELA_PHOTOS = {
     "license": "CC BY 2.0",
     "license_url": "https://creativecommons.org/licenses/by/2.0/",
     "note": "Standard push-up still used; hand position is not a diamond/close grip."
+  },
+  "weighted-dip": {
+    "name": "Weighted Dip",
+    "frames": [
+      "img/exercises/chest-dip/0.webp",
+      "img/exercises/chest-dip/1.webp"
+    ],
+    "match": "closest",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Closest licensed stills: Chest Dip."
+  },
+  "stiff-leg-deadlift": {
+    "name": "Stiff-Leg Deadlift",
+    "frames": [
+      "img/exercises/romanian-deadlift/0.webp",
+      "img/exercises/romanian-deadlift/1.webp"
+    ],
+    "match": "closest",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Closest licensed stills: Romanian Deadlift."
+  },
+  "incline-tricep-extension": {
+    "name": "Incline Tricep Extension",
+    "frames": [
+      "img/exercises/skull-crusher/0.webp",
+      "img/exercises/skull-crusher/1.webp"
+    ],
+    "match": "closest",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Closest licensed stills: Skull Crusher."
+  },
+  "single-leg-leg-press-calf-raise": {
+    "name": "Single-Leg Leg Press Calf Raise",
+    "frames": [
+      "img/exercises/standing-calf-raise/0.webp",
+      "img/exercises/standing-calf-raise/1.webp"
+    ],
+    "match": "closest",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Closest licensed stills: Standing Calf Raise."
+  },
+  "alternating-dumbbell-curl": {
+    "name": "Alternating Dumbbell Curl",
+    "frames": [
+      "img/exercises/dumbbell-curl/0.webp",
+      "img/exercises/dumbbell-curl/1.webp"
+    ],
+    "match": "closest",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Closest licensed stills: Dumbbell Curl."
   }
 };

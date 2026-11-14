@@ -41,7 +41,7 @@
 
   const PLAY = `<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#07111F" fill-opacity="0.88"/><path d="M11.2 8.8v10.4L19.4 14 11.2 8.8z" fill="#1EE0C8"/></svg>`;
 
-  const CATEGORIES = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Legs", "Core"];
+  const CATEGORIES = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Legs", "Core"];
   const LEG_SUBS = ["Quads", "Hamstrings", "Glutes", "Calves"];
   const EQUIPMENT = ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Smith"];
 
@@ -137,6 +137,15 @@
     { name: "Russian Twist", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 16, defaultWeight: null, tempo: [1, 0, 1, 0] },
     { name: "Pallof Press", thumb: "cable", category: "Core", equipment: "Cable", defaultReps: 10, defaultWeight: 15, tempo: [2, 1, 2, 1] },
     { name: "Dead Bug", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 10, defaultWeight: null, tempo: [2, 0, 2, 0] },
+    { name: "Single-Leg Leg Press Calf Raise", thumb: "calf", category: "Legs", sub: "Calves", equipment: "Machine", defaultReps: 8, defaultWeight: 40, tempo: [2, 1, 2, 1] },
+    { name: "Stiff-Leg Deadlift", thumb: "rdl", category: "Legs", sub: "Hamstrings", equipment: "Barbell", defaultReps: 6, defaultWeight: 60, tempo: [3, 1, 2, 1] },
+    { name: "Swiss Ball Leg Raise", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Swiss Ball Crunch", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
+    { name: "Weighted Dip", thumb: "dip", category: "Chest", equipment: "Bodyweight", defaultReps: 6, defaultWeight: 10, tempo: [3, 0, 1, 1] },
+    { name: "Incline Tricep Extension", thumb: "skull", category: "Triceps", equipment: "Barbell", defaultReps: 6, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Alternating Dumbbell Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 6, defaultWeight: 12, tempo: [3, 0, 1, 1] },
+    { name: "Barbell Wrist Curl", thumb: "curl", category: "Forearms", equipment: "Barbell", defaultReps: 8, defaultWeight: 20, tempo: [2, 0, 2, 1] },
+    { name: "Dumbbell Wrist Curl", thumb: "curl", category: "Forearms", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 12, tempo: [2, 0, 2, 1] },
   ];
 
     function slug(name) {
