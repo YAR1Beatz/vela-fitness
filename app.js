@@ -166,7 +166,7 @@
 
   function renderHome() {
     const s = D().get();
-    contentEl().classList.add("has-footer");
+    contentEl().classList.remove("has-footer");
     const stats = D().weekStats();
     const due = D().checkInDue();
     const segs = Array.from({ length: stats.planned }, (_, i) =>
@@ -414,7 +414,7 @@
     }
     const bar = tabbarEl();
     if (bar) bar.classList.toggle("hidden", hide);
-    const space = hide ? "0px" : "var(--tabbar-h)";
+    const space = hide ? "0px" : "calc(var(--tabbar-h) + var(--safe-bottom))";
     document.documentElement.style.setProperty("--tabbar-space", space);
   }
 
@@ -716,6 +716,7 @@
     const typing = ae && ae.matches && ae.matches("input[data-field], textarea[data-notes], [data-cin-weight], [data-cin-note], [data-cin-waist], [data-cin-chest], [data-cin-arms], [data-cin-thighs]");
     if (typing) return;
     contentEl().classList.remove("flush");
+    if (view !== "workout") contentEl().classList.remove("has-footer");
     renderHeader();
     renderTabBar();
     if (view === "days-setup") renderDaysSetup();
@@ -727,7 +728,7 @@
     else if (view === "checkin") renderCheckInPage();
     else if (view === "settings") renderSettingsPage();
     else {
-      contentEl().classList.add("has-footer");
+      contentEl().classList.remove("has-footer");
       renderHome();
       bindSwipeWorkouts();
     }

@@ -37,6 +37,12 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --header-row: 52px;
   --footer-h: 88px;
+  --edge: 16px;
+  --gap: 12px;
+  --card-pad: 16px;
+  --section-gap: 24px;
+  --tabbar-h: 48px;
+  --tabbar-space: calc(var(--tabbar-h) + var(--safe-bottom));
 }
 
 * {
@@ -86,33 +92,49 @@ input, textarea, select {
   -webkit-touch-callout: default;
 }
 
+/* Fill the fixed body (inset: 0). Do NOT use 100dvh — on an iOS standalone
+   PWA, dvh can be ~110px short, which left a navy band under the tab bar.
+   overflow:visible on #app: iOS paints overflow:hidden ancestors at a soft
+   scale, which blurred the VELA header (clip only .content). */
 .app {
-  height: 100%;
-  height: 100dvh;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
   max-width: 480px;
   margin: 0 auto;
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   overscroll-behavior: none;
-  position: relative;
+  transform: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  will-change: auto;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Opaque header so the iOS status bar never sits on a blurry/transparent layer */
+/* Solid opaque navy behind the translucent iOS status bar. */
 .header {
   flex: 0 0 auto;
   padding-top: var(--safe-top);
   background: var(--bg);
   z-index: 30;
   position: relative;
+  overflow: visible;
+  transform: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  will-change: auto;
 }
 .header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px max(16px, var(--safe-right)) 8px max(16px, var(--safe-left));
+  padding: 8px max(var(--edge), var(--safe-right)) 8px max(var(--edge), var(--safe-left));
   min-height: var(--header-row);
 }
 .icon-btn {
@@ -161,17 +183,20 @@ input, textarea, select {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 8px max(18px, var(--safe-right)) 16px max(18px, var(--safe-left));
+  padding: 16px max(var(--edge), var(--safe-right)) calc(16px + var(--tabbar-space)) max(var(--edge), var(--safe-left));
   min-height: 0;
+  min-width: 0;
 }
-.content.has-footer { padding-bottom: 8px; }
+.content.has-footer { padding-bottom: 16px; }
 
 .footer {
   flex: 0 0 auto;
-  padding: 8px max(18px, var(--safe-right)) calc(12px + var(--safe-bottom)) max(18px, var(--safe-left));
+  padding: 8px max(var(--edge), var(--safe-right)) 8px max(var(--edge), var(--safe-left));
+  margin-bottom: var(--tabbar-space);
   background: var(--bg);
   z-index: 20;
 }
+.footer.hidden { margin-bottom: 0; }
 .cta, .program, .btn {
   width: 100%;
   height: 52px;
@@ -197,11 +222,21 @@ input, textarea, select {
 .program:active { background: var(--accent-dim); }
 
 .section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 4px 0 10px;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  margin: 0 0 var(--gap);
+  gap: 0 var(--gap);
+}
+.section .plan-titles { display: contents; }
+.section .program-name,
+.section .week-kicker,
+.section h1 { grid-column: 1; }
+.section .add {
+  grid-column: 2;
+  grid-row: 2;
+  margin-top: 0;
+  align-self: center;
 }
 .section h1 {
   font-size: 20px;
@@ -224,19 +259,20 @@ input, textarea, select {
   gap: 8px;
   background: var(--info-bg);
   border-radius: 12px;
-  padding: 9px 11px;
+  padding: 12px var(--card-pad);
+  margin: 0 0 var(--gap);
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
-  font-weight: 450;
+  font-weight: 500;
 }
 .info svg { flex: 0 0 auto; margin-top: 1px; }
 
 .tiles {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
+  gap: var(--gap);
+  margin-top: 0;
 }
 .swipe-row {
   position: relative;
@@ -272,7 +308,7 @@ input, textarea, select {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 14px 14px 14px 16px;
+  padding: var(--card-pad);
   box-shadow: var(--shadow);
   width: 100%;
   text-align: left;
@@ -1120,7 +1156,7 @@ input, textarea, select {
   position: absolute;
   left: 12px;
   right: 12px;
-  top: calc(8px + env(safe-area-inset-top, 0px));
+  top: calc(8px + var(--safe-top));
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -1366,8 +1402,8 @@ input, textarea, select {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 22px;
-  padding: 16px 14px 14px;
-  margin: 4px 0 18px;
+  padding: var(--card-pad);
+  margin: 0 0 var(--section-gap);
   box-shadow: var(--shadow);
 }
 .streak-row {
@@ -1435,37 +1471,51 @@ input, textarea, select {
 }
 .dash-tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap);
+  align-items: stretch;
 }
 .dash-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 10px 4px 9px;
+  padding: 12px 6px 10px;
   text-align: center;
   min-width: 0;
+  min-height: 76px;
+  height: 100%;
 }
 .dash-tile b {
-  display: block;
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 100%;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 1.1;
+  line-height: 22px;
+  white-space: nowrap;
 }
 .dash-tile span {
   display: block;
   margin-top: 4px;
   font-size: 10px;
-  font-weight: 560;
+  font-weight: 600;
   color: var(--muted);
   line-height: 1.25;
+  min-height: 26px;
+  width: 100%;
+  text-align: center;
 }
 .checkin-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: var(--gap);
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1607,28 +1657,35 @@ button.program-name {
 .hist-del-session { font-weight: 700; }
 
 /* v9: bottom tab bar + Program / Progress / Check-in screens */
-:root { --tabbar-h: 58px; --tabbar-space: var(--tabbar-h); }
 
-.content.has-footer {
-  padding-bottom: 16px;
-}
 .content.flush {
   padding-left: 0;
   padding-right: 0;
   padding-top: 0;
-  padding-bottom: 16px;
+  padding-bottom: calc(16px + var(--tabbar-space));
 }
 
+/* Fixed to the bottom of .app (which fills the screen). Only
+   env(safe-area-inset-bottom) sits under the icons — no extra band. */
 .tabbar {
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex: none;
   display: flex;
   align-items: stretch;
   justify-content: space-around;
-  background: #07111F;
+  background: var(--bg);
   border-top: 1px solid var(--border);
-  padding: 4px 2px calc(6px + var(--safe-bottom));
+  padding: 8px 2px var(--safe-bottom);
   z-index: 28;
-  min-height: calc(var(--tabbar-h) + var(--safe-bottom));
+  min-height: 0;
+  transform: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  will-change: auto;
 }
 .app.setup-open .tabbar,
 .app.kb-open .tabbar,
@@ -1647,8 +1704,8 @@ button.program-name {
   font-size: 10px;
   font-weight: 650;
   letter-spacing: 0.01em;
-  padding: 6px 2px 4px;
-  min-height: 48px;
+  padding: 0 2px 0;
+  min-height: 0;
   border-radius: 12px;
   transition: transform 90ms ease, color 90ms ease, background 90ms ease;
 }
@@ -1661,14 +1718,14 @@ button.program-name {
 .tab-btn.on { color: var(--accent); }
 
 .toast {
-  bottom: calc(12px + var(--safe-bottom) + var(--tabbar-space, var(--tabbar-h)));
+  bottom: calc(12px + max(var(--tabbar-space), var(--safe-bottom)));
 }
 
 .home-next {
-  margin: 18px 0 8px;
+  margin: var(--section-gap) 0 0;
 }
 .home-next .program { width: 100%; }
-.program-next { padding: 0 18px; }
+.program-next { padding: 0 var(--edge); }
 
 /* Program tab */
 .program-hero {
@@ -1677,6 +1734,17 @@ button.program-name {
   overflow: hidden;
   background: #061018;
   margin-bottom: 0;
+}
+.program-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-top);
+  background: var(--bg);
+  z-index: 2;
+  pointer-events: none;
 }
 .program-hero-img {
   position: absolute;
@@ -1696,12 +1764,12 @@ button.program-name {
 }
 .program-hero-top {
   position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: calc(10px + var(--safe-top)) 16px 0;
+  padding: calc(10px + var(--safe-top)) var(--edge) 0;
+  z-index: 3;
   font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.22em;
@@ -1709,7 +1777,7 @@ button.program-name {
 .program-hero-body {
   position: relative;
   z-index: 1;
-  padding: 48px 18px 18px;
+  padding: 48px var(--edge) 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1754,7 +1822,7 @@ button.program-name {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 0;
-  margin: 0 18px 14px;
+  margin: 16px var(--edge) var(--gap);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -1785,8 +1853,8 @@ button.program-name {
 .week-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 18px;
+  gap: var(--gap);
+  padding: 0 var(--edge);
 }
 .week-card {
   position: relative;
@@ -1800,7 +1868,7 @@ button.program-name {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 14px 14px 12px;
+  padding: var(--card-pad) var(--card-pad) 12px;
 }
 .week-card.current { border-color: rgba(30, 224, 200, 0.45); }
 .week-card:active { background: var(--card2); }
@@ -1842,12 +1910,12 @@ button.program-name {
 .mark.missed { color: var(--faint); font-size: 18px; width: 26px; text-align: center; }
 
 /* Progress */
-.progress-page { display: flex; flex-direction: column; gap: 14px; }
+.progress-page { display: flex; flex-direction: column; gap: var(--gap); padding-bottom: 0; }
 .prog-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 14px 14px 8px;
+  padding: var(--card-pad) var(--card-pad) 8px;
 }
 .prog-card h2 {
   font-size: 16px;
