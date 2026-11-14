@@ -179,7 +179,7 @@ window.VELA_PROGRAMS = {
           { name: "Incline Barbell Press", alt: "Incline Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 50, thumb: "incline" },
           { name: "Barbell Bench Press", alt: "Flat Dumbbell Press", tempo: [3, 0, 1, 1], sets: 3, reps: 6, repsRange: "4-6", weight: 60, thumb: "bench" },
           { name: "Weighted Dip", alt: "Chest Dip", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 10, thumb: "dip" },
-          { name: "Incline Tricep Extension", alt: "Skull Crusher", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
+          { name: "Incline Dumbbell Tricep Extension", alt: "Skull Crusher", tempo: [3, 0, 1, 1], sets: 2, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
           { name: "Skull Crusher", alt: "Close-Grip Bench Press", tempo: [3, 0, 1, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 25, thumb: "skull" },
           { name: "Tricep Rope Pushdown", alt: "Overhead Rope Extension", tempo: [2, 0, 2, 1], sets: 1, reps: 6, repsRange: "4-6", weight: 20, thumb: "pushdown" },
         ],

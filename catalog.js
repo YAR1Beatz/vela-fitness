@@ -142,7 +142,7 @@
     { name: "Swiss Ball Leg Raise", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
     { name: "Swiss Ball Crunch", thumb: "generic", category: "Core", equipment: "Bodyweight", defaultReps: 15, defaultWeight: null, tempo: [2, 0, 1, 1] },
     { name: "Weighted Dip", thumb: "dip", category: "Chest", equipment: "Bodyweight", defaultReps: 6, defaultWeight: 10, tempo: [3, 0, 1, 1] },
-    { name: "Incline Tricep Extension", thumb: "skull", category: "Triceps", equipment: "Barbell", defaultReps: 6, defaultWeight: 25, tempo: [3, 0, 1, 1] },
+    { name: "Incline Dumbbell Tricep Extension", aliases: ["Incline Tricep Extension", "Incline Triceps Extension"], thumb: "skull", category: "Triceps", equipment: "Dumbbell", defaultReps: 6, defaultWeight: 25, tempo: [3, 0, 1, 1] },
     { name: "Alternating Dumbbell Curl", thumb: "curl", category: "Biceps", equipment: "Dumbbell", defaultReps: 6, defaultWeight: 12, tempo: [3, 0, 1, 1] },
     { name: "Barbell Wrist Curl", thumb: "curl", category: "Forearms", equipment: "Barbell", defaultReps: 8, defaultWeight: 20, tempo: [2, 0, 2, 1] },
     { name: "Dumbbell Wrist Curl", thumb: "curl", category: "Forearms", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 12, tempo: [2, 0, 2, 1] },
@@ -157,9 +157,30 @@
       .replace(/^-|-$/g, "") || "exercise";
   }
 
+  /* Old keys stay linked after a rename so history, notes, and last-logged follow. */
+  const KEY_ALIASES = {
+    "incline-tricep-extension": "incline-dumbbell-tricep-extension",
+    "incline-triceps-extension": "incline-dumbbell-tricep-extension",
+  };
+
+  function canonicalKey(nameOrKey) {
+    const key = slug(nameOrKey);
+    return KEY_ALIASES[key] || key;
+  }
+
+  function keysFor(nameOrKey) {
+    const canon = canonicalKey(nameOrKey);
+    const aliases = Object.keys(KEY_ALIASES).filter((k) => KEY_ALIASES[k] === canon && k !== canon);
+    return [canon].concat(aliases);
+  }
+
   function findExercise(name) {
-    const key = slug(name);
-    return EXERCISES.find((e) => slug(e.name) === key) || null;
+    const raw = slug(name);
+    const key = canonicalKey(name);
+    return EXERCISES.find((e) => {
+      if (canonicalKey(e.name) === key || slug(e.name) === raw) return true;
+      return (e.aliases || []).some((a) => slug(a) === raw || canonicalKey(a) === key);
+    }) || null;
   }
 
   function categoryOf(name) {
@@ -174,7 +195,7 @@
       if (category === "Legs" && sub && e.sub !== sub) return false;
       if (equipment && e.equipment !== equipment) return false;
       if (q) {
-        const hay = [e.name, e.category, e.sub || "", e.equipment].join(" ").toLowerCase();
+        const hay = [e.name, ...(e.aliases || []), e.category, e.sub || "", e.equipment].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -191,6 +212,9 @@
 
   function photoFor(name) {
     const photos = global.VELA_PHOTOS || {};
+    for (const k of keysFor(name)) {
+      if (photos[k]) return photos[k];
+    }
     return photos[slug(name)] || null;
   }
 
@@ -279,6 +303,9 @@
     LEG_SUBS,
     EQUIPMENT,
     slug,
+    KEY_ALIASES,
+    canonicalKey,
+    keysFor,
     findExercise,
     categoryOf,
     filterExercises,

@@ -161,7 +161,7 @@
 
   function suggestionFor(name, fallbackReps, fallbackWeight) {
     if (!state) return { reps: fallbackReps, weight: fallbackWeight };
-    const rec = state.lastLogged[C().slug(name)];
+    const rec = aliasKeys(name).map((k) => state.lastLogged[k]).find(Boolean);
     if (rec && (rec.reps != null || rec.weight != null)) {
       return {
         reps: rec.reps != null ? rec.reps : fallbackReps,
@@ -177,12 +177,12 @@
     const suggested = suggestionFor(src.name, src.reps, src.weight);
     return {
       id: uid("ex"),
-      key: C().slug(src.name),
+      key: canonKey(src.name),
       name: src.name,
       alt: src.alt || "",
       tempo: Array.isArray(src.tempo) ? src.tempo.slice() : [3, 0, 1, 1],
       thumb,
-      notes: (state && state.notes[C().slug(src.name)]) || "",
+      notes: (state && aliasKeys(src.name).map((k) => state.notes[k]).find((n) => n != null)) || "",
       suggestedReps: suggested.reps,
       suggestedWeight: suggested.weight,
       programReps: src.reps,
@@ -221,7 +221,8 @@
     if (w.timerElapsedFinal === undefined) w.timerElapsedFinal = null;
     (w.exercises || []).forEach((ex) => {
       if (!ex.id) ex.id = uid("ex");
-      if (!ex.key && ex.name) ex.key = C().slug(ex.name);
+      if (ex.key) ex.key = canonKey(ex.key);
+      else if (ex.name) ex.key = canonKey(ex.name);
     });
   }
 
@@ -278,6 +279,16 @@
       if (!state.checkIns) state.checkIns = [];
       state.version = 5;
     }
+    if (state.version < 6) {
+      migrateExerciseKeys(state, {
+        "incline-tricep-extension": "incline-dumbbell-tricep-extension",
+        "incline-triceps-extension": "incline-dumbbell-tricep-extension",
+      }, {
+        "Incline Tricep Extension": "Incline Dumbbell Tricep Extension",
+        "Incline Triceps Extension": "Incline Dumbbell Tricep Extension",
+      });
+      state.version = 6;
+    }
     if (!state.sessions) state.sessions = [];
     if (!state.checkIns) state.checkIns = [];
     if (!state.programs) state.programs = {};
@@ -291,6 +302,73 @@
     normalizeProgramSlots(state);
     (state.workouts || []).forEach(ensureWorkoutFields);
     return state;
+  }
+
+  function mergeKeyedRecords(obj, map, mergeFn) {
+    if (!obj) return;
+    Object.keys(map).forEach((oldK) => {
+      const newK = map[oldK];
+      if (obj[oldK] == null) return;
+      if (obj[newK] == null) obj[newK] = obj[oldK];
+      else obj[newK] = mergeFn(obj[newK], obj[oldK], newK, oldK);
+      delete obj[oldK];
+    });
+  }
+
+  function rewriteWorkoutExercises(workouts, keyMap, nameMap) {
+    (workouts || []).forEach((w) => {
+      (w.exercises || []).forEach((ex) => {
+        if (ex && nameMap[ex.name]) ex.name = nameMap[ex.name];
+        if (ex && ex.alt && nameMap[ex.alt]) ex.alt = nameMap[ex.alt];
+        if (ex && ex.key && keyMap[ex.key]) ex.key = keyMap[ex.key];
+        else if (ex && ex.name) ex.key = canonKey(ex.name);
+      });
+    });
+  }
+
+  function migrateExerciseKeys(state, keyMap, nameMap) {
+    mergeKeyedRecords(state.history, keyMap, (a, b) => {
+      const seen = new Set((a || []).map((h) => h && h.sessionId));
+      const extra = (b || []).filter((h) => h && !seen.has(h.sessionId));
+      return (a || []).concat(extra);
+    });
+    mergeKeyedRecords(state.lastLogged, keyMap, (a, b) => a || b);
+    mergeKeyedRecords(state.notes, keyMap, (a, b) => (a != null && a !== "" ? a : b));
+    rewriteWorkoutExercises(state.workouts, keyMap, nameMap);
+    Object.keys(state.programs || {}).forEach((id) => {
+      rewriteWorkoutExercises((state.programs[id] || {}).workouts, keyMap, nameMap);
+    });
+  }
+
+  function canonKey(nameOrKey) {
+    const cat = C();
+    if (cat && typeof cat.canonicalKey === "function") return cat.canonicalKey(nameOrKey);
+    return cat.slug(nameOrKey);
+  }
+
+  function aliasKeys(nameOrKey) {
+    const cat = C();
+    if (cat && typeof cat.keysFor === "function") return cat.keysFor(nameOrKey);
+    return [canonKey(nameOrKey)];
+  }
+
+  function keysMatch(a, b) {
+    return canonKey(a) === canonKey(b);
+  }
+
+  function readHistoryAll(exerciseKey) {
+    const hist = (get() && get().history) || {};
+    const out = [];
+    const seen = new Set();
+    aliasKeys(exerciseKey).forEach((k) => {
+      (hist[k] || []).forEach((h) => {
+        const id = h && (h.sessionId || (String(h.date || "") + "|" + JSON.stringify(h.sets || [])));
+        if (seen.has(id)) return;
+        seen.add(id);
+        out.push(h);
+      });
+    });
+    return out;
   }
 
   function stampCycleStart(s, when) {
@@ -652,12 +730,14 @@
           st.done ? { reps: st.reps, weight: st.weight } : { reps: null, weight: null }
         ),
       };
-      if (!state.history[ex.key]) state.history[ex.key] = [];
-      const i = state.history[ex.key].findIndex((h) => h.sessionId === w.sessionId);
-      if (i >= 0) state.history[ex.key][i] = entry;
-      else state.history[ex.key].unshift(entry);
+      const key = canonKey(ex.key || ex.name);
+      ex.key = key;
+      if (!state.history[key]) state.history[key] = [];
+      const i = state.history[key].findIndex((h) => h.sessionId === w.sessionId);
+      if (i >= 0) state.history[key][i] = entry;
+      else state.history[key].unshift(entry);
       const lastDone = [...ex.sets].reverse().find((st) => st.done);
-      if (lastDone) state.lastLogged[ex.key] = { reps: lastDone.reps, weight: lastDone.weight };
+      if (lastDone) state.lastLogged[key] = { reps: lastDone.reps, weight: lastDone.weight };
     });
     recordSession(w);
   }
@@ -978,7 +1058,7 @@
   }
 
   function previousSession(exerciseKey, exceptSessionId) {
-    const list = get().history[exerciseKey] || [];
+    const list = readHistoryAll(exerciseKey);
     return list.find((h) => (!exceptSessionId || h.sessionId !== exceptSessionId) && historyEntryLogged(h)) || null;
   }
 
@@ -1091,17 +1171,19 @@
 
   function setNotes(exerciseKey, text) {
     const s = get();
-    s.notes[exerciseKey] = text;
+    const key = canonKey(exerciseKey);
+    s.notes[key] = text;
+    aliasKeys(exerciseKey).forEach((k) => { if (k !== key && s.notes[k] != null) delete s.notes[k]; });
     s.workouts.forEach((w) => {
       w.exercises.forEach((ex) => {
-        if (ex.key === exerciseKey) ex.notes = text;
+        if (keysMatch(ex.key, exerciseKey)) ex.notes = text;
       });
     });
     scheduleSave();
   }
 
   function getHistory(exerciseKey) {
-    return (get().history[exerciseKey] || []).filter(historyEntryLogged);
+    return readHistoryAll(exerciseKey).filter(historyEntryLogged);
   }
 
   function cloneJSON(value) {
@@ -1140,7 +1222,12 @@
   }
 
   function findHistoryEntry(exerciseKey, sessionId) {
-    return (get().history[exerciseKey] || []).find((h) => h.sessionId === sessionId) || null;
+    const hist = get().history || {};
+    for (const k of aliasKeys(exerciseKey)) {
+      const found = (hist[k] || []).find((h) => h.sessionId === sessionId);
+      if (found) return found;
+    }
+    return null;
   }
 
   function allWorkouts() {
@@ -1160,15 +1247,17 @@
   }
 
   function recomputeLastLogged(exerciseKey) {
-    const list = get().history[exerciseKey] || [];
+    const key = canonKey(exerciseKey);
+    const list = readHistoryAll(exerciseKey);
+    aliasKeys(exerciseKey).forEach((k) => { if (state.lastLogged) delete state.lastLogged[k]; });
     for (let i = 0; i < list.length; i += 1) {
       const last = [...(list[i].sets || [])].reverse().find(historySetLogged);
       if (last) {
-        state.lastLogged[exerciseKey] = { reps: last.reps, weight: last.weight };
+        if (!state.lastLogged) state.lastLogged = {};
+        state.lastLogged[key] = { reps: last.reps, weight: last.weight };
         return;
       }
     }
-    if (state.lastLogged) delete state.lastLogged[exerciseKey];
   }
 
   function rebuildSessionRecord(sessionId) {
@@ -1215,7 +1304,7 @@
       if (!w || w.sessionId !== sessionId) return;
       let anyDone = false;
       w.exercises.forEach((ex) => {
-        if (exerciseKey && ex.key !== exerciseKey) {
+        if (exerciseKey && !keysMatch(ex.key, exerciseKey)) {
           if (ex.sets.some((st) => st.done)) anyDone = true;
           return;
         }
@@ -1243,10 +1332,13 @@
   }
 
   function pruneEmptyHistoryEntry(exerciseKey, sessionId) {
-    const list = get().history[exerciseKey] || [];
-    const i = list.findIndex((h) => h.sessionId === sessionId);
-    if (i < 0) return;
-    if (!historyEntryLogged(list[i])) list.splice(i, 1);
+    const hist = get().history || {};
+    aliasKeys(exerciseKey).forEach((k) => {
+      const list = hist[k] || [];
+      const i = list.findIndex((h) => h.sessionId === sessionId);
+      if (i < 0) return;
+      if (!historyEntryLogged(list[i])) list.splice(i, 1);
+    });
   }
 
   function deleteHistorySet(exerciseKey, sessionId, setIndex) {
@@ -1265,10 +1357,16 @@
 
   function deleteHistoryExercise(exerciseKey, sessionId) {
     const snap = captureHistoryUndo();
-    const list = get().history[exerciseKey] || [];
-    const i = list.findIndex((h) => h.sessionId === sessionId);
-    if (i < 0) return null;
-    list.splice(i, 1);
+    const hist = get().history || {};
+    let found = false;
+    aliasKeys(exerciseKey).forEach((k) => {
+      const list = hist[k] || [];
+      const i = list.findIndex((h) => h.sessionId === sessionId);
+      if (i < 0) return;
+      list.splice(i, 1);
+      found = true;
+    });
+    if (!found) return null;
     applyHistoryToCurrent(sessionId, exerciseKey);
     recomputeLastLogged(exerciseKey);
     rebuildSessionRecord(sessionId);
@@ -1554,7 +1652,7 @@
   /* Heaviest logged weight ever for an exercise (bodyweight / null ignored). */
   function personalBestWeight(exerciseKey) {
     let best = null;
-    (get().history[exerciseKey] || []).forEach((h) => {
+    readHistoryAll(exerciseKey).forEach((h) => {
       (h.sets || []).forEach((st) => {
         if (st && st.weight != null && Number(st.weight) > 0) {
           const w = Number(st.weight);
@@ -1564,7 +1662,7 @@
     });
     (get().workouts || []).forEach((wo) => {
       (wo.exercises || []).forEach((ex) => {
-        if (ex.key !== exerciseKey) return;
+        if (!keysMatch(ex.key, exerciseKey)) return;
         (ex.sets || []).forEach((st) => {
           if (st.done && st.weight != null && Number(st.weight) > 0) {
             const w = Number(st.weight);

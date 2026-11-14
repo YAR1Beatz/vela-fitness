@@ -27,6 +27,50 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": ""
   },
+  "incline-barbell-press": {
+    "name": "Incline Barbell Press",
+    "frames": [
+      "img/exercises/incline-barbell-press/0.webp",
+      "img/exercises/incline-barbell-press/1.webp"
+    ],
+    "match": "exact",
+    "author": "Goulart",
+    "source": "wger.de",
+    "source_url": "https://wger.de/",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "wger 'Incline Bench Press' barbell video stills."
+  },
+  "incline-dumbbell-tricep-extension": {
+    "name": "Incline Dumbbell Tricep Extension",
+    "frames": [
+      "img/exercises/incline-dumbbell-tricep-extension/0.webp",
+      "img/exercises/incline-dumbbell-tricep-extension/1.webp"
+    ],
+    "match": "exact",
+    "kind": "illustration",
+    "author": "Everkinetic",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Incline_triceps_extensions_with_dumbbell_2.svg",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "note": "No freely licensed photo found. Everkinetic CC BY-SA 3.0 line art restyled on navy for VELA (start + end positions)."
+  },
+  "incline-tricep-extension": {
+    "name": "Incline Tricep Extension",
+    "frames": [
+      "img/exercises/incline-dumbbell-tricep-extension/0.webp",
+      "img/exercises/incline-dumbbell-tricep-extension/1.webp"
+    ],
+    "match": "exact",
+    "kind": "illustration",
+    "author": "Everkinetic",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Incline_triceps_extensions_with_dumbbell_2.svg",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "note": "No freely licensed photo found. Everkinetic CC BY-SA 3.0 line art restyled on navy for VELA (start + end positions)."
+  },
   "chest-dip": {
     "name": "Chest Dip",
     "frames": [
@@ -692,20 +736,6 @@ window.VELA_PHOTOS = {
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": "Closest licensed stills: Romanian Deadlift."
-  },
-  "incline-tricep-extension": {
-    "name": "Incline Tricep Extension",
-    "frames": [
-      "img/exercises/skull-crusher/0.webp",
-      "img/exercises/skull-crusher/1.webp"
-    ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Closest licensed stills: Skull Crusher."
   },
   "single-leg-leg-press-calf-raise": {
     "name": "Single-Leg Leg Press Calf Raise",

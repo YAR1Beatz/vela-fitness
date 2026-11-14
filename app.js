@@ -119,18 +119,31 @@
   }
 
   function overloadMark(sign) {
-    if (sign === "up") return { cls: "up", char: "↑" };
-    if (sign === "down") return { cls: "down", char: "↓" };
-    if (sign === "same") return { cls: "same", char: "=" };
-    return { cls: "check", char: "✓" };
+    if (sign === "up") return { cls: "up", char: "↑", label: "Progressed" };
+    if (sign === "down") return { cls: "down", char: "↓", label: "Decreased" };
+    if (sign === "same") return { cls: "same", char: "=", label: "Maintained" };
+    return { cls: "check", char: "✓", label: "Logged" };
+  }
+
+  function overloadBadge(sign) {
+    if (!sign) return "";
+    const mark = overloadMark(sign);
+    const icons = {
+      up: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10 2.35c.4 0 .77.18 1.02.5l7.15 8.5c.52.62.08 1.55-.77 1.55H13v5.25c0 .66-.54 1.2-1.2 1.2H8.2c-.66 0-1.2-.54-1.2-1.2V12.9H2.6c-.85 0-1.29-.93-.77-1.55l7.15-8.5A1.3 1.3 0 0 1 10 2.35z"/></svg>',
+      down: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10 17.65c-.4 0-.77-.18-1.02-.5l-7.15-8.5C1.31 8.03 1.75 7.1 2.6 7.1H7V1.85C7 1.19 7.54.65 8.2.65h3.6c.66 0 1.2.54 1.2 1.2V7.1h4.4c.85 0 1.29.93.77 1.55l-7.15 8.5a1.3 1.3 0 0 1-1.02.5z"/></svg>',
+      same: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="3.1" y="5.9" width="13.8" height="3" rx="1.3" fill="currentColor"/><rect x="3.1" y="11.1" width="13.8" height="3" rx="1.3" fill="currentColor"/></svg>',
+      check: '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7.7 13.6L3.9 9.8l-1.5 1.5 5.3 5.3 10.2-10.2-1.5-1.5z"/></svg>',
+    };
+    const icon = icons[sign] || icons.check;
+    return `<span class="badge ${mark.cls}" data-overload="${esc(sign)}" title="${esc(mark.label)}" aria-label="${esc(mark.label)}">${icon}</span>`;
   }
 
   function chipInner(ex, set, exIndex, setIndex, workout) {
     if (set.done) {
       const sign = D().setOverload(ex, setIndex, workout && workout.sessionId);
-      const mark = overloadMark(sign);
       const label = D().formatLogged(set.weight, set.reps);
-      return `<span>${esc(label)}</span><span class="badge ${mark.cls}" data-overload="${esc(sign || "none")}">${mark.char}</span>`;
+      const badge = overloadBadge(sign || "check");
+      return `<span class="chip-label">${esc(label)}</span>${badge}`;
     }
     const reps = ex.suggestedReps != null ? ex.suggestedReps : 8;
     return esc(`${reps} reps`);
@@ -294,7 +307,8 @@
 
   function volumeCompareHtml(cmp, testid) {
     if (!cmp) return `<div class="vol-cmp first" data-testid="${esc(testid)}">First session</div>`;
-    return `<div class="vol-cmp ${esc(cmp.sign)}" data-testid="${esc(testid)}">${esc(cmp.text)}</div>`;
+    const text = String(cmp.text || "").replace(/^[↑↓=]\s*/, "");
+    return `<div class="vol-cmp ${esc(cmp.sign)}" data-testid="${esc(testid)}">${overloadBadge(cmp.sign)}<span>${esc(text)}</span></div>`;
   }
 
   function exerciseCard(ex, exIndex, workout) {
@@ -311,7 +325,7 @@
     ).join("");
     const summary = D().exerciseOverloadSummary(ex, workout && workout.sessionId);
     const summaryHtml = summary
-      ? `<div class="overload-line ${summary.sign}" data-testid="overload-summary-${exIndex}">${esc((summary.sign === "up" ? "↑ " : summary.sign === "down" ? "↓ " : "= ") + summary.text)}</div>`
+      ? `<div class="overload-line ${summary.sign}" data-testid="overload-summary-${exIndex}">${overloadBadge(summary.sign)}<span>${esc(summary.text)}</span></div>`
       : "";
     const altName = ex.alt || "Alternative";
     const alt = `<button type="button" class="alt" data-action="alt" data-ex="${exIndex}" aria-label="Swap for ${esc(altName)}"><span>${esc(altName)}</span><span class="alt-icons">${ICONS.clock}${ICONS.swap}</span></button>`;
@@ -749,7 +763,7 @@
         <b>${VELA_VERSION}</b>
       </div>
       <p class="settings-build">VELA ${VELA_VERSION} · ${VELA_CACHE}</p>
-      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Dumbbell Pullover still has no freely licensed photo. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
     </div>`;
   }
 
@@ -1386,7 +1400,7 @@
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
         <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Each program has its own week and plan. History and last weights are shared, so overload still works if you switch. Edit program.js to change the default workouts.</p>
-        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Dumbbell Pullover still has no freely licensed photo. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);
@@ -1744,8 +1758,7 @@
   function historySetRow(h, set, i, signs, exerciseKey) {
     if (!D().historySetLogged(set)) return "";
     const sign = signs && signs[i];
-    const mark = sign ? overloadMark(sign) : null;
-    const badge = mark ? `<span class="badge ${mark.cls}">${mark.char}</span>` : "";
+    const badge = sign ? overloadBadge(sign) : "";
     const sid = esc(h.sessionId);
     const editBtns = historyEditMode
       ? `<span class="hist-set-acts">

@@ -948,35 +948,59 @@ input, textarea, select {
   color: var(--accent2);
   font-weight: 650;
 }
+.chips.row .chip {
+  flex: 1 1 0;
+  min-width: 0;
+}
 .chip.logged {
   border: 1px solid var(--logged-border);
   background: var(--logged-bg);
   color: var(--logged-text);
   font-weight: 600;
   gap: 5px;
-  padding: 0 8px;
+  padding: 0 7px 0 9px;
+  min-height: 36px;
+}
+.chip.logged .chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chip.logged .badge {
+  /* size comes from the shared .badge rule */
+  flex: 0 0 24px;
+}
+@media (max-width: 399px) {
+  .chip.logged { font-size: 10.5px; padding: 0 5px 0 7px; gap: 4px; }
+}
+
+/* Filled-circle overload badges: ~16px arrow in a 24px disc, high contrast on navy */
+.badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 14px;
-  height: 14px;
-  border-radius: 99px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  line-height: 0;
+  font-size: 0;
 }
-.chip.logged .badge.up { color: var(--up); }
-.chip.logged .badge.same { color: var(--same); }
-.chip.logged .badge.down { color: var(--down); }
-.chip.logged .badge.check { color: var(--muted); }
+.badge svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.badge.up { background: #1ED98A; color: #04261F; }
+.badge.same { background: #E0B15C; color: #1A1408; }
+.badge.down { background: #E85B6A; color: #2A0A12; }
+.badge.check { background: #3A4B60; color: #E7F2FA; }
 
 .overload-line {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
   font-size: 12px;
   font-weight: 560;
@@ -1100,10 +1124,7 @@ input, textarea, select {
 
 .hist-item .signs { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
 .hist-item .set-line { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.hist-item .set-line .badge { font-weight: 700; }
-.hist-item .set-line .badge.up { color: var(--up); }
-.hist-item .set-line .badge.same { color: var(--same); }
-.hist-item .set-line .badge.down { color: var(--down); }
+.hist-item .set-line .badge { flex: 0 0 24px; }
 
 
 /* ——— Exercise demo photos ——— */
@@ -1239,6 +1260,9 @@ input, textarea, select {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .vol-cmp.up { color: var(--up); }
 .vol-cmp.down { color: var(--down); }

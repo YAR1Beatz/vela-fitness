@@ -58,6 +58,12 @@ VIDEOS = {
         "match": "exact",
         **GOULART,
     },
+    "incline-barbell-press": {
+        "url": f"{WGER}/538/4349a6f6-4cee-4c09-828b-c5e7fc2c1ff1.MOV",
+        "wger_name": "Incline Bench Press",
+        "match": "exact",
+        **GOULART,
+    },
     "chest-dip": {
         "url": f"{WGER}/194/d039ec90-474d-47a9-a3ad-bf0b00828c82.MP4",
         "wger_name": "Dips",
@@ -551,6 +557,8 @@ def write_attribution(entries: dict) -> None:
 NAMES = {
     "barbell-bench-press": "Barbell Bench Press",
     "incline-dumbbell-press": "Incline Dumbbell Press",
+    "incline-barbell-press": "Incline Barbell Press",
+    "incline-dumbbell-tricep-extension": "Incline Dumbbell Tricep Extension",
     "incline-machine-press": "Incline Machine Press",
     "chest-dip": "Chest Dip",
     "decline-bench-press": "Decline Bench Press",

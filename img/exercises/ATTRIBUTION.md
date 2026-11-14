@@ -27,6 +27,8 @@ Cropped or resized copies are shared under the same license as the source.
 | Hip Thrust | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Incline Dumbbell Curl | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Seated/standing dumbbell curl video used; not an incline-bench curl. |
 | Incline Dumbbell Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
+| Incline Barbell Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | wger Incline Bench Press (barbell) video stills. |
+| Incline Dumbbell Tricep Extension | exact (illustration) | Everkinetic | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons | No freely licensed photo found. Line art from [Incline triceps extensions with dumbbell 1/2](https://commons.wikimedia.org/wiki/File:Incline_triceps_extensions_with_dumbbell_2.svg), restyled on navy for VELA. |
 | Incline Machine Press | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Incline dumbbell press video used; equipment is dumbbells, not a machine. |
 | Lat Pulldown | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
 | Lateral Raise | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
@@ -65,6 +67,8 @@ Cropped or resized copies are shared under the same license as the source.
 - [Tyler Read](https://commons.wikimedia.org/wiki/File:Girl_doing_chest_press_machine_exercise.jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
 - [Nenad Stojkovic](https://commons.wikimedia.org/wiki/File:Chest_flies_with_cable_machine_-_cable_crossover_flies.jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
 - [PTPioneer](https://commons.wikimedia.org/wiki/File:Girl_doing_push-ups_from_the_side.jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+- [Everkinetic](https://commons.wikimedia.org/wiki/File:Incline_triceps_extensions_with_dumbbell_2.svg) exercise illustrations, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
 
-No freely licensed real-photo match was found for: **Dumbbell Pullover**.
-That exercise keeps the illustrated thumbnail.
+No freely licensed real-photo match was found for: **Dumbbell Pullover** (keeps the illustrated thumbnail). **Incline Dumbbell Tricep Extension** uses a restyled Everkinetic illustration because no freely licensed photo of the correct movement was found.
+
+Also still without a dedicated photo (closest still or catalog thumbnail only) — see the audit in the v13 report: Arnold Press, Barbell Back Squat, Barbell Overhead Press, Front Raise, Front Squat, Barbell Curl, Barbell Shrug, Cable Crunch, Swiss Ball Crunch, Swiss Ball Leg Raise, and the wrist-curl variations, plus any other catalog entries not listed in the table above.
