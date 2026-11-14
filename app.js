@@ -5,6 +5,7 @@
   const C = () => window.VELA_CATALOG;
 
   let view = "home";
+  let tab = "home";
   let activeWorkoutId = null;
   let editing = null;
   let workoutEditMode = false;
@@ -13,6 +14,11 @@
   let historyExIndex = null;
   let historyEditMode = false;
   let historySessionId = null;
+  let historyKey = null;
+  let programWeek = null;
+  let reviewWorkout = null;
+  let returnView = "home";
+  let keyboardOpen = false;
   let restTimer = null;
   let undoTimer = null;
   let undoPayload = null;
@@ -20,6 +26,7 @@
   const headerEl = () => document.getElementById("header");
   const contentEl = () => document.getElementById("content");
   const footerEl = () => document.getElementById("footer");
+  const tabbarEl = () => document.getElementById("tabbar");
   const overlaysEl = () => document.getElementById("overlays");
   const toastEl = () => document.getElementById("toast");
 
@@ -45,6 +52,12 @@
     trash: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.2 4.2h9.6M6.2 4.2V3h3.6v1.2M4.4 4.2 5 13h6l.6-8.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     flame: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.8s1.4 2.2 1.4 4.2c0 1.2-.6 2.2-1.4 2.2S10.6 8.2 10.6 7c0-1.4.6-2.8 1.4-4.2z" fill="currentColor" opacity=".9"/><path d="M12 22c-3.7 0-6.2-2.8-6.2-6.3 0-2.6 1.5-4.6 2.8-6.2.4 1.8 1.5 3 2.8 3.2-1-2.6.2-4.8 2.1-6.7 2.3 1.6 4.7 3.8 4.7 7.2C18.2 19.2 15.7 22 12 22z" fill="currentColor"/></svg>`,
     tape: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5h16v3.2H4V8.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.2 8.5v3.2M9.1 8.5v3.2M12 8.5v3.2M14.9 8.5v3.2M17.8 8.5v3.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 11.7 7 19.2h10L16 11.7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
+    tabHome: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 10.5 12 4.2l7.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-4.2v-5.2h-3.6V20.5H6A1.5 1.5 0 0 1 4.5 19v-8.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
+    tabProgram: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.2 8.2h9.6M7.2 15.8h9.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.2 8.2c-1.8 0-3.2 1-3.2 2.3s1.4 2.3 3.2 2.3 3.2-1 3.2-2.3S9 8.2 7.2 8.2zM16.8 15.8c1.8 0 3.2-1 3.2-2.3s-1.4-2.3-3.2-2.3-3.2 1-3.2 2.3 1.4 2.3 3.2 2.3z" stroke="currentColor" stroke-width="1.7"/><path d="M10.4 10.5h3.2M10.4 13.5h3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+    tabProgress: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 18.5V5.5M4.5 18.5h15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.8 14.2 11.2 10l3 2.6 4.4-5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    tabCheckin: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.1" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 19.2c.8-3.2 3.1-5 6.2-5s5.4 1.8 6.2 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+    tabSettings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" d="M9.7 3.85c.1-.55.57-.95 1.13-.95h2.34c.56 0 1.03.4 1.13.95l.2 1.18c.5.14.97.36 1.39.64l1.1-.45c.53-.22 1.14 0 1.44.5l1.17 2.02c.3.52.2 1.18-.24 1.57l-.92.8c.1.48.16.98.16 1.5s-.06 1.02-.16 1.5l.92.8c.44.39.54 1.05.24 1.57l-1.17 2.02c-.3.5-.91.72-1.44.5l-1.1-.45c-.42.28-.89.5-1.39.64l-.2 1.18c-.1.55-.57.95-1.13.95h-2.34c-.56 0-1.03-.4-1.13-.95l-.2-1.18a6.4 6.4 0 0 1-1.39-.64l-1.1.45c-.53.22-1.14 0-1.44-.5L4.12 15.6c-.3-.52-.2-1.18.24-1.57l.92-.8A6.1 6.1 0 0 1 5.12 12c0-.52.06-1.02.16-1.5l-.92-.8c-.44-.39-.54-1.05-.24-1.57l1.17-2.02c.3-.5.91-.72 1.44-.5l1.1.45c.42-.28.89-.5 1.39-.64l.2-1.18z"/><circle cx="12" cy="12" r="2.55" stroke="currentColor" stroke-width="1.6"/></svg>`,
+    weekCheck: `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1EE0C8"/><path d="M6.6 11.2 9.4 14 15.6 7.6" fill="none" stroke="#04261F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   };
 
   function esc(s) {
@@ -56,6 +69,7 @@
   }
 
   function activeWorkout() {
+    if (view === "review" && reviewWorkout) return reviewWorkout;
     return activeWorkoutId ? D().workoutById(activeWorkoutId) : null;
   }
 
@@ -91,12 +105,22 @@
     return set.done ? "chip logged" : "chip pending";
   }
 
+  function isProgramRoot() {
+    return view === "program";
+  }
+
   function renderHeader() {
-    const w = activeWorkout();
+    const w = activeWorkout() || reviewWorkout;
+    if (isProgramRoot()) {
+      headerEl().classList.add("hidden");
+      headerEl().innerHTML = "";
+      return;
+    }
+    headerEl().classList.remove("hidden");
     let mid = "";
     let left = `<span class="icon-btn" aria-hidden="true"></span>`;
     let extra = "";
-    if (view === "workout" && w) {
+    if ((view === "workout" || view === "review") && w) {
       mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div></div>`;
       left = `<button class="icon-btn" type="button" data-action="back" aria-label="Back to overview">${ICONS.back}</button>`;
       const running = !w.completedAt && !w.timerPaused && w.timerStartedAt;
@@ -110,6 +134,15 @@
       </div>`;
     } else if (view === "days-setup") {
       mid = `<div class="brand"><div class="word logo-only">${ICONS.logo}</div></div>`;
+    } else if (view === "program-week") {
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Week ${esc(programWeek)}</div></div>`;
+      left = `<button class="icon-btn" type="button" data-action="program-back" aria-label="Back to program">${ICONS.back}</button>`;
+    } else if (view === "progress") {
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Progress</div></div>`;
+    } else if (view === "checkin") {
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Check-in</div></div>`;
+    } else if (view === "settings") {
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Settings</div></div>`;
     } else {
       mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub" data-testid="week-label">${esc(D().weekLabel())}</div></div>`;
     }
@@ -124,6 +157,11 @@
       extra = `<div class="setup-progress" data-testid="days-setup-progress"><i></i></div>`;
     }
     headerEl().innerHTML = `<div class="header-row">${left}${mid}${right}</div>${extra}`;
+  }
+
+  function hideFooter() {
+    footerEl().classList.add("hidden");
+    footerEl().innerHTML = "";
   }
 
   function renderHome() {
@@ -205,9 +243,9 @@
     if (s.recoveryWeek) {
       contentEl().insertAdjacentHTML("beforeend", `<div class="tiles" data-testid="week-plan" hidden></div>`);
     }
-    footerEl().classList.remove("hidden");
     const footerLbl = s.recoveryWeek ? "Start next cycle" : "Get your next program";
-    footerEl().innerHTML = `<button class="program" type="button" data-action="next-week" data-testid="next-program">${footerLbl}</button>`;
+    contentEl().insertAdjacentHTML("beforeend", `<div class="home-next"><button class="program" type="button" data-action="next-week" data-testid="next-program">${footerLbl}</button></div>`);
+    hideFooter();
   }
 
   function volumeBarPct(vol, targetKg, prev) {
@@ -242,14 +280,14 @@
       : "";
     const altName = ex.alt || "Alternative";
     const alt = `<button type="button" class="alt" data-action="alt" data-ex="${exIndex}" aria-label="Swap for ${esc(altName)}"><span>${esc(altName)}</span><span class="alt-icons">${ICONS.clock}${ICONS.swap}</span></button>`;
-    const editTools = workoutEditMode
+    const editTools = (!workout.review && workoutEditMode)
       ? `<div class="ex-edit-tools">
            <button type="button" class="drag-handle" data-drag-handle data-ex="${exIndex}" data-testid="drag-handle-${exIndex}" aria-label="Reorder ${esc(ex.name)}">${ICONS.drag}</button>
            <button type="button" class="remove-ex" data-action="remove-exercise" data-ex="${exIndex}" data-testid="remove-exercise-${exIndex}">${ICONS.trash} Remove</button>
          </div>`
       : "";
     const more = `<button type="button" class="more-btn" data-action="ex-menu" data-ex="${exIndex}" data-testid="ex-menu-${exIndex}" aria-label="Exercise options">${ICONS.more}</button>`;
-    return `<div class="block${workoutEditMode ? " edit-mode" : ""}" data-ex-block="${exIndex}" data-testid="exercise-card-${esc(ex.key)}">
+    return `<div class="block${workoutEditMode ? " edit-mode" : ""}${workout && workout.review ? " review" : ""}" data-ex-block="${exIndex}" data-testid="exercise-card-${esc(ex.key)}">
       ${alt}
       ${editTools}
       <div class="card">
@@ -329,18 +367,387 @@
     bindExerciseReorder();
   }
 
+  function haptic() {
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
+  }
+
+  function persistTab() {
+    const s = D().get();
+    s.uiTab = tab;
+    D().saveNow();
+  }
+
+  function switchTab(next) {
+    if (!next) return;
+    haptic();
+    tab = next;
+    view = next;
+    programWeek = null;
+    reviewWorkout = null;
+    activeWorkoutId = null;
+    editing = null;
+    workoutEditMode = false;
+    persistTab();
+    closeSheet();
+    render();
+    contentEl().scrollTop = 0;
+  }
+
+  function trackingOpen() {
+    return !!(overlaysEl() && overlaysEl().querySelector(".sheet.tracking, [data-testid='sets-tracking']"));
+  }
+
+  function shouldHideTabBar() {
+    if (view === "days-setup") return true;
+    if (keyboardOpen) return true;
+    if (trackingOpen()) return true;
+    return false;
+  }
+
+  function syncChrome() {
+    const app = document.getElementById("app");
+    const hide = shouldHideTabBar();
+    if (app) {
+      app.classList.toggle("kb-open", !!keyboardOpen);
+      app.classList.toggle("tracking-open", trackingOpen());
+      app.classList.toggle("setup-open", view === "days-setup");
+    }
+    const bar = tabbarEl();
+    if (bar) bar.classList.toggle("hidden", hide);
+    const space = hide ? "0px" : "var(--tabbar-h)";
+    document.documentElement.style.setProperty("--tabbar-space", space);
+  }
+
+  function updateKeyboard() {
+    const vv = window.visualViewport;
+    const focused = document.activeElement && document.activeElement.matches && document.activeElement.matches("input, textarea, select");
+    let open = false;
+    if (vv) {
+      const gap = window.innerHeight - vv.height - (vv.offsetTop || 0);
+      open = gap > 80 && !!focused;
+    } else {
+      open = !!focused;
+    }
+    if (open === keyboardOpen) {
+      syncChrome();
+      return;
+    }
+    keyboardOpen = open;
+    syncChrome();
+  }
+
+  function renderTabBar() {
+    const bar = tabbarEl();
+    if (!bar) return;
+    const items = [
+      { id: "home", label: "Home", icon: ICONS.tabHome },
+      { id: "program", label: "Program", icon: ICONS.tabProgram },
+      { id: "progress", label: "Progress", icon: ICONS.tabProgress },
+      { id: "checkin", label: "Check-in", icon: ICONS.tabCheckin },
+      { id: "settings", label: "Settings", icon: ICONS.tabSettings },
+    ];
+    const current = (view === "program-week") ? "program" : (view === "review" ? (returnView === "program-week" || returnView === "program" ? "program" : tab) : (view === "workout" ? tab : view));
+    bar.innerHTML = items.map((it) => {
+      const on = current === it.id ? " on" : "";
+      return `<button type="button" class="tab-btn${on}" data-action="switch-tab" data-tab="${it.id}" data-testid="tab-${it.id}" aria-label="${esc(it.label)}" aria-current="${current === it.id ? "page" : "false"}">${it.icon}<span>${esc(it.label)}</span></button>`;
+    }).join("");
+    bar.setAttribute("data-testid", "tab-bar");
+    syncChrome();
+  }
+
+  function sparkline(points) {
+    const vals = (points || []).map((p) => Number(p.kg) || Number(p.repsOnly) || 0);
+    if (vals.length < 2) return `<span class="spark empty" aria-hidden="true"></span>`;
+    const w = 72, h = 28, pad = 2;
+    const min = Math.min.apply(null, vals);
+    const max = Math.max.apply(null, vals);
+    const span = max - min || 1;
+    const coords = vals.map((v, i) => {
+      const x = pad + (i / (vals.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((v - min) / span) * (h - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${coords}" fill="none" stroke="#1EE0C8" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  }
+
+  function renderProgram() {
+    hideFooter();
+    contentEl().classList.add("flush");
+    const s = D().get();
+    const cycle = D().cycleProgress();
+    const title = D().programTitle();
+    const heroName = D().programHeroName();
+    const photo = C().photoFor(heroName);
+    const src = photo && photo.frames && photo.frames[0] ? photo.frames[0] : "";
+    const weeks = (cycle.weeks || []).map((w) => {
+      const mark = w.complete ? ICONS.weekCheck : ICONS.chev;
+      const current = w.current ? " current" : "";
+      const done = w.complete ? " done" : "";
+      return `<button type="button" class="week-card${current}${done}" data-action="open-week" data-week="${w.week}" data-testid="week-card-${w.week}">
+        <div class="week-copy">
+          <h3>Week ${esc(w.week)}</h3>
+          <p data-testid="week-pct-${w.week}">${esc(w.pct)}% completed</p>
+        </div>
+        <div class="week-bar"><i style="width:${esc(w.pct)}%"></i></div>
+        <span class="week-mark">${mark}</span>
+      </button>`;
+    }).join("");
+    const nextLbl = s.recoveryWeek ? "Start next cycle" : "Get your next program";
+    contentEl().innerHTML = `
+      <section class="program-hero" data-testid="program-tab">
+        ${src ? `<img class="program-hero-img" src="${esc(src)}" alt="">` : ""}
+        <div class="program-hero-shade"></div>
+        <div class="program-hero-top">${ICONS.logo}<span>VELA</span></div>
+        <div class="program-hero-body">
+          <h1 data-testid="program-title">${esc(title)}</h1>
+          <div class="program-pills">
+            <button type="button" class="pill prim" data-action="choose-program" data-testid="change-program">Change program</button>
+            <button type="button" class="pill" data-action="reset-cycle" data-testid="reset-program">Reset program</button>
+          </div>
+        </div>
+      </section>
+      <div class="program-stats" data-testid="program-stats">
+        <div class="pstat" data-testid="program-stat-workouts"><b>${esc(cycle.done)}/${esc(cycle.total)}</b><span>Workouts</span></div>
+        <div class="pstat" data-testid="program-stat-completed"><b>${esc(cycle.pct)}%</b><span>Completed</span></div>
+        <div class="pstat" data-testid="program-stat-time"><b>${esc(cycle.timeLabel)}</b><span>Time hrs</span></div>
+      </div>
+      <div class="week-list" data-testid="week-list">${weeks}</div>
+      <div class="home-next program-next"><button class="program" type="button" data-action="next-week" data-testid="next-program-tab">${esc(nextLbl)}</button></div>`;
+  }
+
+  function workoutTile(w, { logged, missed, locked, sessionId } = {}) {
+    const n = (w.exercises || []).length;
+    const done = !!(w.completedAt || logged);
+    const mark = done
+      ? `<div class="mark" aria-label="Done">${ICONS.checkFill}</div>`
+      : missed
+        ? `<div class="mark missed">—</div>`
+        : `<div class="mark chev">${ICONS.chev}</div>`;
+    const sub = w.dayLabel ? `${esc(w.dayLabel)} · ` : "";
+    const status = missed ? "Not logged" : (locked ? "Upcoming" : `${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes || 60)} mins`);
+    const action = locked ? "" : (sessionId ? `data-action="open-review" data-session="${esc(sessionId)}"` : `data-action="open-workout" data-id="${esc(w.id)}"`);
+    const disabled = locked ? " disabled" : "";
+    return `<div class="swipe-row" data-swipe="${locked || sessionId ? "none" : "workout"}" data-id="${esc(w.id)}">
+      <button type="button" class="swipe-actions" data-action="delete-workout" data-id="${esc(w.id)}">Delete</button>
+      <div class="swipe-front">
+        <button type="button" class="tile${done ? " done" : ""}${missed ? " missed" : ""}${locked ? " locked" : ""}"${action}${disabled} data-testid="workout-tile-${esc(w.id)}">
+          <div class="meta"><h2>${esc(w.name)}</h2><p>${sub}${esc(status)}</p></div>
+          ${mark}
+        </button>
+      </div>
+    </div>`;
+  }
+
+  function renderProgramWeek() {
+    hideFooter();
+    contentEl().classList.remove("flush");
+    const s = D().get();
+    const week = Number(programWeek) || s.week || 1;
+    const current = !s.recoveryWeek && Number(s.week) === week;
+    const future = !s.recoveryWeek && week > Number(s.week);
+    const cycle = D().cycleProgress();
+    const info = (cycle.weeks || []).find((w) => w.week === week) || D().weekProgress(week);
+    let tiles = "";
+    if (current) {
+      tiles = (s.workouts || []).map((w) => workoutTile(w, { logged: !!w.completedAt })).join("");
+    } else {
+      const sessions = D().weekSessionsInCycle(week);
+      const byId = {};
+      sessions.forEach((ses) => {
+        if (!byId[ses.workoutId]) byId[ses.workoutId] = ses;
+      });
+      const plan = (s.workouts || []);
+      tiles = plan.map((w) => {
+        const ses = byId[w.id];
+        if (ses) return workoutTile(w, { logged: true, sessionId: ses.sessionId });
+        return workoutTile(w, { missed: !future, locked: !!future });
+      }).join("");
+      /* Sessions for workouts no longer on the plan */
+      Object.keys(byId).forEach((id) => {
+        if (plan.some((w) => w.id === id)) return;
+        const ses = byId[id];
+        tiles += workoutTile({ id, name: ses.workoutName || id, minutes: 60, exercises: [] }, { logged: true, sessionId: ses.sessionId });
+      });
+    }
+    contentEl().innerHTML = `
+      <div class="section">
+        <div class="plan-titles">
+          <p class="week-kicker">Week ${esc(week)} · ${esc(info.pct)}% completed</p>
+          <h1>${current ? "This week's plan" : (future ? "Upcoming week" : "Logged workouts")}</h1>
+        </div>
+      </div>
+      <div class="tiles" data-testid="week-plan">${tiles || `<div class="empty">No workouts this week.</div>`}</div>`;
+    if (current) bindSwipeWorkouts();
+  }
+
+  function renderProgress() {
+    hideFooter();
+    contentEl().classList.remove("flush");
+    const pbs = D().allTimePersonalBests();
+    const rows = D().exercisesWithHistory();
+    const pbHtml = pbs.slice(0, 8).map((pb) =>
+      `<button type="button" class="prog-row" data-action="open-progress-ex" data-key="${esc(pb.key)}" data-testid="pb-row-${esc(pb.key)}">
+        <span class="prog-name">${esc(pb.name)}</span>
+        <span class="prog-pb">${esc(pb.weight)}kg</span>
+        ${ICONS.chev}
+      </button>`
+    ).join("") || `<p class="empty">No personal bests yet. Log a weighted set to start the list.</p>`;
+    const histHtml = rows.map((row) =>
+      `<button type="button" class="prog-row ex" data-action="open-progress-ex" data-key="${esc(row.key)}" data-testid="progress-ex-${esc(row.key)}">
+        <span class="prog-main">
+          <span class="prog-name">${esc(row.name)}</span>
+          <span class="prog-meta">${row.pb != null ? esc(row.pb) + "kg PB" : "Bodyweight"} · ${esc(row.sessions)} session${row.sessions === 1 ? "" : "s"}</span>
+        </span>
+        ${sparkline(row.trend)}
+        ${ICONS.chev}
+      </button>`
+    ).join("") || `<p class="empty">History shows up here after you log a set. You can edit or delete a wrong entry.</p>`;
+    contentEl().innerHTML = `
+      <div class="progress-page" data-testid="progress-tab">
+        <section class="prog-card">
+          <h2>Personal bests</h2>
+          <p class="prog-note">Heaviest weight you’ve logged for each exercise.</p>
+          <div class="prog-list" data-testid="pb-list">${pbHtml}</div>
+        </section>
+        <section class="prog-card">
+          <h2>History</h2>
+          <p class="prog-note">Volume trend per exercise. Tap to edit or delete a set.</p>
+          <div class="prog-list" data-testid="history-list">${histHtml}</div>
+        </section>
+      </div>`;
+  }
+
+  function renderCheckInPage() {
+    hideFooter();
+    contentEl().classList.remove("flush");
+    const list = D().listCheckIns();
+    const today = D().copenhagenYMD();
+    const latest = list[0];
+    const due = D().checkInDue();
+    const history = list.map((c) => {
+      const bits = [`${c.weight != null ? c.weight + " kg" : "—"}`];
+      if (c.waist) bits.push(`waist ${c.waist}`);
+      if (c.chest) bits.push(`chest ${c.chest}`);
+      if (c.arms) bits.push(`arms ${c.arms}`);
+      if (c.thighs) bits.push(`thighs ${c.thighs}`);
+      const photo = c.photo ? `<img class="checkin-thumb" src="${c.photo}" alt="">` : "";
+      return `<div class="hist-item" data-testid="checkin-entry">
+        <div class="when">${esc(c.date)}${photo}</div>
+        <div class="sets">${esc(bits.join(" · "))}${c.note ? " · " + esc(c.note) : ""}</div>
+      </div>`;
+    }).join("") || `<p class="empty">No check-ins yet.</p>`;
+    contentEl().innerHTML = `<div class="checkin-page" data-testid="checkin-sheet">
+      <p class="prog-note">${due ? "Log this month’s measurements when you’re ready." : "This month’s check-in is in. You can update it or look back."}</p>
+      <label class="field-label">Date</label>
+      <input class="text-input" type="date" data-cin-date value="${esc(today)}" />
+      <label class="field-label">Body weight (kg)</label>
+      <input class="text-input" data-cin-weight inputmode="decimal" placeholder="e.g. 82,5" value="${latest && latest.weight != null ? esc(String(latest.weight).replace(".", ",")) : ""}" />
+      <div class="measure-grid">
+        <label>Waist (cm)<input class="text-input" data-cin-waist inputmode="decimal" placeholder="Optional" /></label>
+        <label>Chest (cm)<input class="text-input" data-cin-chest inputmode="decimal" placeholder="Optional" /></label>
+        <label>Arms (cm)<input class="text-input" data-cin-arms inputmode="decimal" placeholder="Optional" /></label>
+        <label>Thighs (cm)<input class="text-input" data-cin-thighs inputmode="decimal" placeholder="Optional" /></label>
+      </div>
+      <label class="field-label">Note</label>
+      <textarea class="text-input" data-cin-note rows="3" placeholder="How the month felt"></textarea>
+      <label class="field-label">Progress photo (saved on this phone)</label>
+      <input class="text-input" type="file" accept="image/*" data-cin-photo />
+      <div class="checkin-preview" data-cin-preview></div>
+      <div class="sheet-actions" style="margin:16px 0 8px;padding:0;display:flex;gap:8px">
+        <button type="button" class="btn ghost" data-action="close-sheet">Close</button>
+        <button type="button" class="btn pri save-checkin-btn" data-action="save-checkin" data-testid="save-checkin" style="margin:0">Save check-in</button>
+      </div>
+      <h3 class="checkin-hist-title">History</h3>
+      ${history}
+    </div>`;
+    bindCheckInPhoto(contentEl());
+  }
+
+  function bindCheckInPhoto(root) {
+    const file = root.querySelector("[data-cin-photo]");
+    if (!file) return;
+    file.addEventListener("change", () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      resizeCheckInPhoto(f, (url) => {
+        file.dataset.ready = url || "";
+        const prev = root.querySelector("[data-cin-preview]");
+        if (prev) prev.innerHTML = url ? `<img class="checkin-preview-img" src="${url}" alt="Preview">` : "";
+      });
+    });
+  }
+
+  function renderSettingsPage() {
+    hideFooter();
+    contentEl().classList.remove("flush");
+    const rest = D().get().restSeconds || 90;
+    const days = D().get().daysPerWeek || 4;
+    const pid = D().activeProgramId();
+    contentEl().innerHTML = `<div class="settings-page" data-testid="settings-tab">
+      <div class="settings-row">
+        <span>Rest timer</span>
+        <div class="stepper">
+          <button type="button" data-action="rest-dec" aria-label="Shorter rest">−</button>
+          <b data-rest-value>${rest}s</b>
+          <button type="button" data-action="rest-inc" aria-label="Longer rest">+</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span>Program</span>
+        <button type="button" class="add" data-action="choose-program" data-testid="settings-program">${esc(D().programTitle())}</button>
+      </div>
+      ${pid === "max-ot"
+        ? `<div class="settings-row"><span>Training days</span><b>5x/week · Mon–Fri</b></div>`
+        : `<div class="settings-row">
+        <span>Training days</span>
+        <button type="button" class="add" data-action="change-days" data-testid="change-days">${esc(days + "x/week")}</button>
+      </div>`}
+      <div class="settings-row">
+        <span>Default program</span>
+        <button type="button" class="add" data-action="reset-program">Reset</button>
+      </div>
+      <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Bro Split 4-day, Bro Split 5-day and Max-OT each keep their own week and plan. History and last weights are shared, so overload still works if you switch.</p>
+      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Dumbbell Pullover has no freely licensed photo yet. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+    </div>`;
+  }
+
   function render() {
     const ae = document.activeElement;
-    const typing = ae && ae.matches && ae.matches("input[data-field], textarea[data-notes]");
+    const typing = ae && ae.matches && ae.matches("input[data-field], textarea[data-notes], [data-cin-weight], [data-cin-note], [data-cin-waist], [data-cin-chest], [data-cin-arms], [data-cin-thighs]");
     if (typing) return;
+    contentEl().classList.remove("flush");
     renderHeader();
+    renderTabBar();
     if (view === "days-setup") renderDaysSetup();
     else if (view === "workout") renderWorkout();
+    else if (view === "review") renderReviewWorkout();
+    else if (view === "program-week") renderProgramWeek();
+    else if (view === "program") renderProgram();
+    else if (view === "progress") renderProgress();
+    else if (view === "checkin") renderCheckInPage();
+    else if (view === "settings") renderSettingsPage();
     else {
       contentEl().classList.add("has-footer");
       renderHome();
       bindSwipeWorkouts();
     }
+    syncChrome();
+  }
+
+  function renderReviewWorkout() {
+    const w = reviewWorkout;
+    if (!w) {
+      view = returnView || "program";
+      render();
+      return;
+    }
+    hideFooter();
+    const cards = (w.exercises || []).map((ex, i) => exerciseCard(ex, i, w)).join("");
+    contentEl().innerHTML = `
+      <p class="week-kicker">Logged ${esc((w.completedAt || "").slice(0, 10) || "")}</p>
+      <h1 class="ex-heading">${esc(w.name)}</h1>
+      ${workoutVolumeBlock(w)}
+      <div class="stack" data-testid="exercise-stack">${cards || `<p class="empty">Nothing was logged in this session.</p>`}</div>`;
   }
 
   function openDaysSetup(source) {
@@ -717,6 +1124,7 @@
     unlockBackgroundScroll();
     const host = overlaysEl().querySelector("[data-sheet-host]");
     if (host) host.innerHTML = "";
+    syncChrome();
   }
 
   function showSheet(html, opts) {
@@ -724,6 +1132,7 @@
     const top = opts && opts.top;
     const cls = top ? "overlay overlay-top" : "overlay";
     overlaysEl().querySelector("[data-sheet-host]").innerHTML = `<div class="${cls}" data-overlay="sheet">${html}</div>`;
+    syncChrome();
   }
 
   function showConfirm({ title, body, confirm, danger, onConfirm }) {
@@ -777,20 +1186,17 @@
 
   function openProgramPicker() {
     const current = D().activeProgramId();
-    const items = D().listPrograms().map((p) => {
+    const items = D().listProgramChoices().map((p) => {
       const on = p.id === current ? " on" : "";
-      const meta = p.id === "max-ot"
-        ? "Jeff Willet · 8 weeks + recovery · 5 days · 3 min rest"
-        : "5-week cycle · 4 or 5 days";
-      return `<button type="button" class="pick-item${on}" data-action="select-program" data-program="${esc(p.id)}" data-testid="program-option-${esc(p.id)}">
-        <span class="pick-meta"><strong>${esc(p.name)}</strong><em>${esc(meta)}</em></span>
+      return `<button type="button" class="pick-item${on}" data-action="select-program" data-program="${esc(p.id)}" data-testid="${esc(p.testid)}">
+        <span class="pick-meta"><strong>${esc(p.name)}</strong><em>${esc(p.meta)}</em></span>
       </button>`;
     }).join("");
     showSheet(`<div class="sheet" data-testid="program-picker">
       <div class="handle"></div>
-      <h2>Program</h2>
+      <h2>Change program</h2>
       <div class="sheet-body">${items}
-        <p class="empty" style="text-align:left;padding:8px 0 0">Switching keeps each program’s week and plan. History stays shared, so overload signs still work.</p>
+        <p class="empty" style="text-align:left;padding:8px 0 0">Bro Split 4-day, Bro Split 5-day and Max-OT each keep their own week and plan. History stays shared, so overload signs still work.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn ghost" data-action="close-sheet">Cancel</button></div>
     </div>`);
@@ -799,12 +1205,21 @@
   function selectProgram(id) {
     if (!id) return;
     D().switchProgram(id);
-    view = "home";
     activeWorkoutId = null;
     editing = null;
     workoutEditMode = false;
+    programWeek = null;
+    reviewWorkout = null;
     closeSheet();
-    /* Bro Split first-time still needs a days choice if never set. */
+    /* Stay on Program if that's where Change program was used; otherwise Home so existing tests still see the plan. */
+    if (tab === "program" || view === "program" || view === "settings") {
+      tab = view === "settings" ? "settings" : "program";
+      view = tab;
+    } else {
+      tab = "home";
+      view = "home";
+    }
+    persistTab();
     if (id === "bro-split" && D().get().daysPerWeek == null) {
       openDaysSetup("settings");
       return;
@@ -831,63 +1246,15 @@
   }
 
   function openCheckIn() {
-    const list = D().listCheckIns();
-    const today = D().copenhagenYMD();
-    const latest = list[0];
-    const history = list.map((c) => {
-      const bits = [`${c.weight != null ? c.weight + " kg" : "—"}`];
-      if (c.waist) bits.push(`waist ${c.waist}`);
-      if (c.chest) bits.push(`chest ${c.chest}`);
-      if (c.arms) bits.push(`arms ${c.arms}`);
-      if (c.thighs) bits.push(`thighs ${c.thighs}`);
-      const photo = c.photo ? `<img class="checkin-thumb" src="${c.photo}" alt="">` : "";
-      return `<div class="hist-item" data-testid="checkin-entry">
-        <div class="when">${esc(c.date)}${photo}</div>
-        <div class="sets">${esc(bits.join(" · "))}${c.note ? " · " + esc(c.note) : ""}</div>
-      </div>`;
-    }).join("") || `<p class="empty">No check-ins yet.</p>`;
-    showSheet(`<div class="sheet" data-testid="checkin-sheet">
-      <div class="handle"></div>
-      <h2>Monthly Check-in</h2>
-      <div class="sheet-body">
-        <label class="field-label">Date</label>
-        <input class="text-input" type="date" data-cin-date value="${esc(today)}" />
-        <label class="field-label">Body weight (kg)</label>
-        <input class="text-input" data-cin-weight inputmode="decimal" placeholder="e.g. 82,5" value="${latest && latest.weight != null ? esc(String(latest.weight).replace(".", ",")) : ""}" />
-        <div class="measure-grid">
-          <label>Waist (cm)<input class="text-input" data-cin-waist inputmode="decimal" placeholder="Optional" /></label>
-          <label>Chest (cm)<input class="text-input" data-cin-chest inputmode="decimal" placeholder="Optional" /></label>
-          <label>Arms (cm)<input class="text-input" data-cin-arms inputmode="decimal" placeholder="Optional" /></label>
-          <label>Thighs (cm)<input class="text-input" data-cin-thighs inputmode="decimal" placeholder="Optional" /></label>
-        </div>
-        <label class="field-label">Note</label>
-        <textarea class="text-input" data-cin-note rows="3" placeholder="How the month felt"></textarea>
-        <label class="field-label">Progress photo (saved on this phone)</label>
-        <input class="text-input" type="file" accept="image/*" data-cin-photo />
-        <div class="checkin-preview" data-cin-preview></div>
-        <h3 class="checkin-hist-title">History</h3>
-        ${history}
-      </div>
-      <div class="sheet-actions">
-        <button type="button" class="btn ghost" data-action="close-sheet">Close</button>
-        <button type="button" class="btn pri" data-action="save-checkin" data-testid="save-checkin">Save check-in</button>
-      </div>
-    </div>`);
-    const file = overlaysEl().querySelector("[data-cin-photo]");
-    if (file) {
-      file.addEventListener("change", () => {
-        const f = file.files && file.files[0];
-        if (!f) return;
-        resizeCheckInPhoto(f, (url) => {
-          file.dataset.ready = url || "";
-          const prev = overlaysEl().querySelector("[data-cin-preview]");
-          if (prev) prev.innerHTML = url ? `<img class="checkin-preview-img" src="${url}" alt="Preview">` : "";
-        });
-      });
-    }
+    tab = "checkin";
+    view = "checkin";
+    persistTab();
+    closeSheet();
+    render();
+    contentEl().scrollTop = 0;
   }
 
-  function resizeCheckInPhoto(file, done) {
+    function resizeCheckInPhoto(file, done) {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -914,7 +1281,7 @@
   }
 
   function commitCheckIn() {
-    const root = overlaysEl();
+    const root = (overlaysEl() && overlaysEl().querySelector("[data-cin-weight]")) ? overlaysEl() : contentEl();
     const num = (sel) => {
       const el = root.querySelector(sel);
       const v = C().parseNum(el && el.value);
@@ -939,6 +1306,9 @@
       photo: (photoEl && photoEl.dataset.ready) || null,
     });
     closeSheet();
+    tab = "home";
+    view = "home";
+    persistTab();
     render();
     showToast("Check-in saved");
   }
@@ -984,8 +1354,7 @@
     const next = Math.max(15, Math.min(300, cur + delta));
     D().setRestSeconds(next);
     D().saveNow();
-    const el = overlaysEl().querySelector("[data-rest-value]");
-    if (el) el.textContent = `${next}s`;
+    document.querySelectorAll("[data-rest-value]").forEach((el) => { el.textContent = `${next}s`; });
   }
 
   function openAddWorkout() {
@@ -1397,7 +1766,9 @@
       bindHistorySwipes();
       return;
     }
-    const ex = w && historyExIndex != null ? w.exercises[historyExIndex] : null;
+    const live = w && historyExIndex != null ? w.exercises[historyExIndex] : null;
+    const key = (live && live.key) || historyKey;
+    const ex = live || (key ? { key, name: exerciseNameFromKey(key) } : null);
     if (!ex) {
       closeSheet();
       return;
@@ -1482,16 +1853,20 @@
     });
   }
 
+  function refreshAfterHistory() {
+    if (view === "review" && reviewWorkout && reviewWorkout.sessionId) {
+      reviewWorkout = D().workoutFromSession(reviewWorkout.sessionId);
+    }
+    render();
+    if (historyKey || historyExIndex != null || historySessionId) paintHistory();
+  }
+
   function afterHistoryChange(snap, message) {
-    if (view === "workout") renderWorkout();
-    else render();
-    paintHistory();
+    refreshAfterHistory();
     if (!snap) return;
     showToast(message, "Undo", () => {
       D().restoreHistoryUndo(snap);
-      if (view === "workout") renderWorkout();
-      else render();
-      paintHistory();
+      refreshAfterHistory();
     });
   }
 
@@ -1613,11 +1988,14 @@
 
   function goToNextWeek() {
     D().advanceWeek();
-    view = "home";
     activeWorkoutId = null;
     editing = null;
     workoutEditMode = false;
+    programWeek = null;
+    reviewWorkout = null;
     stopRest(true);
+    if (tab === "program") view = "program";
+    else { tab = "home"; view = "home"; }
     render();
   }
 
@@ -1681,6 +2059,28 @@
     });
   }
 
+  function requestProgramReset() {
+    showConfirm({
+      title: "Reset this program?",
+      body: "Week 1 starts again with your current exercises and last logged weights. Training history and overload signs are kept.",
+      confirm: "Reset program",
+      danger: true,
+      onConfirm: () => {
+        const days = D().get().daysPerWeek || 4;
+        D().resetCycle(days);
+        programWeek = null;
+        activeWorkoutId = null;
+        editing = null;
+        workoutEditMode = false;
+        stopRest(true);
+        view = "program";
+        tab = "program";
+        render();
+        showToast("Program reset. History is kept.");
+      },
+    });
+  }
+
   function requestReset() {
     showConfirm({
       title: "Reset to the default Bro Split?",
@@ -1704,7 +2104,8 @@
       danger: false,
       onConfirm: () => {
         D().finishWorkout(w.id);
-        view = "home";
+        view = returnView || "home";
+        if (view === "program-week" && programWeek == null) view = "program";
         activeWorkoutId = null;
         editing = null;
         stopRest(true);
@@ -1841,12 +2242,49 @@
     if (action === "back") {
       editing = null;
       workoutEditMode = false;
-      view = "home";
       D().get().activeWorkoutId = null;
       D().saveNow();
       activeWorkoutId = null;
+      reviewWorkout = null;
       stopRest(true);
+      view = returnView || "home";
+      if (view === "program-week" && programWeek == null) view = "program";
+      if (view === "home") tab = "home";
       render();
+      return;
+    }
+    if (action === "switch-tab") { switchTab(btn.dataset.tab); return; }
+    if (action === "open-week") {
+      programWeek = Number(btn.dataset.week) || 1;
+      view = "program-week";
+      tab = "program";
+      render();
+      contentEl().scrollTop = 0;
+      return;
+    }
+    if (action === "program-back") {
+      programWeek = null;
+      view = "program";
+      tab = "program";
+      render();
+      return;
+    }
+    if (action === "reset-cycle") { requestProgramReset(); return; }
+    if (action === "open-review") {
+      reviewWorkout = D().workoutFromSession(btn.dataset.session);
+      returnView = "program-week";
+      tab = "program";
+      view = "review";
+      render();
+      contentEl().scrollTop = 0;
+      return;
+    }
+    if (action === "open-progress-ex") {
+      historyKey = btn.dataset.key;
+      historyExIndex = null;
+      historyEditMode = false;
+      historySessionId = null;
+      paintHistory();
       return;
     }
     if (action === "settings") { openSettings(); return; }
@@ -1859,7 +2297,7 @@
     if (action === "cycle-recover") {
       closeSheet();
       D().startRecoveryWeek();
-      view = "home";
+      view = tab === "program" ? "program" : "home";
       activeWorkoutId = null;
       editing = null;
       workoutEditMode = false;
@@ -1872,15 +2310,28 @@
     if (action === "cycle-continue") { closeSheet(); goToNextWeek(); return; }
     if (action === "cycle-reset") { requestCycleReset(); return; }
     if (action === "demo") { openDemo(exIndex); return; }
-    if (action === "close-sheet") { closeSheet(); D().saveNow(); return; }
+    if (action === "close-sheet") {
+      closeSheet();
+      D().saveNow();
+      if (view === "checkin" && !overlaysEl().querySelector(".sheet, .dialog")) {
+        tab = "home";
+        view = "home";
+        persistTab();
+        render();
+      }
+      return;
+    }
     if (action === "open-workout") {
       activeWorkoutId = btn.dataset.id;
       D().get().activeWorkoutId = activeWorkoutId;
       D().startTimer(activeWorkoutId);
       D().saveNow();
+      returnView = (view === "program-week") ? "program-week" : "home";
+      tab = returnView === "home" ? "home" : "program";
       view = "workout";
       editing = null;
       workoutEditMode = false;
+      reviewWorkout = null;
       render();
       return;
     }
@@ -1918,7 +2369,7 @@
       render();
       return;
     }
-    if (action === "history") { historyEditMode = false; historySessionId = null; openHistory(exIndex); return; }
+    if (action === "history") { historyEditMode = false; historySessionId = null; historyKey = null; openHistory(exIndex); return; }
     if (action === "toggle-history-edit") { historyEditMode = !historyEditMode; paintHistory(); return; }
     if (action === "history-back") { paintHistory(); return; }
     if (action === "open-hist-session") { openHistorySession(btn.dataset.session); return; }
@@ -2023,13 +2474,34 @@
       const w = D().workoutById(activeWorkoutId);
       if (w && !w.completedAt) D().startTimer(activeWorkoutId);
     }
+    if (view !== "days-setup" && view !== "workout") {
+      const saved = s.uiTab;
+      if (saved && ["home", "program", "progress", "checkin", "settings"].includes(saved)) {
+        tab = saved;
+        view = saved;
+      }
+    } else if (view === "workout") {
+      tab = "home";
+      returnView = "home";
+    }
     setInterval(patchTimer, 1000);
     ensureOverlayHost();
     document.addEventListener("click", onClick);
     document.addEventListener("input", onInput, true);
-    document.addEventListener("focusin", onFocusIn, true);
-    document.addEventListener("focusout", () => D().saveNow(), true);
+    document.addEventListener("focusin", (e) => {
+      onFocusIn(e);
+      setTimeout(updateKeyboard, 50);
+    }, true);
+    document.addEventListener("focusout", () => {
+      D().saveNow();
+      setTimeout(updateKeyboard, 80);
+    }, true);
     document.addEventListener("keydown", onKeydown);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateKeyboard);
+      window.visualViewport.addEventListener("scroll", updateKeyboard);
+    }
+    window.addEventListener("resize", updateKeyboard);
     /* Block pinch-zoom like a native iPhone app. */
     ["gesturestart", "gesturechange", "gestureend"].forEach((type) => {
       document.addEventListener(type, (event) => event.preventDefault(), { passive: false });
@@ -2054,6 +2526,7 @@
   window.VELA_APP = {
     render,
     get view() { return view; },
+    get tab() { return tab; },
     pinTrackingToViewport,
     applyTrackingViewport,
   };

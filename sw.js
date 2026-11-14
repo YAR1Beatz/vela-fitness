@@ -1,4 +1,4 @@
-const CACHE = "vela-v8";
+const CACHE = "vela-v9";
 const ASSETS = [
   "./",
   "./index.html",

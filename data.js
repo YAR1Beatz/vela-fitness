@@ -4,9 +4,16 @@
   const SAVE_DELAY = 280;
   const C = () => global.VELA_CATALOG;
   const PROGRAMS = () => global.VELA_PROGRAMS || { [((global.VELA_PROGRAM || {}).id || "bro-split")]: global.VELA_PROGRAM };
+  function baseProgramId(id) {
+    if (!id) return "bro-split";
+    if (id === "bro-split-4" || id === "bro-split-5") return "bro-split";
+    return id;
+  }
+
   const PROGRAM = () => {
     const all = PROGRAMS();
-    const id = (state && (state.activeProgramId || state.programId)) || "bro-split";
+    const raw = (state && (state.activeProgramId || state.programId)) || "bro-split";
+    const id = baseProgramId(raw);
     return all[id] || all["bro-split"] || global.VELA_PROGRAM;
   };
 
@@ -24,24 +31,30 @@
       activeWorkoutId: p.activeWorkoutId || null,
       workouts: p.workouts,
       recoveryWeek: !!p.recoveryWeek,
+      cycleStartedAt: p.cycleStartedAt || null,
     };
   }
 
   function seedProgramFields(id) {
-    const prev = state;
     const all = PROGRAMS();
-    const program = all[id];
+    const program = all[baseProgramId(id)] || all[id];
     if (!program) return null;
     /* buildExercise reads lastLogged from state — keep current shared history. */
+    let days = program.defaultDays != null ? program.defaultDays : (baseProgramId(id) === "bro-split" ? 4 : program.workouts.length);
+    if (id === "bro-split-5") days = 5;
+    if (id === "bro-split-4") days = 4;
+    const workouts = program.workouts.map(buildWorkout);
     const fields = {
       week: 1,
       cycleWeeks: program.cycleWeeks || 8,
-      daysPerWeek: program.defaultDays != null ? program.defaultDays : (id === "bro-split" ? null : program.workouts.length),
+      daysPerWeek: days,
       restSeconds: program.restSeconds || 90,
       activeWorkoutId: null,
-      workouts: program.workouts.map(buildWorkout),
+      workouts,
       recoveryWeek: false,
+      cycleStartedAt: new Date().toISOString(),
     };
+    if (baseProgramId(id) === "bro-split" && days === 5) applyFiveDaySplit(fields);
     return fields;
   }
 
@@ -55,6 +68,8 @@
     p.activeWorkoutId = s.activeWorkoutId;
     p.workouts = s.workouts;
     p.recoveryWeek = !!s.recoveryWeek;
+    if (s.cycleStartedAt) p.cycleStartedAt = s.cycleStartedAt;
+    else if (p.cycleStartedAt) s.cycleStartedAt = p.cycleStartedAt;
   }
 
   function syncDown(s) {
@@ -68,20 +83,56 @@
     s.workouts = p.workouts;
     s.recoveryWeek = !!p.recoveryWeek;
     s.programId = s.activeProgramId;
+    if (p.cycleStartedAt) s.cycleStartedAt = p.cycleStartedAt;
+  }
+
+  function resolveProgramId(id) {
+    if (!id) return "bro-split-4";
+    if (id === "bro-split") {
+      const s = state;
+      return (s && s.lastBroSplitId) || (s && s.programs && s.programs["bro-split-5"] && !s.programs["bro-split-4"] ? "bro-split-5" : "bro-split-4");
+    }
+    return id;
   }
 
   function switchProgram(id) {
     const s = get();
     const all = PROGRAMS();
-    if (!all[id]) return s;
-    if ((s.activeProgramId || s.programId) === id) return s;
+    const target = resolveProgramId(id);
+    if (!all[baseProgramId(target)]) return s;
+    if ((s.activeProgramId || s.programId) === target) return s;
     syncUp(s);
-    if (!s.programs[id]) s.programs[id] = seedProgramFields(id);
-    s.activeProgramId = id;
+    if (!s.programs[target]) s.programs[target] = seedProgramFields(target);
+    s.activeProgramId = target;
+    s.programId = target;
+    if (baseProgramId(target) === "bro-split") s.lastBroSplitId = target;
     syncDown(s);
     saveNow();
     notify();
     return s;
+  }
+
+  function listProgramChoices() {
+    return [
+      { id: "bro-split-4", baseId: "bro-split", days: 4, name: "Bro Split – 4 Day", testid: "program-option-bro-split", meta: "5-week cycle · 4 days" },
+      { id: "bro-split-5", baseId: "bro-split", days: 5, name: "Bro Split – 5 Day", testid: "program-option-bro-split-5", meta: "5-week cycle · 5 days · Delts day" },
+      { id: "max-ot", baseId: "max-ot", days: 5, name: "Max-OT", testid: "program-option-max-ot", meta: "Jeff Willet · 8 weeks + recovery · 5 days · 3 min rest" },
+    ];
+  }
+
+  function programTitle(id, days) {
+    const s = get();
+    const pid = id || activeProgramId();
+    const base = baseProgramId(pid);
+    const n = days != null ? days : (s.daysPerWeek || (pid === "bro-split-5" ? 5 : 4));
+    if (base === "max-ot") return "Max-OT";
+    return n === 5 ? "Bro Split – 5 Day" : "Bro Split – 4 Day";
+  }
+
+  function programHeroName(id) {
+    return baseProgramId(id || activeProgramId()) === "max-ot"
+      ? "Seated Dumbbell Shoulder Press"
+      : "Barbell Bench Press";
   }
 
   let state = null;
@@ -237,8 +288,46 @@
         state.programs[state.activeProgramId].workouts = state.workouts;
       }
     }
+    normalizeProgramSlots(state);
     (state.workouts || []).forEach(ensureWorkoutFields);
     return state;
+  }
+
+  function stampCycleStart(s, when) {
+    const iso = when || new Date().toISOString();
+    if (!s) return iso;
+    s.cycleStartedAt = iso;
+    if (s.programs && s.activeProgramId) {
+      const p = s.programs[s.activeProgramId] || (s.programs[s.activeProgramId] = {});
+      p.cycleStartedAt = iso;
+    }
+    return iso;
+  }
+
+  function normalizeProgramSlots(s) {
+    if (!s) return s;
+    if (!s.programs) s.programs = {};
+    if (!s.uiTab) s.uiTab = "home";
+    const raw = s.activeProgramId || s.programId || "bro-split";
+    if (raw === "bro-split" && s.daysPerWeek != null) {
+      const key = s.daysPerWeek === 5 ? "bro-split-5" : "bro-split-4";
+      if (!s.programs[key]) s.programs[key] = s.programs["bro-split"] || programFields(s);
+      s.activeProgramId = key;
+      s.programId = key;
+      s.lastBroSplitId = key;
+    } else if (raw === "bro-split-4" || raw === "bro-split-5") {
+      s.lastBroSplitId = raw;
+    }
+    const p = s.programs[s.activeProgramId];
+    if (p && !p.cycleStartedAt && !s.cycleStartedAt) {
+      /* Existing installs: count prior sessions toward the current cycle. */
+      stampCycleStart(s, "1970-01-01T00:00:00.000Z");
+    } else if (p && p.cycleStartedAt && !s.cycleStartedAt) {
+      s.cycleStartedAt = p.cycleStartedAt;
+    } else if (s.cycleStartedAt && p && !p.cycleStartedAt) {
+      p.cycleStartedAt = s.cycleStartedAt;
+    }
+    return s;
   }
 
   function seedState() {
@@ -395,6 +484,8 @@
           if (keptNotes[ex.key]) ex.notes = keptNotes[ex.key];
         });
       });
+      normalizeProgramSlots(state);
+      stampCycleStart(state);
       saveNow();
       notify();
       return state;
@@ -406,6 +497,7 @@
     if (next === 5) applyFiveDaySplit(s);
     else applyFourDayMerge(s);
     s.daysPerWeek = next;
+    if ((s.activeProgramId || s.programId) === "bro-split") normalizeProgramSlots(s);
     saveNow();
     notify();
     return s;
@@ -462,6 +554,7 @@
     s.week = 1;
     s.activeWorkoutId = null;
     s.workouts.forEach(resetWorkoutSession);
+    stampCycleStart(s);
     saveNow();
     notify();
   }
@@ -1430,7 +1523,7 @@
 
   function sessionsInWeek(start, programId) {
     return derivedSessions().filter((ses) => {
-      if (programId && (ses.programId || "bro-split") !== programId) return false;
+      if (programId && !sessionProgramMatches(ses, programId)) return false;
       return inCalendarWeek(sessionDate(ses), start) && ses.completed;
     });
   }
@@ -1482,7 +1575,7 @@
     const weekMax = {};
     Object.keys(s.history || {}).forEach((key) => {
       (s.history[key] || []).forEach((h) => {
-        if (programId && h.programId && h.programId !== programId) return;
+        if (programId && !sessionProgramMatches(h, programId)) return;
         const inWeek = inCalendarWeek(h.date || (h.datetime || "").slice(0, 10), start);
         (h.sets || []).forEach((st) => {
           if (st == null || st.weight == null || !(Number(st.weight) > 0)) return;
@@ -1519,7 +1612,7 @@
     const counted = new Set();
     Object.keys(s.history || {}).forEach((key) => {
       (s.history[key] || []).forEach((h) => {
-        if (programId && h.programId && h.programId !== programId) return;
+        if (programId && !sessionProgramMatches(h, programId)) return;
         if (!inCalendarWeek(h.date || (h.datetime || "").slice(0, 10), start)) return;
         const id = `${h.sessionId}:${key}`;
         if (counted.has(id)) return;
@@ -1651,6 +1744,201 @@
     notify();
   }
 
+  function exerciseNameFromKey(key) {
+    const list = (C().EXERCISES || []);
+    const found = list.find((e) => C().slug(e.name) === key);
+    if (found) return found.name;
+    return String(key || "").replace(/-/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  }
+
+  function cycleStartMs(s) {
+    const st = s || get();
+    const p = st.programs && st.programs[st.activeProgramId];
+    const raw = (p && p.cycleStartedAt) || st.cycleStartedAt;
+    const t = raw ? Date.parse(raw) : 0;
+    return Number.isFinite(t) ? t : 0;
+  }
+
+  function sessionProgramMatches(ses, programId) {
+    const pid = programId || activeProgramId();
+    const sid = ses && ses.programId;
+    if (!sid) return baseProgramId(pid) === "bro-split";
+    if (sid === pid) return true;
+    /* Pre-v9 sessions were stored as "bro-split". Count them for the Bro Split slot. */
+    if (sid === "bro-split" && baseProgramId(pid) === "bro-split") return true;
+    return false;
+  }
+
+  function sessionsInCycle(programId) {
+    const s = get();
+    const pid = programId || activeProgramId();
+    const start = cycleStartMs(s);
+    return (s.sessions || []).filter((ses) => {
+      if (!sessionProgramMatches(ses, pid)) return false;
+      const when = Date.parse(ses.datetime || ses.date || 0);
+      if (start && Number.isFinite(when) && when < start) return false;
+      return true;
+    });
+  }
+
+  function uniqueWorkoutCount(list) {
+    const seen = new Set();
+    (list || []).forEach((ses) => {
+      if (!ses) return;
+      const key = ses.sessionId || `${ses.workoutId}-${ses.date}`;
+      seen.add(key);
+    });
+    return seen.size;
+  }
+
+  function weekSessionsInCycle(week, programId) {
+    return sessionsInCycle(programId).filter((ses) => Number(ses.week) === Number(week));
+  }
+
+  function cycleProgress() {
+    const s = get();
+    const plannedDays = plannedWorkouts() || s.daysPerWeek || (s.workouts || []).length || 4;
+    const weeks = cycleWeeks();
+    const current = s.recoveryWeek ? weeks : (s.week || 1);
+    const totalWeeks = Math.max(weeks, current);
+    const total = weeks * plannedDays;
+    const sessions = sessionsInCycle();
+    /* Current in-progress completions that may not be in sessions yet. */
+    const extra = [];
+    if (!s.recoveryWeek) {
+      (s.workouts || []).forEach((w) => {
+        if (!w.completedAt) return;
+        if (sessions.some((ses) => ses.sessionId === w.sessionId)) return;
+        extra.push({ sessionId: w.sessionId, workoutId: w.id, week: s.week, durationMs: timerMs(w) || 0, completed: true });
+      });
+    }
+    const all = sessions.concat(extra);
+    const done = uniqueWorkoutCount(all.filter((ses) => ses.completed !== false));
+    const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+    const timeMs = all.reduce((sum, ses) => sum + (ses.durationMs || 0), 0);
+    const weekCards = [];
+    for (let w = 1; w <= totalWeeks; w += 1) {
+      weekCards.push(weekProgress(w, plannedDays, sessions, extra));
+    }
+    return {
+      done,
+      total,
+      pct,
+      timeMs,
+      timeLabel: formatHoursSpent(timeMs),
+      plannedDays,
+      cycleWeeks: weeks,
+      currentWeek: s.week || 1,
+      recoveryWeek: !!s.recoveryWeek,
+      weeks: weekCards,
+    };
+  }
+
+  function weekProgress(week, plannedDays, cycleSessions, extra) {
+    const s = get();
+    const planned = plannedDays || plannedWorkouts() || (s.workouts || []).length || 4;
+    const list = (cycleSessions || sessionsInCycle()).filter((ses) => Number(ses.week) === Number(week));
+    const more = (extra || []).filter((ses) => Number(ses.week) === Number(week));
+    const done = uniqueWorkoutCount(list.concat(more));
+    const pct = planned > 0 ? Math.min(100, Math.round((done / planned) * 100)) : 0;
+    const isCurrent = !s.recoveryWeek && Number(s.week) === Number(week);
+    return {
+      week,
+      planned,
+      done,
+      pct,
+      complete: planned > 0 && done >= planned,
+      current: isCurrent,
+      sessions: list.concat(more),
+    };
+  }
+
+  function allTimePersonalBests() {
+    const s = get();
+    const keys = new Set(Object.keys(s.history || {}));
+    (s.workouts || []).forEach((w) => (w.exercises || []).forEach((ex) => { if (ex.key) keys.add(ex.key); }));
+    const list = [];
+    keys.forEach((key) => {
+      const weight = personalBestWeight(key);
+      if (weight == null) return;
+      list.push({ key, name: exerciseNameFromKey(key), weight });
+    });
+    list.sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name));
+    return list;
+  }
+
+  function volumeTrend(exerciseKey, limit) {
+    const cap = limit || 8;
+    const hist = (getHistory(exerciseKey) || []).slice();
+    const points = hist.slice(0, cap).reverse().map((h) => {
+      const v = setsVolume(h.sets || []);
+      return { date: h.date, sessionId: h.sessionId, kg: v.kg, repsOnly: v.repsOnly };
+    });
+    return points;
+  }
+
+  function exercisesWithHistory() {
+    const s = get();
+    const keys = new Set(Object.keys(s.history || {}).filter((k) => (getHistory(k) || []).length));
+    const list = [];
+    keys.forEach((key) => {
+      const hist = getHistory(key) || [];
+      const last = hist[0];
+      const trend = volumeTrend(key, 8);
+      list.push({
+        key,
+        name: exerciseNameFromKey(key),
+        pb: personalBestWeight(key),
+        sessions: hist.length,
+        lastDate: last && last.date,
+        lastWorkout: last && last.workout,
+        trend,
+      });
+    });
+    list.sort((a, b) => String(b.lastDate || "").localeCompare(String(a.lastDate || "")) || a.name.localeCompare(b.name));
+    return list;
+  }
+
+  function workoutFromSession(sessionId) {
+    const s = get();
+    const ses = (s.sessions || []).find((row) => row.sessionId === sessionId) || null;
+    const rows = getSessionHistory(sessionId);
+    const exercises = rows.map((r) => ({
+      id: r.key,
+      key: r.key,
+      name: exerciseNameFromKey(r.key),
+      alt: "",
+      tempo: [3, 0, 1, 1],
+      notes: (s.notes && s.notes[r.key]) || "",
+      suggestedReps: null,
+      suggestedWeight: null,
+      sets: (r.entry.sets || []).map((st) => {
+        const logged = st && (st.reps != null || st.weight != null);
+        return {
+          reps: logged ? st.reps : null,
+          weight: logged ? st.weight : null,
+          repsText: "",
+          weightText: "",
+          done: !!logged,
+        };
+      }),
+    }));
+    return {
+      id: (ses && ses.workoutId) || (rows[0] && rows[0].entry.workoutId) || sessionId,
+      name: (ses && ses.workoutName) || (rows[0] && rows[0].entry.workout) || "Workout",
+      dayLabel: "",
+      minutes: 60,
+      completedAt: (ses && (ses.datetime || ses.date)) || (rows[0] && rows[0].entry.datetime) || null,
+      sessionId,
+      timerStartedAt: null,
+      timerAccumMs: (ses && ses.durationMs) || 0,
+      timerPaused: true,
+      timerElapsedFinal: (ses && ses.durationMs) || 0,
+      review: true,
+      exercises,
+    };
+  }
+
     function doneExerciseCount(workout) {
     return workout.exercises.filter((ex) => ex.sets.length && ex.sets.every((s) => s.done)).length;
   }
@@ -1673,7 +1961,21 @@
     cycleWeeks,
     isShoulderExercise,
     listPrograms,
+    listProgramChoices,
     switchProgram,
+    programTitle,
+    programHeroName,
+    baseProgramId,
+    cycleProgress,
+    weekProgress,
+    weekSessionsInCycle,
+    sessionsInCycle,
+    allTimePersonalBests,
+    volumeTrend,
+    exercisesWithHistory,
+    workoutFromSession,
+    exerciseNameFromKey,
+    stampCycleStart,
     startRecoveryWeek,
     weekStats,
     personalBestWeight,
