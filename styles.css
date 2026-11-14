@@ -1620,10 +1620,11 @@ button.program-name {
 .hist-head .btn-edit { flex: 0 0 auto; min-width: 44px; }
 .when-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
+.when-row .when { margin-bottom: 0; flex: 1; min-width: 0; }
 .hist-link {
   color: var(--accent);
   font-size: 12px;
@@ -1641,11 +1642,61 @@ button.program-name {
   border-radius: 10px;
   font-size: 12px;
 }
+.hist-swipe .swipe-front {
+  background: var(--bg2);
+}
 .hist-swipe .set-line {
-  background: var(--card);
-  padding: 6px 0;
-  justify-content: space-between;
+  background: var(--bg2);
+  padding: 8px 0;
+  justify-content: flex-start;
   width: 100%;
+  gap: 10px;
+}
+.hist-item .set-line .set-n {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.2em;
+}
+.hist-item .set-line .set-val {
+  flex: 1 1 auto;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 560;
+}
+.hist-menu-wrap { position: relative; flex: 0 0 auto; }
+.hist-more { width: 32px; height: 32px; color: var(--muted); }
+.hist-menu {
+  position: absolute;
+  right: 0;
+  top: 32px;
+  z-index: 8;
+  min-width: 210px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: var(--shadow);
+}
+.hist-menu.hidden { display: none; }
+.hist-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 560;
+  color: var(--text);
+}
+.hist-menu button:active { background: var(--bg2); }
+.hist-menu button.danger { color: var(--danger); font-weight: 650; }
+.hist-session-title { margin: 0 0 10px; align-items: center; }
+.hist-head .btn-edit.on {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 .hist-set-acts { display: flex; gap: 8px; flex: 0 0 auto; }
 .hist-edit-set, .hist-del, .hist-del-entry, .hist-del-session {

@@ -153,6 +153,22 @@ def confirm_delete(page):
     page.locator(".dialog .btn.danger").tap()
 
 
+def in_history_edit(page):
+    cls = page.locator('[data-testid="history-edit"]').get_attribute("class") or ""
+    return " on" in f" {cls} " or cls.endswith(" on") or "on" in cls.split()
+
+
+def enter_history_edit(page):
+    if not in_history_edit(page):
+        page.locator('[data-testid="history-edit"]').tap()
+        page.wait_for_timeout(50)
+
+
+def open_hist_menu(page, menu_id):
+    page.locator(f'[data-testid="hist-menu-{menu_id}"]').tap()
+    page.wait_for_selector(f'[data-testid="hist-menu-panel-{menu_id}"]:not(.hidden)')
+
+
 def main():
     httpd, url = start_server()
     print("serving", url)
@@ -178,9 +194,11 @@ def main():
         check(page.locator('[data-testid="history-entry"]').count() >= 2, "history lists current and prior sessions")
         page.locator('[data-testid="history-edit"]').tap()
         page.wait_for_selector('[data-testid="history-edit"]')
-        check(page.locator('[data-testid="history-edit"]').inner_text() == "Done", "Edit mode is on")
+        check(in_history_edit(page) and page.locator('[data-testid="history-edit"]').inner_text() == "Edit", "Edit mode is on (header stays Edit)")
         check(page.locator('[data-action="delete-hist-set"]').count() >= 3, "edit mode shows per-set delete")
-        check(page.locator('[data-action="delete-hist-session"]').count() >= 1, "edit mode can delete an entire session")
+        # Session-level deletes live in the ⋯ menu
+        open_hist_menu(page, "prior-week")
+        check(page.locator('[data-testid="delete-hist-session-prior-week"]').count() == 1, "⋯ menu can delete an entire session")
         shot(page, "history-delete.png")
 
         # Delete the immediate prior exercise entry (50kg). Signs should fall back to 60kg week.
@@ -200,8 +218,7 @@ def main():
 
         # Delete a single set from the current session → un-grey that chip
         # Re-enter edit if undo re-rendered
-        if page.locator('[data-testid="history-edit"]').inner_text() != "Done":
-            page.locator('[data-testid="history-edit"]').tap()
+        enter_history_edit(page)
         sid = st["sessionId"]
         page.locator(f'[data-testid="delete-hist-set-seated-leg-curl-{sid}-0"]').tap()
         confirm_delete(page)
@@ -220,8 +237,7 @@ def main():
         check(st["done"][0] is True and st["signs"][0] == "up", "undo restores the deleted current set", json.dumps(st))
 
         # Edit set 2 of the current session: 50 → 52.5, same 8 reps → up
-        if page.locator('[data-testid="history-edit"]').inner_text() != "Done":
-            page.locator('[data-testid="history-edit"]').tap()
+        enter_history_edit(page)
         page.locator(f'[data-testid="edit-hist-set-seated-leg-curl-{st["sessionId"]}-1"]').tap()
         page.wait_for_selector('[data-testid="edit-hist-set-sheet"]')
         page.locator('[data-testid="hist-reps-input"]').fill("8")
@@ -236,12 +252,12 @@ def main():
         check("52.50" in chip or "52,5" in chip or "52.5" in chip, "greyed chip shows edited weight", chip)
 
         # Session view + delete entire prior-week session (curl + extension)
+        open_hist_menu(page, "prior-week")
         page.locator('[data-testid="open-hist-session-prior-week"]').tap()
         page.wait_for_selector('[data-testid="history-back"]')
         body = page.inner_text('[data-testid="history-sheet"]')
         check("Seated Leg Curl" in body and "Leg Extension" in body, "session view lists both exercises")
-        if page.locator('[data-testid="history-edit"]').inner_text() != "Done":
-            page.locator('[data-testid="history-edit"]').tap()
+        open_hist_menu(page, "session")
         page.locator('[data-testid="delete-hist-session"]').tap()
         confirm_delete(page)
         page.wait_for_selector('[data-testid="history-sheet"]')
@@ -255,9 +271,8 @@ def main():
         # Delete entire current session → un-grey all current curl sets
         if page.locator('[data-testid="history-back"]').count():
             page.locator('[data-testid="history-back"]').tap()
-        if page.locator('[data-testid="history-edit"]').inner_text() != "Done":
-            page.locator('[data-testid="history-edit"]').tap()
         curr = signs(page)["sessionId"]
+        open_hist_menu(page, curr)
         page.locator(f'[data-testid="delete-hist-session-{curr}"]').tap()
         confirm_delete(page)
         page.wait_for_selector('[data-testid="history-sheet"]')

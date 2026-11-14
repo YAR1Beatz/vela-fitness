@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "11";
-  const VELA_CACHE = "vela-v11";
+  const VELA_VERSION = "12";
+  const VELA_CACHE = "vela-v12";
 
   let view = "home";
   let tab = "home";
@@ -648,7 +648,7 @@
         </section>
         <section class="prog-card">
           <h2>History</h2>
-          <p class="prog-note">Volume trend per exercise. Tap to edit or delete a set.</p>
+          <p class="prog-note">Volume trend per exercise. Open one to review history.</p>
           <div class="prog-list" data-testid="history-list">${histHtml}</div>
         </section>
       </div>`;
@@ -1754,12 +1754,30 @@
          </span>`
       : "";
     return `<div class="hist-swipe" data-swipe="hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}">
-      <button type="button" class="swipe-actions" data-action="delete-hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}">Delete</button>
+      <button type="button" class="swipe-actions" data-action="delete-hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}" aria-hidden="true" tabindex="-1">Delete</button>
       <div class="swipe-front">
         <div class="set-line" data-testid="history-set-${sid}-${i}">
-          <span>Set ${i + 1} · ${esc(D().formatLogged(set.weight, set.reps))} ${badge}</span>
+          <span class="set-n">Set ${i + 1}</span>
+          <span class="set-val">${esc(D().formatLogged(set.weight, set.reps))}</span>
+          ${badge}
           ${editBtns}
         </div>
+      </div>
+    </div>`;
+  }
+
+  function closeHistMenus() {
+    const root = overlaysEl();
+    if (!root) return;
+    root.querySelectorAll(".hist-menu").forEach((m) => m.classList.add("hidden"));
+    root.querySelectorAll('[data-action="toggle-hist-menu"]').forEach((b) => b.setAttribute("aria-expanded", "false"));
+  }
+
+  function histMenuButton(menuId, items) {
+    return `<div class="hist-menu-wrap">
+      <button type="button" class="more-btn hist-more" data-action="toggle-hist-menu" data-menu="${esc(menuId)}" data-testid="hist-menu-${esc(menuId)}" aria-label="Session options" aria-expanded="false">${ICONS.more}</button>
+      <div class="hist-menu hidden" data-testid="hist-menu-panel-${esc(menuId)}" role="menu">
+        ${items.join("")}
       </div>
     </div>`;
   }
@@ -1786,25 +1804,35 @@
         const older = D().previousSession(row.key, h.sessionId);
         const signs = D().sessionSetOverload(h, older);
         const sets = (h.sets || []).map((s, i) => historySetRow(h, s, i, signs, row.key)).join("");
+        const exMenu = histMenuButton(row.key, [
+          `<button type="button" class="danger" data-action="delete-hist-exercise" data-key="${esc(row.key)}" data-session="${esc(h.sessionId)}" data-testid="delete-hist-exercise-${esc(row.key)}">Delete this exercise</button>`,
+        ]);
         return `<div class="hist-item" data-testid="history-entry" data-session="${esc(h.sessionId)}" data-key="${esc(row.key)}">
-          <div class="when">${esc(exerciseNameFromKey(row.key))}</div>
+          <div class="when-row">
+            <div class="when">${esc(exerciseNameFromKey(row.key))}</div>
+            ${exMenu}
+          </div>
           <div class="sets signs">${sets}</div>
-          ${historyEditMode ? `<button type="button" class="hist-del-entry" data-action="delete-hist-exercise" data-key="${esc(row.key)}" data-session="${esc(h.sessionId)}" data-testid="delete-hist-exercise-${esc(row.key)}">Delete exercise from session</button>` : ""}
         </div>`;
       }).join("") || `<div class="empty">Nothing logged in this session.</div>`;
+      const sessionMenu = rows.length ? histMenuButton("session", [
+        `<button type="button" class="danger" data-action="delete-hist-session" data-session="${esc(historySessionId)}" data-testid="delete-hist-session">Delete entire session</button>`,
+      ]) : "";
       showSheet(`<div class="sheet" data-testid="history-sheet">
         <div class="handle"></div>
         <div class="hist-head">
           <button type="button" class="btn-edit" data-action="history-back" data-testid="history-back">Back</button>
           <h2>Session</h2>
-          <button type="button" class="btn-edit${historyEditMode ? " on" : ""}" data-action="toggle-history-edit" data-testid="history-edit">${historyEditMode ? "Done" : "Edit"}</button>
+          <button type="button" class="btn-edit${historyEditMode ? " on" : ""}" data-action="toggle-history-edit" data-testid="history-edit">Edit</button>
         </div>
         <div class="sheet-body">
-          <p class="hint" style="margin:0 0 10px">${esc(title)}</p>
+          <div class="when-row hist-session-title">
+            <p class="hint" style="margin:0">${esc(title)}</p>
+            ${sessionMenu}
+          </div>
           ${blocks}
-          ${historyEditMode && rows.length ? `<button type="button" class="hist-del-session" data-action="delete-hist-session" data-session="${esc(historySessionId)}" data-testid="delete-hist-session">Delete entire session</button>` : ""}
         </div>
-        <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Close</button></div>
+        <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
       </div>`);
       bindHistorySwipes();
       return;
@@ -1821,16 +1849,17 @@
       const older = hist[idx + 1] || null;
       const signs = D().sessionSetOverload(h, older);
       const sets = (h.sets || []).map((s, i) => historySetRow(h, s, i, signs, ex.key)).join("");
+      const menu = histMenuButton(h.sessionId, [
+        `<button type="button" data-action="open-hist-session" data-session="${esc(h.sessionId)}" data-testid="open-hist-session-${esc(h.sessionId)}">View session</button>`,
+        `<button type="button" class="danger" data-action="delete-hist-exercise" data-key="${esc(ex.key)}" data-session="${esc(h.sessionId)}" data-testid="delete-hist-exercise-${esc(h.sessionId)}">Delete this exercise</button>`,
+        `<button type="button" class="danger" data-action="delete-hist-session" data-session="${esc(h.sessionId)}" data-testid="delete-hist-session-${esc(h.sessionId)}">Delete entire session</button>`,
+      ]);
       return `<div class="hist-item hist-swipe-item" data-testid="history-entry" data-session="${esc(h.sessionId)}" data-key="${esc(ex.key)}">
         <div class="when-row">
           <div class="when">${esc(formatHistoryWhen(h))}</div>
-          <button type="button" class="hist-link" data-action="open-hist-session" data-session="${esc(h.sessionId)}" data-testid="open-hist-session-${esc(h.sessionId)}">Session</button>
+          ${menu}
         </div>
         <div class="sets signs">${sets}</div>
-        ${historyEditMode ? `<div class="hist-entry-acts">
-          <button type="button" class="hist-del-entry" data-action="delete-hist-exercise" data-key="${esc(ex.key)}" data-session="${esc(h.sessionId)}" data-testid="delete-hist-exercise-${esc(h.sessionId)}">Delete this exercise</button>
-          <button type="button" class="hist-del-session" data-action="delete-hist-session" data-session="${esc(h.sessionId)}" data-testid="delete-hist-session-${esc(h.sessionId)}">Delete entire session</button>
-        </div>` : ""}
       </div>`;
     }).join("");
     showSheet(`<div class="sheet" data-testid="history-sheet">
@@ -1838,7 +1867,7 @@
       <div class="hist-head">
         <span class="hist-head-space"></span>
         <h2>${esc(ex.name)}</h2>
-        <button type="button" class="btn-edit${historyEditMode ? " on" : ""}" data-action="toggle-history-edit" data-testid="history-edit">${historyEditMode ? "Done" : "Edit"}</button>
+        <button type="button" class="btn-edit${historyEditMode ? " on" : ""}" data-action="toggle-history-edit" data-testid="history-edit">Edit</button>
       </div>
       <div class="sheet-body">${rows || `<div class="empty">No history yet. Track a set or finish a workout to log it.</div>`}</div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
@@ -1847,6 +1876,14 @@
   }
 
   function bindHistorySwipes() {
+    const sheet = overlaysEl().querySelector('[data-testid="history-sheet"]');
+    if (sheet && !sheet.dataset.menuBound) {
+      sheet.dataset.menuBound = "1";
+      sheet.addEventListener("pointerdown", (e) => {
+        if (e.target.closest(".hist-menu-wrap")) return;
+        closeHistMenus();
+      });
+    }
     overlaysEl().querySelectorAll('[data-swipe="hist-set"]').forEach((row) => {
       const front = row.querySelector(".swipe-front") || row;
       let startX = 0, startY = 0, dx = 0, tracking = false, decided = false, horizontal = false;
@@ -1884,11 +1921,15 @@
       });
       function end() {
         if (!tracking && !decided) return;
+        const isTap = tracking && !decided;
+        const shouldDelete = horizontal && dx < -56;
         tracking = false;
         front.style.transition = "";
         front.style.transform = "";
-        if (horizontal && dx < -56) {
+        if (shouldDelete) {
           requestDeleteHistorySet(row.dataset.key, row.dataset.session, Number(row.dataset.set));
+        } else if (isTap) {
+          openEditHistorySet(row.dataset.key, row.dataset.session, Number(row.dataset.set));
         }
       }
       row.addEventListener("pointerup", end);
@@ -2354,6 +2395,7 @@
     if (action === "cycle-reset") { requestCycleReset(); return; }
     if (action === "demo") { openDemo(exIndex); return; }
     if (action === "close-sheet") {
+      historyEditMode = false;
       closeSheet();
       D().saveNow();
       if (view === "checkin" && !overlaysEl().querySelector(".sheet, .dialog")) {
@@ -2414,6 +2456,17 @@
     }
     if (action === "history") { historyEditMode = false; historySessionId = null; historyKey = null; openHistory(exIndex); return; }
     if (action === "toggle-history-edit") { historyEditMode = !historyEditMode; paintHistory(); return; }
+    if (action === "toggle-hist-menu") {
+      const menuId = btn.dataset.menu;
+      const menu = overlaysEl().querySelector(`[data-testid="hist-menu-panel-${menuId}"]`);
+      const willOpen = menu && menu.classList.contains("hidden");
+      closeHistMenus();
+      if (willOpen && menu) {
+        menu.classList.remove("hidden");
+        btn.setAttribute("aria-expanded", "true");
+      }
+      return;
+    }
     if (action === "history-back") { paintHistory(); return; }
     if (action === "open-hist-session") { openHistorySession(btn.dataset.session); return; }
     if (action === "delete-hist-set") { requestDeleteHistorySet(btn.dataset.key, btn.dataset.session, Number(btn.dataset.set)); return; }

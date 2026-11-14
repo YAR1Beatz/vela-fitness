@@ -1055,11 +1055,21 @@
   }
 
   function formatLogged(weight, reps) {
-    if (weight != null && weight !== "" && reps != null && reps !== "") {
-      return `${Number(weight).toFixed(2)}kg x ${reps}`;
-    }
-    if (reps != null && reps !== "") return `${reps} reps`;
-    if (weight != null && weight !== "") return `${Number(weight).toFixed(2)}kg`;
+    const cat = C();
+    const num = (v) => {
+      if (cat && typeof cat.formatNumber === "function") return cat.formatNumber(v);
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "";
+      if (Number.isInteger(n)) return String(n);
+      return String(Math.round(n * 100) / 100).replace(".", ",");
+    };
+    const hasW = weight != null && weight !== "";
+    const hasR = reps != null && reps !== "";
+    const w = hasW ? num(weight) : "";
+    const r = hasR ? num(reps) : "";
+    if (w && r) return `${w} kg × ${r}`;
+    if (r) return `${r} reps`;
+    if (w) return `${w} kg`;
     return "Set";
   }
 
