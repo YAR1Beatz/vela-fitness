@@ -959,7 +959,8 @@ input, textarea, select {
   font-weight: 600;
   gap: 5px;
   padding: 0 7px 0 9px;
-  min-height: 36px;
+  min-height: 32px;
+  align-items: center;
 }
 .chip.logged .chip-label {
   min-width: 0;
@@ -969,27 +970,27 @@ input, textarea, select {
 }
 .chip.logged .badge {
   /* size comes from the shared .badge rule */
-  flex: 0 0 24px;
+  flex: 0 0 18px;
 }
 @media (max-width: 399px) {
   .chip.logged { font-size: 10.5px; padding: 0 5px 0 7px; gap: 4px; }
 }
 
-/* Filled-circle overload badges: ~16px arrow in a 24px disc, high contrast on navy */
+/* Filled-circle overload badges: ~12px arrow in an 18px disc, high contrast on navy */
 .badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
   border-radius: 50%;
   line-height: 0;
   font-size: 0;
 }
 .badge svg {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   display: block;
 }
 .badge.up { background: #1ED98A; color: #04261F; }
@@ -1124,7 +1125,7 @@ input, textarea, select {
 
 .hist-item .signs { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
 .hist-item .set-line { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.hist-item .set-line .badge { flex: 0 0 24px; }
+.hist-item .set-line .badge { flex: 0 0 18px; }
 
 
 /* ——— Exercise demo photos ——— */
