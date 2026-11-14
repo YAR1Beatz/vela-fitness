@@ -1542,3 +1542,66 @@ button.program-name {
 @media (max-width: 360px) {
   .dash-tile b { font-size: 17px; }
 }
+
+/* v8: history edit / swipe-to-delete */
+.hist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 0 8px;
+}
+.hist-head h2 {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+  font-size: 18px;
+}
+.hist-head-space { width: 44px; flex: 0 0 44px; }
+.hist-head .btn-edit { flex: 0 0 auto; min-width: 44px; }
+.when-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hist-link {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 0;
+  flex: 0 0 auto;
+}
+.hist-swipe {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.hist-swipe .swipe-actions {
+  width: 78px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.hist-swipe .set-line {
+  background: var(--card);
+  padding: 6px 0;
+  justify-content: space-between;
+  width: 100%;
+}
+.hist-set-acts { display: flex; gap: 8px; flex: 0 0 auto; }
+.hist-edit-set, .hist-del, .hist-del-entry, .hist-del-session {
+  font-size: 12px;
+  font-weight: 650;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.hist-edit-set { color: var(--accent); }
+.hist-del, .hist-del-entry, .hist-del-session { color: var(--danger); }
+.hist-del-entry, .hist-del-session {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 0 0;
+}
+.hist-entry-acts { display: flex; flex-direction: column; gap: 2px; }
+.hist-del-session { font-weight: 700; }

@@ -876,9 +876,17 @@
     return ex;
   }
 
+  function historySetLogged(s) {
+    return !!(s && (s.reps != null || s.weight != null));
+  }
+
+  function historyEntryLogged(h) {
+    return !!(h && (h.sets || []).some(historySetLogged));
+  }
+
   function previousSession(exerciseKey, exceptSessionId) {
     const list = get().history[exerciseKey] || [];
-    return list.find((h) => !exceptSessionId || h.sessionId !== exceptSessionId) || null;
+    return list.find((h) => (!exceptSessionId || h.sessionId !== exceptSessionId) && historyEntryLogged(h)) || null;
   }
 
   /* Overload rule: compare this set to the same set number in the previous session.
@@ -990,7 +998,227 @@
   }
 
   function getHistory(exerciseKey) {
-    return (get().history[exerciseKey] || []).slice();
+    return (get().history[exerciseKey] || []).filter(historyEntryLogged);
+  }
+
+  function cloneJSON(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function captureHistoryUndo() {
+    const s = get();
+    syncUp(s);
+    return {
+      history: cloneJSON(s.history || {}),
+      sessions: cloneJSON(s.sessions || []),
+      lastLogged: cloneJSON(s.lastLogged || {}),
+      programs: cloneJSON(s.programs || {}),
+      workouts: cloneJSON(s.workouts || []),
+      activeProgramId: s.activeProgramId,
+    };
+  }
+
+  function restoreHistoryUndo(snap) {
+    const s = get();
+    if (!snap) return;
+    s.history = cloneJSON(snap.history || {});
+    s.sessions = cloneJSON(snap.sessions || []);
+    s.lastLogged = cloneJSON(snap.lastLogged || {});
+    if (snap.programs) s.programs = cloneJSON(snap.programs);
+    if (snap.workouts && !(snap.programs && snap.programs[s.activeProgramId])) {
+      s.workouts = cloneJSON(snap.workouts);
+    }
+    if (s.programs && s.programs[s.activeProgramId] && s.programs[s.activeProgramId].workouts) {
+      s.workouts = s.programs[s.activeProgramId].workouts;
+      s.activeWorkoutId = s.programs[s.activeProgramId].activeWorkoutId;
+    }
+    saveNow();
+    notify();
+  }
+
+  function findHistoryEntry(exerciseKey, sessionId) {
+    return (get().history[exerciseKey] || []).find((h) => h.sessionId === sessionId) || null;
+  }
+
+  function allWorkouts() {
+    const s = get();
+    const list = [];
+    const seen = new Set();
+    const add = (w) => {
+      if (!w || seen.has(w)) return;
+      seen.add(w);
+      list.push(w);
+    };
+    (s.workouts || []).forEach(add);
+    Object.keys(s.programs || {}).forEach((id) => {
+      (s.programs[id].workouts || []).forEach(add);
+    });
+    return list;
+  }
+
+  function recomputeLastLogged(exerciseKey) {
+    const list = get().history[exerciseKey] || [];
+    for (let i = 0; i < list.length; i += 1) {
+      const last = [...(list[i].sets || [])].reverse().find(historySetLogged);
+      if (last) {
+        state.lastLogged[exerciseKey] = { reps: last.reps, weight: last.weight };
+        return;
+      }
+    }
+    if (state.lastLogged) delete state.lastLogged[exerciseKey];
+  }
+
+  function rebuildSessionRecord(sessionId) {
+    const s = get();
+    let vol = 0;
+    let any = false;
+    let meta = null;
+    Object.keys(s.history || {}).forEach((key) => {
+      (s.history[key] || []).forEach((h) => {
+        if (h.sessionId !== sessionId) return;
+        const v = setsVolume(h.sets);
+        vol += v.kg || 0;
+        if (historyEntryLogged(h)) {
+          any = true;
+          meta = h;
+        }
+      });
+    });
+    if (!s.sessions) s.sessions = [];
+    const i = s.sessions.findIndex((x) => x.sessionId === sessionId);
+    if (!any) {
+      if (i >= 0) s.sessions.splice(i, 1);
+      return;
+    }
+    if (i >= 0) s.sessions[i].volumeKg = vol;
+    else if (meta) {
+      s.sessions.unshift({
+        programId: meta.programId,
+        workoutId: meta.workoutId,
+        workoutName: meta.workout,
+        week: meta.week,
+        sessionId,
+        date: meta.date,
+        datetime: meta.datetime,
+        durationMs: 0,
+        volumeKg: vol,
+        completed: true,
+      });
+    }
+  }
+
+  function applyHistoryToCurrent(sessionId, exerciseKey) {
+    allWorkouts().forEach((w) => {
+      if (!w || w.sessionId !== sessionId) return;
+      let anyDone = false;
+      w.exercises.forEach((ex) => {
+        if (exerciseKey && ex.key !== exerciseKey) {
+          if (ex.sets.some((st) => st.done)) anyDone = true;
+          return;
+        }
+        const entry = findHistoryEntry(ex.key, sessionId);
+        ex.sets.forEach((st, i) => {
+          const hs = entry && entry.sets && entry.sets[i];
+          if (!historySetLogged(hs)) {
+            st.done = false;
+            st.reps = null;
+            st.weight = null;
+            st.repsText = "";
+            st.weightText = "";
+          } else {
+            st.done = true;
+            st.reps = hs.reps;
+            st.weight = hs.weight;
+            st.repsText = hs.reps == null ? "" : String(hs.reps).replace(".", ",");
+            st.weightText = hs.weight == null ? "" : String(hs.weight).replace(".", ",");
+            anyDone = true;
+          }
+        });
+      });
+      if (!anyDone) w.completedAt = null;
+    });
+  }
+
+  function pruneEmptyHistoryEntry(exerciseKey, sessionId) {
+    const list = get().history[exerciseKey] || [];
+    const i = list.findIndex((h) => h.sessionId === sessionId);
+    if (i < 0) return;
+    if (!historyEntryLogged(list[i])) list.splice(i, 1);
+  }
+
+  function deleteHistorySet(exerciseKey, sessionId, setIndex) {
+    const snap = captureHistoryUndo();
+    const entry = findHistoryEntry(exerciseKey, sessionId);
+    if (!entry || !entry.sets || !entry.sets[setIndex]) return null;
+    entry.sets[setIndex] = { reps: null, weight: null };
+    pruneEmptyHistoryEntry(exerciseKey, sessionId);
+    applyHistoryToCurrent(sessionId, exerciseKey);
+    recomputeLastLogged(exerciseKey);
+    rebuildSessionRecord(sessionId);
+    saveNow();
+    notify();
+    return snap;
+  }
+
+  function deleteHistoryExercise(exerciseKey, sessionId) {
+    const snap = captureHistoryUndo();
+    const list = get().history[exerciseKey] || [];
+    const i = list.findIndex((h) => h.sessionId === sessionId);
+    if (i < 0) return null;
+    list.splice(i, 1);
+    applyHistoryToCurrent(sessionId, exerciseKey);
+    recomputeLastLogged(exerciseKey);
+    rebuildSessionRecord(sessionId);
+    saveNow();
+    notify();
+    return snap;
+  }
+
+  function deleteHistorySession(sessionId) {
+    const snap = captureHistoryUndo();
+    const s = get();
+    const keys = [];
+    Object.keys(s.history || {}).forEach((key) => {
+      const before = (s.history[key] || []).length;
+      s.history[key] = (s.history[key] || []).filter((h) => h.sessionId !== sessionId);
+      if ((s.history[key] || []).length !== before) keys.push(key);
+    });
+    applyHistoryToCurrent(sessionId, null);
+    keys.forEach(recomputeLastLogged);
+    rebuildSessionRecord(sessionId);
+    saveNow();
+    notify();
+    return snap;
+  }
+
+  function updateHistorySet(exerciseKey, sessionId, setIndex, { reps, weight } = {}) {
+    const snap = captureHistoryUndo();
+    const entry = findHistoryEntry(exerciseKey, sessionId);
+    if (!entry || !entry.sets || !entry.sets[setIndex]) return null;
+    if (reps !== undefined) entry.sets[setIndex].reps = reps;
+    if (weight !== undefined) entry.sets[setIndex].weight = weight;
+    if (!historySetLogged(entry.sets[setIndex])) entry.sets[setIndex] = { reps: null, weight: null };
+    pruneEmptyHistoryEntry(exerciseKey, sessionId);
+    applyHistoryToCurrent(sessionId, exerciseKey);
+    recomputeLastLogged(exerciseKey);
+    rebuildSessionRecord(sessionId);
+    saveNow();
+    notify();
+    return snap;
+  }
+
+  function getSessionHistory(sessionId) {
+    const s = get();
+    const rows = [];
+    Object.keys(s.history || {}).forEach((key) => {
+      (s.history[key] || []).forEach((h) => {
+        if (h.sessionId === sessionId && historyEntryLogged(h)) {
+          rows.push({ key, entry: h });
+        }
+      });
+    });
+    rows.sort((a, b) => (a.entry.workout || "").localeCompare(b.entry.workout || "") || a.key.localeCompare(b.key));
+    return rows;
   }
 
   /* Logged volume only: untracked / suggested values are not counted.
@@ -1474,6 +1702,15 @@
     moveExercise,
     setNotes,
     getHistory,
+    getSessionHistory,
+    findHistoryEntry,
+    captureHistoryUndo,
+    restoreHistoryUndo,
+    deleteHistorySet,
+    deleteHistoryExercise,
+    deleteHistorySession,
+    updateHistorySet,
+    historySetLogged,
     exerciseVolume,
     exerciseVolumeKg,
     previousExerciseVolume,

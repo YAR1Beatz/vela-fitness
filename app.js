@@ -10,6 +10,9 @@
   let workoutEditMode = false;
   let pickerState = null;
   let daysSetupSource = null;
+  let historyExIndex = null;
+  let historyEditMode = false;
+  let historySessionId = null;
   let restTimer = null;
   let undoTimer = null;
   let undoPayload = null;
@@ -1311,30 +1314,263 @@
     render();
   }
 
-  function openHistory(exIndex) {
+  function exerciseNameFromKey(key) {
+    const found = (C().EXERCISES || []).find((e) => C().slug(e.name) === key);
+    if (found) return found.name;
     const w = activeWorkout();
-    const ex = w.exercises[exIndex];
+    const live = w && w.exercises.find((e) => e.key === key);
+    if (live) return live.name;
+    return String(key || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  function formatHistoryWhen(h) {
+    const when = h.date ? new Date(h.date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+    const week = h.week ? ` · Week ${h.week}` : "";
+    return `${when}${h.workout ? " · " + h.workout : ""}${week}`;
+  }
+
+  function historySetRow(h, set, i, signs, exerciseKey) {
+    if (!D().historySetLogged(set)) return "";
+    const sign = signs && signs[i];
+    const mark = sign ? overloadMark(sign) : null;
+    const badge = mark ? `<span class="badge ${mark.cls}">${mark.char}</span>` : "";
+    const sid = esc(h.sessionId);
+    const editBtns = historyEditMode
+      ? `<span class="hist-set-acts">
+           <button type="button" class="hist-edit-set" data-action="edit-hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}" data-testid="edit-hist-set-${esc(exerciseKey)}-${sid}-${i}">Edit</button>
+           <button type="button" class="hist-del" data-action="delete-hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}" data-testid="delete-hist-set-${esc(exerciseKey)}-${sid}-${i}">Delete</button>
+         </span>`
+      : "";
+    return `<div class="hist-swipe" data-swipe="hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}">
+      <button type="button" class="swipe-actions" data-action="delete-hist-set" data-key="${esc(exerciseKey)}" data-session="${sid}" data-set="${i}">Delete</button>
+      <div class="swipe-front">
+        <div class="set-line" data-testid="history-set-${sid}-${i}">
+          <span>Set ${i + 1} · ${esc(D().formatLogged(set.weight, set.reps))} ${badge}</span>
+          ${editBtns}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function openHistory(exIndex) {
+    if (exIndex != null) historyExIndex = exIndex;
+    historySessionId = null;
+    paintHistory();
+  }
+
+  function openHistorySession(sessionId) {
+    historySessionId = sessionId;
+    paintHistory();
+  }
+
+  function paintHistory() {
+    const w = activeWorkout();
+    if (historySessionId) {
+      const rows = D().getSessionHistory(historySessionId);
+      const head = rows[0] && rows[0].entry;
+      const title = head ? formatHistoryWhen(head) : "Session";
+      const blocks = rows.map((row) => {
+        const h = row.entry;
+        const older = D().previousSession(row.key, h.sessionId);
+        const signs = D().sessionSetOverload(h, older);
+        const sets = (h.sets || []).map((s, i) => historySetRow(h, s, i, signs, row.key)).join("");
+        return `<div class="hist-item" data-testid="history-entry" data-session="${esc(h.sessionId)}" data-key="${esc(row.key)}">
+          <div class="when">${esc(exerciseNameFromKey(row.key))}</div>
+          <div class="sets signs">${sets}</div>
+          ${historyEditMode ? `<button type="button" class="hist-del-entry" data-action="delete-hist-exercise" data-key="${esc(row.key)}" data-session="${esc(h.sessionId)}" data-testid="delete-hist-exercise-${esc(row.key)}">Delete exercise from session</button>` : ""}
+        </div>`;
+      }).join("") || `<div class="empty">Nothing logged in this session.</div>`;
+      showSheet(`<div class="sheet" data-testid="history-sheet">
+        <div class="handle"></div>
+        <div class="hist-head">
+          <button type="button" class="btn-edit" data-action="history-back" data-testid="history-back">Back</button>
+          <h2>Session</h2>
+          <button type="button" class="btn-edit${historyEditMode ? " on" : ""}" data-action="toggle-history-edit" data-testid="history-edit">${historyEditMode ? "Done" : "Edit"}</button>
+        </div>
+        <div class="sheet-body">
+          <p class="hint" style="margin:0 0 10px">${esc(title)}</p>
+          ${blocks}
+          ${historyEditMode && rows.length ? `<button type="button" class="hist-del-session" data-action="delete-hist-session" data-session="${esc(historySessionId)}" data-testid="delete-hist-session">Delete entire session</button>` : ""}
+        </div>
+        <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Close</button></div>
+      </div>`);
+      bindHistorySwipes();
+      return;
+    }
+    const ex = w && historyExIndex != null ? w.exercises[historyExIndex] : null;
+    if (!ex) {
+      closeSheet();
+      return;
+    }
     const hist = D().getHistory(ex.key);
     const rows = hist.map((h, idx) => {
       const older = hist[idx + 1] || null;
       const signs = D().sessionSetOverload(h, older);
-      const sets = (h.sets || []).map((s, i) => {
-        if (s.reps == null && s.weight == null) return "";
-        const sign = signs[i];
-        const mark = sign ? overloadMark(sign) : null;
-        const badge = mark ? `<span class="badge ${mark.cls}">${mark.char}</span>` : "";
-        return `<div class="set-line">Set ${i + 1} · ${esc(D().formatLogged(s.weight, s.reps))} ${badge}</div>`;
-      }).join("");
-      const when = h.date ? new Date(h.date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
-      const week = h.week ? ` · Week ${esc(h.week)}` : "";
-      return `<div class="hist-item" data-testid="history-entry"><div class="when">${esc(when)}${h.workout ? " · " + esc(h.workout) : ""}${week}</div><div class="sets signs">${sets}</div></div>`;
+      const sets = (h.sets || []).map((s, i) => historySetRow(h, s, i, signs, ex.key)).join("");
+      return `<div class="hist-item hist-swipe-item" data-testid="history-entry" data-session="${esc(h.sessionId)}" data-key="${esc(ex.key)}">
+        <div class="when-row">
+          <div class="when">${esc(formatHistoryWhen(h))}</div>
+          <button type="button" class="hist-link" data-action="open-hist-session" data-session="${esc(h.sessionId)}" data-testid="open-hist-session-${esc(h.sessionId)}">Session</button>
+        </div>
+        <div class="sets signs">${sets}</div>
+        ${historyEditMode ? `<div class="hist-entry-acts">
+          <button type="button" class="hist-del-entry" data-action="delete-hist-exercise" data-key="${esc(ex.key)}" data-session="${esc(h.sessionId)}" data-testid="delete-hist-exercise-${esc(h.sessionId)}">Delete this exercise</button>
+          <button type="button" class="hist-del-session" data-action="delete-hist-session" data-session="${esc(h.sessionId)}" data-testid="delete-hist-session-${esc(h.sessionId)}">Delete entire session</button>
+        </div>` : ""}
+      </div>`;
     }).join("");
     showSheet(`<div class="sheet" data-testid="history-sheet">
       <div class="handle"></div>
-      <h2>${esc(ex.name)}</h2>
+      <div class="hist-head">
+        <span class="hist-head-space"></span>
+        <h2>${esc(ex.name)}</h2>
+        <button type="button" class="btn-edit${historyEditMode ? " on" : ""}" data-action="toggle-history-edit" data-testid="history-edit">${historyEditMode ? "Done" : "Edit"}</button>
+      </div>
       <div class="sheet-body">${rows || `<div class="empty">No history yet. Track a set or finish a workout to log it.</div>`}</div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);
+    bindHistorySwipes();
+  }
+
+  function bindHistorySwipes() {
+    overlaysEl().querySelectorAll('[data-swipe="hist-set"]').forEach((row) => {
+      const front = row.querySelector(".swipe-front") || row;
+      let startX = 0, startY = 0, dx = 0, tracking = false, decided = false, horizontal = false;
+      row.addEventListener("pointerdown", (e) => {
+        if (e.target.closest("button")) return;
+        startX = e.clientX;
+        startY = e.clientY;
+        dx = 0;
+        tracking = true;
+        decided = false;
+        horizontal = false;
+        front.style.transition = "none";
+      });
+      row.addEventListener("pointermove", (e) => {
+        if (!tracking) return;
+        const x = e.clientX - startX;
+        const y = e.clientY - startY;
+        if (!decided) {
+          if (Math.abs(x) + Math.abs(y) < 8) return;
+          decided = true;
+          horizontal = Math.abs(x) > Math.abs(y) && Math.abs(x) > 6;
+          if (horizontal) {
+            try { row.setPointerCapture(e.pointerId); } catch (err) {}
+          } else {
+            tracking = false;
+            front.style.transition = "";
+            return;
+          }
+        }
+        if (!horizontal) return;
+        dx = Math.min(0, x);
+        if (dx < -120) dx = -120;
+        front.style.transform = `translateX(${dx}px)`;
+        e.preventDefault();
+      });
+      function end() {
+        if (!tracking && !decided) return;
+        tracking = false;
+        front.style.transition = "";
+        front.style.transform = "";
+        if (horizontal && dx < -56) {
+          requestDeleteHistorySet(row.dataset.key, row.dataset.session, Number(row.dataset.set));
+        }
+      }
+      row.addEventListener("pointerup", end);
+      row.addEventListener("pointercancel", end);
+    });
+  }
+
+  function afterHistoryChange(snap, message) {
+    if (view === "workout") renderWorkout();
+    else render();
+    paintHistory();
+    if (!snap) return;
+    showToast(message, "Undo", () => {
+      D().restoreHistoryUndo(snap);
+      if (view === "workout") renderWorkout();
+      else render();
+      paintHistory();
+    });
+  }
+
+  function requestDeleteHistorySet(key, sessionId, setIndex) {
+    const entry = D().findHistoryEntry(key, sessionId);
+    const set = entry && entry.sets && entry.sets[setIndex];
+    if (!set) return;
+    const label = D().formatLogged(set.weight, set.reps);
+    showConfirm({
+      title: `Delete set ${setIndex + 1}?`,
+      body: `Remove ${label} from this session. Overload, volume and the dashboard will update. You can undo for a few seconds after.`,
+      confirm: "Delete set",
+      danger: true,
+      onConfirm: () => {
+        const snap = D().deleteHistorySet(key, sessionId, setIndex);
+        afterHistoryChange(snap, "Set deleted");
+      },
+    });
+  }
+
+  function requestDeleteHistoryExercise(key, sessionId) {
+    showConfirm({
+      title: `Delete ${exerciseNameFromKey(key)} from this session?`,
+      body: "All sets of this exercise in that session will be removed. Other exercises in the session are kept. You can undo for a few seconds after.",
+      confirm: "Delete exercise",
+      danger: true,
+      onConfirm: () => {
+        const snap = D().deleteHistoryExercise(key, sessionId);
+        afterHistoryChange(snap, "Exercise entry deleted");
+      },
+    });
+  }
+
+  function requestDeleteHistorySession(sessionId) {
+    const rows = D().getSessionHistory(sessionId);
+    const when = rows[0] ? formatHistoryWhen(rows[0].entry) : "this session";
+    showConfirm({
+      title: "Delete entire session?",
+      body: `This removes every exercise logged in ${when}. Overload, volume, PBs and the dashboard will update. You can undo for a few seconds after.`,
+      confirm: "Delete session",
+      danger: true,
+      onConfirm: () => {
+        const snap = D().deleteHistorySession(sessionId);
+        if (historySessionId === sessionId) historySessionId = null;
+        afterHistoryChange(snap, "Session deleted");
+      },
+    });
+  }
+
+  function openEditHistorySet(key, sessionId, setIndex) {
+    const entry = D().findHistoryEntry(key, sessionId);
+    const set = entry && entry.sets && entry.sets[setIndex];
+    if (!set) return;
+    const reps = set.reps == null ? "" : String(set.reps).replace(".", ",");
+    const wt = set.weight == null ? "" : String(set.weight).replace(".", ",");
+    showSheet(`<div class="sheet" data-testid="edit-hist-set-sheet">
+      <div class="handle"></div>
+      <h2>Edit set ${setIndex + 1}</h2>
+      <div class="sheet-body">
+        <p class="hint" style="margin:0 0 10px">${esc(exerciseNameFromKey(key))} · ${esc(formatHistoryWhen(entry))}</p>
+        <label class="field-label">Reps</label>
+        <input class="text-input" data-hist-reps data-testid="hist-reps-input" inputmode="decimal" value="${esc(reps)}" />
+        <label class="field-label">Weight (kg)</label>
+        <input class="text-input" data-hist-weight data-testid="hist-weight-input" inputmode="decimal" value="${esc(wt)}" />
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" data-action="history-back">Cancel</button>
+        <button type="button" class="btn pri" data-action="save-hist-set" data-key="${esc(key)}" data-session="${esc(sessionId)}" data-set="${setIndex}" data-testid="save-hist-set">Save</button>
+      </div>
+    </div>`);
+    const repsEl = overlaysEl().querySelector("[data-hist-reps]");
+    if (repsEl) repsEl.focus({ preventScroll: true });
+  }
+
+  function saveEditedHistorySet(key, sessionId, setIndex) {
+    const reps = C().parseNum((overlaysEl().querySelector("[data-hist-reps]") || {}).value);
+    const weight = C().parseNum((overlaysEl().querySelector("[data-hist-weight]") || {}).value);
+    const snap = D().updateHistorySet(key, sessionId, setIndex, { reps, weight });
+    afterHistoryChange(snap, "Set updated");
   }
 
   function openNotes(exIndex) {
@@ -1682,7 +1918,15 @@
       render();
       return;
     }
-    if (action === "history") { openHistory(exIndex); return; }
+    if (action === "history") { historyEditMode = false; historySessionId = null; openHistory(exIndex); return; }
+    if (action === "toggle-history-edit") { historyEditMode = !historyEditMode; paintHistory(); return; }
+    if (action === "history-back") { paintHistory(); return; }
+    if (action === "open-hist-session") { openHistorySession(btn.dataset.session); return; }
+    if (action === "delete-hist-set") { requestDeleteHistorySet(btn.dataset.key, btn.dataset.session, Number(btn.dataset.set)); return; }
+    if (action === "delete-hist-exercise") { requestDeleteHistoryExercise(btn.dataset.key, btn.dataset.session); return; }
+    if (action === "delete-hist-session") { requestDeleteHistorySession(btn.dataset.session); return; }
+    if (action === "edit-hist-set") { openEditHistorySet(btn.dataset.key, btn.dataset.session, Number(btn.dataset.set)); return; }
+    if (action === "save-hist-set") { saveEditedHistorySet(btn.dataset.key, btn.dataset.session, Number(btn.dataset.set)); return; }
     if (action === "notes") { openNotes(exIndex); return; }
     if (action === "alt") { openAlt(exIndex); return; }
     if (action === "add-exercise") { openLibraryPicker({ mode: "add" }); return; }
