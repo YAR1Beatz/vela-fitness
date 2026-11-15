@@ -771,13 +771,17 @@ window.VELA_PHOTOS = {
       "img/exercises/barbell-bench-press/0.webp",
       "img/exercises/barbell-bench-press/1.webp"
     ],
+    "video": "img/exercises/flat-barbell-bench-press/demo.mp4",
+    "poster": "img/exercises/flat-barbell-bench-press/poster.jpg",
     "match": "exact",
     "author": "Goulart",
     "source": "wger.de",
     "source_url": "https://wger.de/",
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": ""
+    "note": "",
+    "videoAuthor": "ChatGPT",
+    "videoNote": "Looping demo generated with ChatGPT."
   },
   "lying-tricep-extension": {
     "name": "Lying Tricep Extension",

@@ -1149,6 +1149,24 @@ input, textarea, select {
 }
 .ex-photo.single .frame-a,
 .ex-photo.single img { opacity: 1; }
+.ex-photo.ex-video .video-poster { opacity: 1; }
+.ex-photo.ex-video video,
+.ex-demo-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  pointer-events: none;
+  background: #061018;
+  z-index: 1;
+}
+.demo-photo .ex-photo.large video,
+.demo-photo .ex-photo.large .ex-demo-video { object-fit: contain; }
+@media (prefers-reduced-motion: reduce) {
+  .ex-photo.ex-video video { display: none; }
+}
 .ex-photo[data-frames="2"] .frame-a {
   animation: exFadeA 2.4s ease-in-out infinite;
 }

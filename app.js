@@ -1156,7 +1156,7 @@
         <b>${VELA_VERSION}</b>
       </div>
       <p class="settings-build">VELA ${VELA_VERSION} · ${VELA_CACHE}</p>
-      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Dumbbell Pullover still has no freely licensed photo. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press also has a looping demo generated with ChatGPT. Dumbbell Pullover still has no freely licensed photo. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
     </div>`;
   }
 
@@ -1622,9 +1622,11 @@
     const ex = w && w.exercises[exIndex];
     if (!ex) return;
     const photo = C().photoFor(ex.name);
-    const credit = photo
-      ? `${photo.author || "Unknown"} · ${photo.license || ""}${photo.match === "closest" ? " · closest match" : ""}`
-      : "";
+    const credit = photo && photo.video
+      ? (photo.videoNote || "Looping demo")
+      : photo
+        ? `${photo.author || "Unknown"} · ${photo.license || ""}${photo.match === "closest" ? " · closest match" : ""}`
+        : "";
     showSheet(`<div class="demo-card" role="dialog" aria-modal="true" aria-label="${esc(ex.name)} demo" data-testid="exercise-demo">
         <button type="button" class="tracking-close" data-action="close-sheet" data-testid="close-demo" aria-label="Close">Done ${ICONS.close}</button>
         <div class="demo-photo">${C().photoMarkup(ex.name, { large: true })}</div>
@@ -1793,7 +1795,7 @@
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
         <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Each program has its own week and plan. History and last weights are shared, so overload still works if you switch. Edit program.js to change the default workouts.</p>
-        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Dumbbell Pullover still has no freely licensed photo. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Tyler Read, Nenad Stojkovic and PTPioneer (CC BY / CC BY-SA). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press also has a looping demo generated with ChatGPT. Dumbbell Pullover still has no freely licensed photo. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);

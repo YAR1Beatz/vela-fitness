@@ -10,7 +10,7 @@ Cropped or resized copies are shared under the same license as the source.
 | Exercise | Match | Author | License | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Back Extension | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
-| Flat Barbell Bench Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
+| Flat Barbell Bench Press | exact | Goulart (stills); looping demo generated with ChatGPT | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (stills) | wger.de (stills) | Licensed Goulart stills remain as the photo fallback. A ChatGPT-generated looping demo (H.264) plays on this exercise. |
 | Bulgarian Split Squat | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Standing dumbbell lunge video used; not a rear-foot-elevated split squat. |
 | Cable Fly | exact | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Single mid-rep still; no start/end pair. |
 | Cable Lateral Raise | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Dumbbell lateral raise video used; not a cable raise. |

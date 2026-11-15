@@ -1,4 +1,4 @@
-const CACHE = "vela-v17";
+const CACHE = "vela-v18";
 const ASSETS = [
   "./",
   "./index.html",
@@ -107,7 +107,9 @@ const ASSETS = [
   "./img/exercises/tricep-rope-pushdown/0.webp",
   "./img/exercises/tricep-rope-pushdown/1.webp",
   "./img/exercises/walking-lunge/0.webp",
-  "./img/exercises/walking-lunge/1.webp"
+  "./img/exercises/walking-lunge/1.webp",
+  "./img/exercises/flat-barbell-bench-press/demo.mp4",
+  "./img/exercises/flat-barbell-bench-press/poster.jpg"
 ];
 
 self.addEventListener("install", (event) => {

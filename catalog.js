@@ -244,11 +244,27 @@
     return photos[slug(name)] || null;
   }
 
+  function videoFor(name) {
+    const photo = photoFor(name);
+    if (photo && photo.video) return photo;
+    return null;
+  }
+
   function photoMarkup(name, { mini = false, large = false } = {}) {
     const photo = photoFor(name);
     const fallback = thumbMarkup((findExercise(name) || {}).thumb || "generic");
-    if (!photo || !photo.frames || !photo.frames.length) return fallback;
-    const frames = photo.frames;
+    if (!photo || !((photo.frames && photo.frames.length) || photo.video)) return fallback;
+    /* Mini list thumbs stay as stills so a plan or library row doesn't autoplay many videos. */
+    if (!mini && photo.video) {
+      const poster = photo.poster || (photo.frames && photo.frames[0]) || "";
+      const cls = ["ex-photo", "ex-video", large ? "large" : ""].filter(Boolean).join(" ");
+      return `<div class="${cls}" data-testid="ex-photo">
+        ${poster ? `<img class="frame frame-a video-poster" src="${poster}" alt="" draggable="false">` : ""}
+        <video class="ex-demo-video" src="${photo.video}" poster="${poster}" autoplay loop muted playsinline webkit-playsinline data-testid="ex-video"></video>
+      </div>`;
+    }
+    const frames = photo.frames || [];
+    if (!frames.length) return fallback;
     const cls = ["ex-photo", mini ? "mini" : "", large ? "large" : "", frames.length < 2 ? "single" : ""]
       .filter(Boolean)
       .join(" ");
@@ -338,6 +354,7 @@
     thumbMarkup,
     playMarkup,
     photoFor,
+    videoFor,
     photoMarkup,
     formatNumber,
     formatKg,
