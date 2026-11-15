@@ -1925,13 +1925,43 @@
     return s.weightChartRange;
   }
 
+  function bodyWeightOnDate(date, exceptId) {
+    return bodyWeightEntries().find((p) => p.date === date && p.id !== exceptId) || null;
+  }
+
+  function checkInHasExtras(c) {
+    if (!c) return false;
+    return c.waist != null || c.chest != null || c.arms != null || c.thighs != null || !!c.note || !!c.photo;
+  }
+
+  function removeWeightFromCheckIn(s, id) {
+    const i = (s.checkIns || []).findIndex((c) => c.id === id);
+    if (i < 0) return;
+    const c = s.checkIns[i];
+    if (checkInHasExtras(c)) s.checkIns[i] = Object.assign({}, c, { weight: null });
+    else s.checkIns.splice(i, 1);
+  }
+
+  function captureWeightUndo() {
+    return cloneJSON(get().checkIns || []);
+  }
+
+  function restoreWeightUndo(snap) {
+    const s = get();
+    s.checkIns = cloneJSON(snap || []);
+    saveNow();
+    notify();
+  }
+
   /* Log (or update) only body weight for a date, without wiping other check-in fields. */
   function logBodyWeight(weight, date) {
     const w = Number(weight);
-    if (!Number.isFinite(w)) return null;
+    if (!Number.isFinite(w)) return { ok: false };
+    const day = date || copenhagenYMD();
+    const today = copenhagenYMD();
+    if (day > today) return { ok: false, future: true };
     const s = get();
     if (!s.checkIns) s.checkIns = [];
-    const day = date || copenhagenYMD();
     const i = s.checkIns.findIndex((c) => c.date === day);
     if (i >= 0) {
       s.checkIns[i] = Object.assign({}, s.checkIns[i], { weight: w, date: day });
@@ -1950,7 +1980,40 @@
     }
     saveNow();
     notify();
-    return true;
+    return { ok: true };
+  }
+
+  function updateBodyWeight(id, { weight, date } = {}) {
+    const w = Number(weight);
+    if (!Number.isFinite(w)) return { ok: false };
+    const day = date || copenhagenYMD();
+    const today = copenhagenYMD();
+    if (day > today) return { ok: false, future: true };
+    const s = get();
+    if (!s.checkIns) s.checkIns = [];
+    const src = s.checkIns.find((c) => c.id === id);
+    if (!src) return logBodyWeight(w, day);
+    if (src.date === day) return logBodyWeight(w, day);
+    logBodyWeight(w, day);
+    /* logBodyWeight writes the target date; clear the weight on the original record. */
+    const leftover = (get().checkIns || []).find((c) => c.id === id && c.date !== day);
+    if (leftover) {
+      const st = get();
+      removeWeightFromCheckIn(st, leftover.id);
+      saveNow();
+      notify();
+    }
+    return { ok: true };
+  }
+
+  function deleteBodyWeight(id) {
+    const s = get();
+    const found = (s.checkIns || []).find((c) => c.id === id);
+    if (!found) return { ok: false };
+    removeWeightFromCheckIn(s, id);
+    saveNow();
+    notify();
+    return { ok: true };
   }
 
   function bodyWeightSeries(range) {
@@ -2230,10 +2293,15 @@
     saveCheckIn,
     deleteCheckIn,
     logBodyWeight,
+    updateBodyWeight,
+    deleteBodyWeight,
+    bodyWeightOnDate,
     bodyWeightEntries,
     bodyWeightSeries,
     weightChartRange,
     setWeightChartRange,
+    captureWeightUndo,
+    restoreWeightUndo,
     formatHoursSpent,
     copenhagenYMD,
     calendarWeekStart,

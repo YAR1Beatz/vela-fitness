@@ -17,6 +17,7 @@
   let historyEditMode = false;
   let historySessionId = null;
   let historyKey = null;
+  let weightHistoryEditMode = false;
   let programWeek = null;
   let reviewWorkout = null;
   let returnView = "home";
@@ -323,6 +324,10 @@
       `<button type="button" class="wrange${r === range ? " on" : ""}" data-action="weight-range" data-range="${r}" data-testid="weight-range-${r}">${r}</button>`
     ).join("");
     const logBtn = `<button type="button" class="weight-log" data-action="log-weight" data-testid="log-weight">${ICONS.plus} Log weight</button>`;
+    const histBtn = (series.all && series.all.length)
+      ? `<button type="button" class="weight-hist-btn" data-action="weight-history" data-testid="weight-history">History</button>`
+      : "";
+    const headActions = `<div class="weight-head-actions">${histBtn}${logBtn}</div>`;
     if (!series.all || series.all.length < 2) {
       const current = series.current
         ? `<div class="weight-now" data-testid="weight-current">${esc(C().formatNumber(series.current.weight))} <span>kg</span></div>
@@ -332,7 +337,7 @@
       return `<section class="dash-card weight-card" data-testid="weight-card">
         <div class="weight-head">
           <h2>Body weight</h2>
-          ${logBtn}
+          ${headActions}
         </div>
         ${series.current ? current : one + current}
         <div class="weight-ranges" data-testid="weight-ranges">${ranges}</div>
@@ -353,7 +358,7 @@
     return `<section class="dash-card weight-card" data-testid="weight-card">
       <div class="weight-head">
         <h2>Body weight</h2>
-        ${logBtn}
+        ${headActions}
       </div>
       <div class="weight-now" data-testid="weight-current">${esc(cur)} <span>kg</span></div>
       <div class="weight-deltas" data-testid="weight-delta">${bits.join("<span class='wd-dot'>·</span>")}</div>
@@ -373,47 +378,230 @@
     if (fresh) card.replaceWith(fresh);
   }
 
-  function openLogWeight() {
-    const series = D().bodyWeightSeries();
-    const today = D().copenhagenYMD();
-    const latest = series.current && series.current.weight != null
-      ? C().formatNumber(series.current.weight)
-      : "";
-    showSheet(`<div class="sheet" data-testid="log-weight-sheet">
-      <div class="handle"></div>
-      <h2>Log weight</h2>
-      <div class="sheet-body">
-        <label class="field-label">Date</label>
-        <input class="text-input" type="date" data-log-weight-date data-testid="log-weight-date" value="${esc(today)}" />
-        <label class="field-label">Body weight (kg)</label>
-        <input class="text-input" data-log-weight-input data-testid="log-weight-input" inputmode="decimal" placeholder="e.g. 82,5" value="${esc(latest)}" />
-      </div>
-      <div class="sheet-actions">
-        <button type="button" class="btn ghost" data-action="close-sheet">Cancel</button>
-        <button type="button" class="btn pri" data-action="save-log-weight" data-testid="save-log-weight">Save</button>
-      </div>
-    </div>`);
-    const input = overlaysEl().querySelector("[data-log-weight-input]");
-    if (input) {
-      input.focus();
-      input.select && input.select();
-    }
+  function formatWeightDate(ymd) {
+    if (!ymd) return "";
+    const d = new Date(`${ymd}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return ymd;
+    return d.toLocaleDateString("da-DK", { day: "numeric", month: "short", year: "numeric" });
   }
 
-  function commitLogWeight() {
+  function openLogWeight(existing) {
+    const series = D().bodyWeightSeries();
+    const today = D().copenhagenYMD();
+    const min = "2015-01-01";
+    const isEdit = !!(existing && existing.id);
+    const dateVal = (existing && existing.date) || today;
+    const weightVal = existing && existing.weight != null
+      ? C().formatNumber(existing.weight)
+      : "";
+    const title = isEdit ? "Edit weigh-in" : "Log weight";
+    showSheet(`<div class="sheet kb-safe" data-testid="log-weight-sheet">
+      <div class="tracking-head">
+        <h2>${esc(title)}</h2>
+        <button type="button" class="tracking-close" data-action="${isEdit ? "weight-history" : "close-sheet"}" data-testid="close-log-weight">Cancel</button>
+      </div>
+      <p class="weight-log-hint">Pick today or an earlier date to add a past weigh-in.</p>
+      <label class="field-label" for="log-weight-date">Date</label>
+      <input class="text-input date-input" id="log-weight-date" type="date" data-log-weight-date data-testid="log-weight-date" value="${esc(dateVal)}" min="${min}" max="${esc(today)}"${isEdit ? ` data-edit-id="${esc(existing.id)}"` : ""} />
+      <label class="field-label" for="log-weight-input">Body weight (kg)</label>
+      <input class="text-input" id="log-weight-input" data-log-weight-input data-testid="log-weight-input" inputmode="decimal" enterkeyhint="done" placeholder="e.g. 82,5" value="${esc(weightVal)}" />
+      <div class="sheet-actions">
+        <button type="button" class="btn pri" data-action="save-log-weight" data-testid="save-log-weight">${isEdit ? "Save" : "Save"}</button>
+      </div>
+    </div>`, { top: true });
+    startViewportPin();
+    /* Don't auto-focus the kg field — on iPhone the keyboard would cover the date picker. */
+  }
+
+  function readLogWeightForm() {
     const root = overlaysEl();
     const input = root && root.querySelector("[data-log-weight-input]");
     const dateEl = root && root.querySelector("[data-log-weight-date]");
     const weight = C().parseNum(input && input.value);
-    if (weight == null) {
-      showToast("Add a body weight to save");
-      return;
-    }
-    D().logBodyWeight(weight, (dateEl && dateEl.value) || D().copenhagenYMD());
+    const today = D().copenhagenYMD();
+    let date = (dateEl && dateEl.value) || today;
+    const editId = (dateEl && dateEl.getAttribute("data-edit-id")) || "";
+    return { weight, date, today, editId };
+  }
+
+  function afterWeightSave(message, reopenHistory) {
     closeSheet();
     if (view === "home" && tab === "home") refreshWeightCard();
     else render();
-    showToast("Weight saved");
+    if (reopenHistory) openWeightHistory();
+    showToast(message || "Weight saved");
+  }
+
+  function commitLogWeight() {
+    const form = readLogWeightForm();
+    if (form.weight == null) {
+      showToast("Add a body weight to save");
+      return;
+    }
+    if (!form.date || form.date > form.today) {
+      showToast("Pick today or a past date");
+      return;
+    }
+    const existing = D().bodyWeightOnDate(form.date, form.editId || null);
+    const save = () => {
+      const result = form.editId
+        ? D().updateBodyWeight(form.editId, { weight: form.weight, date: form.date })
+        : D().logBodyWeight(form.weight, form.date);
+      if (result && result.future) {
+        showToast("Pick today or a past date");
+        return;
+      }
+      afterWeightSave(existing || form.editId ? "Weight updated" : "Weight saved", !!form.editId);
+    };
+    if (existing) {
+      const when = formatWeightDate(existing.date);
+      const prev = C().formatNumber(existing.weight);
+      const next = C().formatNumber(form.weight);
+      showConfirm({
+        title: "Replace weigh-in?",
+        body: `There's already a weigh-in on ${when} (${prev} kg). Replace it with ${next} kg?`,
+        confirm: "Replace",
+        onConfirm: save,
+      });
+      return;
+    }
+    save();
+  }
+
+  function openWeightHistory() {
+    weightHistoryEditMode = false;
+    paintWeightHistory();
+  }
+
+  function paintWeightHistory() {
+    const entries = D().bodyWeightEntries().slice().reverse();
+    const rows = entries.map((e) => {
+      const acts = weightHistoryEditMode
+        ? `<span class="hist-set-acts">
+             <button type="button" class="hist-edit-set" data-action="edit-weight-entry" data-id="${esc(e.id)}" data-testid="edit-weight-${esc(e.id)}">Edit</button>
+             <button type="button" class="hist-del" data-action="delete-weight-entry" data-id="${esc(e.id)}" data-testid="delete-weight-${esc(e.id)}">Delete</button>
+           </span>`
+        : "";
+      const swipe = weightHistoryEditMode
+        ? `<button type="button" class="swipe-actions" data-action="delete-weight-entry" data-id="${esc(e.id)}" aria-hidden="true" tabindex="-1">Delete</button>`
+        : "";
+      return `<div class="hist-swipe" data-swipe="weight-entry" data-id="${esc(e.id)}">
+        ${swipe}
+        <div class="swipe-front">
+          <div class="set-line weight-hist-row" data-testid="weight-hist-row-${esc(e.id)}">
+            <span class="set-n">${esc(formatWeightDate(e.date))}</span>
+            <span class="set-val" data-testid="weight-hist-kg-${esc(e.id)}">${esc(C().formatNumber(e.weight))} kg</span>
+            ${acts}
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+    showSheet(`<div class="sheet" data-testid="weight-history-sheet">
+      <div class="handle"></div>
+      <div class="hist-head">
+        <span class="hist-head-space"></span>
+        <h2>Weight history</h2>
+        <button type="button" class="btn-edit${weightHistoryEditMode ? " on" : ""}" data-action="toggle-weight-history-edit" data-testid="weight-history-edit">${weightHistoryEditMode ? "Done" : "Edit"}</button>
+      </div>
+      <div class="sheet-body">${rows || `<div class="empty" data-testid="weight-history-empty">No weigh-ins yet.</div>`}</div>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" data-action="log-weight" data-testid="history-log-weight">Log weight</button>
+        <button type="button" class="btn pri" data-action="close-sheet" data-testid="weight-history-done">Done</button>
+      </div>
+    </div>`);
+    bindWeightHistorySwipes();
+  }
+
+  function bindWeightHistorySwipes() {
+    if (!weightHistoryEditMode) return;
+    overlaysEl().querySelectorAll('[data-swipe="weight-entry"]').forEach((row) => {
+      const front = row.querySelector(".swipe-front") || row;
+      let startX = 0, startY = 0, dx = 0, tracking = false, decided = false, horizontal = false;
+      row.addEventListener("pointerdown", (e) => {
+        if (e.target.closest("button")) return;
+        startX = e.clientX;
+        startY = e.clientY;
+        dx = 0;
+        tracking = true;
+        decided = false;
+        horizontal = false;
+        front.style.transition = "none";
+      });
+      row.addEventListener("pointermove", (e) => {
+        if (!tracking) return;
+        const x = e.clientX - startX;
+        const y = e.clientY - startY;
+        if (!decided) {
+          if (Math.abs(x) + Math.abs(y) < 8) return;
+          decided = true;
+          horizontal = Math.abs(x) > Math.abs(y) && Math.abs(x) > 6;
+          if (horizontal) {
+            try { row.setPointerCapture(e.pointerId); } catch (err) {}
+          } else {
+            tracking = false;
+            front.style.transition = "";
+            return;
+          }
+        }
+        if (!horizontal) return;
+        dx = Math.min(0, x);
+        if (dx < -120) dx = -120;
+        front.style.transform = `translateX(${dx}px)`;
+        e.preventDefault();
+      });
+      function end() {
+        if (!tracking && !decided) return;
+        const shouldDelete = horizontal && dx < -56;
+        tracking = false;
+        front.style.transition = "";
+        front.style.transform = "";
+        if (shouldDelete) requestDeleteWeight(row.dataset.id);
+      }
+      row.addEventListener("pointerup", end);
+      row.addEventListener("pointercancel", end);
+    });
+  }
+
+  function refreshAfterWeightChange() {
+    if (view === "home" && tab === "home") refreshWeightCard();
+    else if (view === "home") render();
+    const histOpen = overlaysEl().querySelector('[data-testid="weight-history-sheet"]');
+    if (histOpen) paintWeightHistory();
+  }
+
+  function requestDeleteWeight(id) {
+    const entry = D().bodyWeightEntries().find((e) => e.id === id);
+    if (!entry) return;
+    const snap = D().captureWeightUndo();
+    const label = `${formatWeightDate(entry.date)} · ${C().formatNumber(entry.weight)} kg`;
+    showConfirm({
+      title: "Delete weigh-in?",
+      body: `Remove ${label} from your history?`,
+      confirm: "Delete",
+      danger: true,
+      onConfirm: () => {
+        D().deleteBodyWeight(id);
+        const keepEdit = weightHistoryEditMode;
+        refreshAfterWeightChange();
+        if (!overlaysEl().querySelector('[data-testid="weight-history-sheet"]')) {
+          weightHistoryEditMode = keepEdit;
+          paintWeightHistory();
+        }
+        showToast("Weigh-in deleted", "Undo", () => {
+          D().restoreWeightUndo(snap);
+          refreshAfterWeightChange();
+          if (!overlaysEl().querySelector('[data-testid="weight-history-sheet"]')) {
+            openWeightHistory();
+          }
+        });
+      },
+    });
+  }
+
+  function openEditWeight(id) {
+    const entry = D().bodyWeightEntries().find((e) => e.id === id);
+    if (!entry) return;
+    openLogWeight(entry);
   }
 
   function renderHome() {
@@ -1331,7 +1519,7 @@
   }
 
   function applyTrackingViewport(height, offsetTop) {
-    const card = overlaysEl().querySelector(".sheet.tracking");
+    const card = overlaysEl().querySelector(".sheet.tracking, .sheet.kb-safe");
     if (!card) return;
     const app = document.getElementById("app");
     const header = document.getElementById("header");
@@ -1351,7 +1539,7 @@
   }
 
   function pinTrackingToViewport() {
-    if (!overlaysEl().querySelector(".sheet.tracking")) return;
+    if (!overlaysEl().querySelector(".sheet.tracking, .sheet.kb-safe")) return;
     const vv = window.visualViewport;
     if (vv) applyTrackingViewport(vv.height, vv.offsetTop);
     else applyTrackingViewport(window.innerHeight, 0);
@@ -2595,6 +2783,10 @@
     if (action === "select-program") { selectProgram(btn.dataset.program); return; }
     if (action === "log-weight") { openLogWeight(); return; }
     if (action === "save-log-weight") { commitLogWeight(); return; }
+    if (action === "weight-history") { openWeightHistory(); return; }
+    if (action === "toggle-weight-history-edit") { weightHistoryEditMode = !weightHistoryEditMode; paintWeightHistory(); return; }
+    if (action === "edit-weight-entry") { openEditWeight(btn.dataset.id); return; }
+    if (action === "delete-weight-entry") { requestDeleteWeight(btn.dataset.id); return; }
     if (action === "weight-range") {
       D().setWeightChartRange(btn.dataset.range);
       refreshWeightCard();

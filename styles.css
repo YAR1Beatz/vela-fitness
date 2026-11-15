@@ -14,6 +14,7 @@
 }
 
 :root {
+  color-scheme: dark;
   --bg: #07111F;
   --bg2: #0B1A2E;
   --card: #12233A;
@@ -1026,7 +1027,7 @@ input, textarea, select {
 }
 
 /* Sets Tracking — top-anchored card so the iOS keyboard cannot cover it */
-.sheet.tracking {
+.sheet.tracking, .sheet.kb-safe {
   position: absolute;
   left: 12px;
   right: 12px;
@@ -1043,7 +1044,7 @@ input, textarea, select {
   flex: 0 0 auto;
   z-index: 2;
 }
-.sheet.tracking .handle { display: none; }
+.sheet.tracking .handle, .sheet.kb-safe .handle { display: none; }
 .tracking-head {
   display: flex;
   align-items: center;
@@ -1603,7 +1604,58 @@ input, textarea, select {
   font-weight: 650;
   white-space: nowrap;
 }
+.weight-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.weight-hist-btn {
+  background: none;
+  color: var(--accent2);
+  font-size: 13px;
+  font-weight: 650;
+  padding: 6px 4px;
+  min-height: 36px;
+}
 .weight-log svg { width: 11px; height: 11px; }
+.weight-log-hint {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.date-input,
+input[type="date"].text-input {
+  color-scheme: dark;
+  background: var(--bg);
+  color: var(--text);
+  accent-color: var(--accent);
+  min-height: 48px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="date"].text-input::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  cursor: pointer;
+  filter: invert(78%) sepia(40%) saturate(500%) hue-rotate(110deg);
+  width: 18px;
+  height: 18px;
+}
+.weight-hist-row {
+  gap: 12px;
+  padding: 10px 0;
+}
+.weight-hist-row .set-n {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--muted);
+}
+.weight-hist-row .set-val {
+  flex: 0 0 auto;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
 .weight-now {
   font-size: 32px;
   font-weight: 700;
