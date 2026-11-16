@@ -11,7 +11,7 @@ fails = []
 NEW = {
     "Pec Deck": ("pec-deck", 1), "Incline Machine Press": ("incline-machine-press", 1),
     "Overhead Rope Extension": ("overhead-rope-extension", 1), "T-Bar Row": ("t-bar-row", 2),
-    "Tricep Rope Pushdown": ("tricep-rope-pushdown", 1), "Cable Pushdowns": ("tricep-rope-pushdown", 1),
+    "Tricep Rope Pushdown": ("cable-rope-tricep-extension", 1), "Cable Pushdowns": ("cable-push-down-straight-bar", 2),
     "Overhead Cable Crossover": ("overhead-cable-crossover", 1), "Lying Leg Curl": ("lying-leg-curl", 2),
     "Hack Squat": ("hack-squat", 2), "Cable Kickback": ("cable-kickback", 1),
     "Preacher Curl": ("preacher-curl", 2), "Cable Curl": ("cable-curl", 1),
@@ -77,7 +77,7 @@ def run(p, w, h, tag, sheet=False):
         page.goto(URL, wait_until="networkidle")
     page.locator('[data-testid="tab-settings"]').tap()
     page.wait_for_timeout(200)
-    check(page.locator('[data-testid="app-version"] b').inner_text() == "23", f"[{tag}] version 23")
+    check(page.locator('[data-testid="app-version"] b').inner_text() >= "23", f"[{tag}] version >= 23")
     b.close()
 
 

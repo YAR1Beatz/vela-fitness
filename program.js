@@ -78,7 +78,7 @@ window.VELA_PROGRAMS = {
         { name: "Rear Delt Fly", alt: "Face Pull", tempo: [2, 0, 2, 1], sets: 3, reps: 12, weight: 8, thumb: "rear-delt" },
         { name: "EZ-Bar Curl", alt: "Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 3, reps: 10, weight: 25, thumb: "curl" },
         { name: "Hammer Curl", alt: "Incline Dumbbell Curl", tempo: [3, 0, 1, 1], sets: 3, reps: 10, weight: 12, thumb: "hammer" },
-        { name: "Tricep Rope Pushdown", alt: "Overhead Rope Extension", tempo: [2, 0, 2, 1], sets: 3, reps: 12, weight: 20, thumb: "pushdown" },
+        { name: "Cable Rope Tricep Extension", alt: "Overhead Rope Extension", tempo: [2, 0, 2, 1], sets: 3, reps: 12, weight: 20, thumb: "pushdown" },
         { name: "Skull Crusher", alt: "Close-Grip Bench Press", tempo: [3, 0, 1, 1], sets: 3, reps: 10, weight: 25, thumb: "skull" },
         { name: "Overhead Tricep Extension", alt: "Diamond Push-Up", tempo: [3, 0, 2, 1], sets: 3, reps: 12, weight: 12, thumb: "overhead-tri" },
       ],

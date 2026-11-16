@@ -318,6 +318,10 @@
       });
       state.version = 7;
     }
+    if (state.version < 8) {
+      splitPushdownExercises(state);
+      state.version = 8;
+    }
     if (!state.sessions) state.sessions = [];
     if (!state.checkIns) state.checkIns = [];
     if (!state.programs) state.programs = {};
@@ -331,6 +335,74 @@
     normalizeProgramSlots(state);
     (state.workouts || []).forEach(ensureWorkoutFields);
     return state;
+  }
+
+  /* v24: "Tricep Rope Pushdown" and Max-OT's "Cable Pushdown" used to share one key
+     (tricep-rope-pushdown). Split them: Max-OT logs go to the straight-bar pushdown,
+     everything else to Cable Rope Tricep Extension. Log entries are moved unchanged,
+     and a copy of the old records is kept in state.migrationBackups.v8Pushdown. */
+  const PUSHDOWN_OLD_KEYS = ["tricep-rope-pushdown", "cable-pushdown", "cable-pushdowns"];
+  const ROPE_KEY = "cable-rope-tricep-extension";
+  const BAR_KEY = "cable-push-down-straight-bar";
+  function splitPushdownExercises(state) {
+    const hist = state.history || (state.history = {});
+    const last = state.lastLogged || (state.lastLogged = {});
+    const notes = state.notes || (state.notes = {});
+    const backup = { history: {}, lastLogged: {}, notes: {} };
+    let any = false;
+    PUSHDOWN_OLD_KEYS.forEach((k) => {
+      if (hist[k] != null) { backup.history[k] = JSON.parse(JSON.stringify(hist[k])); any = true; }
+      if (last[k] != null) { backup.lastLogged[k] = JSON.parse(JSON.stringify(last[k])); any = true; }
+      if (notes[k] != null) { backup.notes[k] = notes[k]; any = true; }
+    });
+    if (any) {
+      if (!state.migrationBackups) state.migrationBackups = {};
+      if (!state.migrationBackups.v8Pushdown) state.migrationBackups.v8Pushdown = backup;
+    }
+    const moved = { [ROPE_KEY]: [], [BAR_KEY]: [] };
+    PUSHDOWN_OLD_KEYS.forEach((k) => {
+      (hist[k] || []).forEach((h) => {
+        if (!h) return;
+        const dest = h.programId === "max-ot" ? BAR_KEY : ROPE_KEY;
+        if (!hist[dest]) hist[dest] = [];
+        if (h.sessionId && hist[dest].some((x) => x && x.sessionId === h.sessionId)) return;
+        hist[dest].push(h);
+        moved[dest].push(h);
+      });
+    });
+    [ROPE_KEY, BAR_KEY].forEach((dest) => {
+      if (hist[dest]) {
+        hist[dest].sort((a, b) => String((b && (b.datetime || b.date)) || "").localeCompare(String((a && (a.datetime || a.date)) || "")));
+      }
+      if (!moved[dest].length || last[dest]) return;
+      const newest = moved[dest].slice().sort((a, b) => String(b.datetime || b.date || "").localeCompare(String(a.datetime || a.date || "")))[0];
+      const done = (newest.sets || []).filter((st) => st && st.reps != null);
+      const lastSet = done[done.length - 1];
+      if (lastSet) last[dest] = { reps: lastSet.reps, weight: lastSet.weight };
+    });
+    PUSHDOWN_OLD_KEYS.forEach((k) => {
+      if (notes[k] != null && notes[k] !== "") {
+        if (notes[ROPE_KEY] == null || notes[ROPE_KEY] === "") notes[ROPE_KEY] = notes[k];
+        if (notes[BAR_KEY] == null || notes[BAR_KEY] === "") notes[BAR_KEY] = notes[k];
+      }
+      delete hist[k];
+      delete last[k];
+      delete notes[k];
+    });
+    const OLD_NAMES = ["Tricep Rope Pushdown", "Cable Pushdown", "Cable Pushdowns"];
+    const fix = (workouts, programId) => {
+      (workouts || []).forEach((w) => {
+        (w.exercises || []).forEach((ex) => {
+          if (!ex) return;
+          const target = programId === "max-ot" ? "Cable Pushdown" : "Cable Rope Tricep Extension";
+          if (OLD_NAMES.includes(ex.name)) { ex.name = target; ex.key = canonKey(target); }
+          if (OLD_NAMES.includes(ex.alt)) ex.alt = target;
+        });
+      });
+    };
+    Object.keys(state.programs || {}).forEach((id) => fix((state.programs[id] || {}).workouts, id));
+    const active = state.activeProgramId || state.programId || "bro-split";
+    if (!(state.programs && state.programs[active] && state.programs[active].workouts === state.workouts)) fix(state.workouts, active);
   }
 
   function mergeKeyedRecords(obj, map, mergeFn) {

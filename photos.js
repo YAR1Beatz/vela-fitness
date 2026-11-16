@@ -447,10 +447,10 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": "Straight barbell curl video used; not an EZ-bar."
   },
-  "tricep-rope-pushdown": {
-    "name": "Tricep Rope Pushdown",
+  "cable-rope-tricep-extension": {
+    "name": "Cable Rope Tricep Extension",
     "frames": [
-      "img/exercises/tricep-rope-pushdown/0.webp"
+      "img/exercises/cable-rope-tricep-extension/0.webp"
     ],
     "match": "exact",
     "author": "Shixart1985",
@@ -459,6 +459,20 @@ window.VELA_PHOTOS = {
     "license": "CC BY 2.0",
     "license_url": "https://creativecommons.org/licenses/by/2.0/",
     "note": "Rope attachment on a high cable at the bottom of a pushdown. Cropped and resized."
+  },
+  "cable-push-down-straight-bar": {
+    "name": "Cable Push Down (Straight Bar)",
+    "frames": [
+      "img/exercises/cable-push-down-straight-bar/0.webp",
+      "img/exercises/cable-push-down-straight-bar/1.webp"
+    ],
+    "match": "exact",
+    "author": "George Stepanek",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:CableMachinePushdown.JPG",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "note": "Triceps pushdown with a short straight bar on a high cable; start and end frames split from one image."
   },
   "skull-crusher": {
     "name": "Skull Crusher",

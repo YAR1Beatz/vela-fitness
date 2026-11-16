@@ -59,7 +59,8 @@ Cropped or resized copies are shared under the same license as the source.
 | Standing Calf Raise | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Standing Leg Curl | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | T-Bar Row | exact | Colossus Fitness | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:How_to_properly_do_Machine_T-Bar_Rows.webm) | Two frames (start and top) taken from a demonstration video of a chest-supported plate-loaded T-bar row machine. |
-| Tricep Rope Pushdown | exact | Shixart1985 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strong_woman_using_cable_machine_for_upper_body_workout_in_gym.jpg) | Rope attachment on a high cable at the bottom of a pushdown. Cropped and resized. |
+| Cable Push Down (Straight Bar) (Max-OT: Cable Pushdown) | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:CableMachinePushdown.JPG) | Straight-bar triceps pushdown on a high cable; start and end frames split from one image. |
+| Cable Rope Tricep Extension | exact | Shixart1985 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strong_woman_using_cable_machine_for_upper_body_workout_in_gym.jpg) | Rope attachment on a high cable at the bottom of a pushdown. Cropped and resized. |
 | Walking Lunge | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 
 ## Sources
