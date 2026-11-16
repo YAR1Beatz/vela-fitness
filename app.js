@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "19";
-  const VELA_CACHE = "vela-v19";
+  const VELA_VERSION = "20";
+  const VELA_CACHE = "vela-v20";
 
   let view = "home";
   let tab = "home";
@@ -961,7 +961,7 @@
       <div class="home-next program-next"><button class="program" type="button" data-action="next-week" data-testid="next-program-tab">${esc(nextLbl)}</button></div>`;
   }
 
-  function workoutTile(w, { logged, missed, locked, sessionId, pastWeek } = {}) {
+  function workoutTile(w, { logged, missed, locked, sessionId, pastWeek, partial } = {}) {
     const n = (w.exercises || []).length;
     /* On a past/upcoming week page only that week's own sessions count as done.
        The plan's completedAt belongs to the current week and must not leak in. */
@@ -975,13 +975,13 @@
     const sub = w.dayLabel ? `${esc(w.dayLabel)} · ` : "";
     const status = done && pastWeek
       ? "Logged"
-      : (isMissed ? "Not logged" : (locked ? "Upcoming" : `${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes || 60)} mins`));
+      : partial ? "Started, not finished" : (isMissed ? "Not logged" : (locked ? "Upcoming" : `${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes || 60)} mins`));
     const action = locked ? "" : (sessionId ? `data-action="open-review" data-session="${esc(sessionId)}"` : (pastWeek ? "" : `data-action="open-workout" data-id="${esc(w.id)}"`));
     const disabled = locked || (pastWeek && !sessionId) ? " disabled" : "";
     const swipeable = !pastWeek && !locked && !sessionId;
     /* Delete only exists on swipeable rows and stays hidden until the row is swiped. */
     const del = swipeable ? `<button type="button" class="swipe-actions" data-action="delete-workout" data-id="${esc(w.id)}" tabindex="-1" aria-hidden="true">Delete</button>` : "";
-    return `<div class="swipe-row" data-swipe="${swipeable ? "workout" : "none"}" data-id="${esc(w.id)}" data-week-state="${done ? "logged" : (isMissed ? "missed" : (locked ? "upcoming" : "open"))}">
+    return `<div class="swipe-row" data-swipe="${swipeable ? "workout" : "none"}" data-id="${esc(w.id)}" data-week-state="${done ? "logged" : (partial ? "partial" : (isMissed ? "missed" : (locked ? "upcoming" : "open")))}">
       ${del}
       <div class="swipe-front">
         <button type="button" class="tile${done ? " done" : ""}${isMissed ? " missed" : ""}${locked ? " locked" : ""}"${action}${disabled} data-testid="workout-tile-${esc(w.id)}">
@@ -997,36 +997,19 @@
     contentEl().classList.remove("flush");
     const s = D().get();
     const week = Number(programWeek) || s.week || 1;
-    const current = !s.recoveryWeek && Number(s.week) === week;
-    const future = !s.recoveryWeek && week > Number(s.week);
-    const cycle = D().cycleProgress();
-    const info = (cycle.weeks || []).find((w) => w.week === week) || D().weekProgress(week);
-    let tiles = "";
-    if (current) {
-      tiles = (s.workouts || []).map((w) => workoutTile(w, { logged: !!w.completedAt })).join("");
-    } else {
-      const sessions = D().weekSessionsInCycle(week);
-      const byId = {};
-      sessions.forEach((ses) => {
-        if (!byId[ses.workoutId]) byId[ses.workoutId] = ses;
-      });
-      const plan = (s.workouts || []);
-      tiles = plan.map((w) => {
-        const ses = byId[w.id];
-        if (ses) return workoutTile(w, { logged: true, sessionId: ses.sessionId, pastWeek: true });
-        return workoutTile(w, { missed: !future, locked: !!future, pastWeek: true });
-      }).join("");
-      /* Sessions for workouts no longer on the plan */
-      Object.keys(byId).forEach((id) => {
-        if (plan.some((w) => w.id === id)) return;
-        const ses = byId[id];
-        tiles += workoutTile({ id, name: ses.workoutName || id, minutes: 60, exercises: [] }, { logged: true, sessionId: ses.sessionId, pastWeek: true });
-      });
-    }
+    const wr = D().weekRows(week);
+    const info = D().weekProgress(week);
+    const current = wr.current;
+    const future = wr.future;
+    const tiles = wr.rows.map((r) => {
+      if (current) return workoutTile(r.workout, { logged: r.done });
+      if (r.session) return workoutTile(r.workout, { logged: r.done, partial: !r.done, sessionId: r.session.sessionId, pastWeek: true });
+      return workoutTile(r.workout, { missed: !future, locked: !!future, pastWeek: true });
+    }).join("");
     contentEl().innerHTML = `
       <div class="section">
         <div class="plan-titles">
-          <p class="week-kicker">Week ${esc(week)} · ${esc(info.pct)}% completed</p>
+          <p class="week-kicker" data-testid="week-detail-pct">Week ${esc(week)} · ${esc(info.pct)}% completed</p>
           <h1>${current ? "This week's plan" : (future ? "Upcoming week" : "Logged workouts")}</h1>
         </div>
       </div>
@@ -2475,7 +2458,7 @@
     if (!w) return;
     showConfirm({
       title: `Delete ${w.name}?`,
-      body: "This removes the workout from this week. You can undo for a few seconds after.",
+      body: "This removes it from this week’s plan. Sets you already logged stay in History. You can undo for a few seconds after.",
       confirm: "Delete",
       danger: true,
       onConfirm: () => {
@@ -2620,17 +2603,24 @@
 
   /* Swipe helpers */
   function bindSwipe(selector, onOpen) {
+    /* v20: the row shrinks from the right (margin) instead of sliding left, so the
+       title never slides out of view, and taps on Delete are never eaten by the row. */
     contentEl().querySelectorAll(selector).forEach((row) => {
-      let startX = 0, startY = 0, dx = 0, tracking = false, decided = false, horizontal = false;
+      let startX = 0, startY = 0, dx = 0, tracking = false, decided = false, horizontal = false, wasOpen = false;
       const front = row.querySelector(".swipe-front") || row;
+      const closeOthers = () => contentEl().querySelectorAll(selector + ".open").forEach((r) => { if (r !== row) r.classList.remove("open"); });
       row.addEventListener("pointerdown", (e) => {
         if (e.button && e.button !== 0) return;
+        delete row.dataset.swallow;
+        if (e.target.closest(".swipe-actions")) { tracking = false; decided = false; return; }
+        closeOthers();
         startX = e.clientX;
         startY = e.clientY;
         dx = 0;
         tracking = true;
         decided = false;
         horizontal = false;
+        wasOpen = row.classList.contains("open");
         front.style.transition = "none";
       });
       row.addEventListener("pointermove", (e) => {
@@ -2643,6 +2633,7 @@
           horizontal = Math.abs(x) > Math.abs(y) && Math.abs(x) > 6;
           if (horizontal) {
             row.classList.add("dragging");
+            closeOthers();
             try { row.setPointerCapture(e.pointerId); } catch (err) {}
           } else {
             tracking = false;
@@ -2651,38 +2642,54 @@
           }
         }
         if (!horizontal) return;
-        dx = Math.min(0, x);
+        dx = Math.min(0, x + (wasOpen ? -92 : 0));
         if (dx < -120) dx = -120;
-        front.style.transform = `translateX(${dx}px)`;
+        front.style.marginRight = `${-dx}px`;
         e.preventDefault();
       });
       function end() {
         if (!tracking && !decided) return;
+        const tap = tracking && !decided;
         tracking = false;
         row.classList.remove("dragging");
         front.style.transition = "";
+        front.style.marginRight = "";
+        if (tap) {
+          /* A tap on an open row just closes it; the click is swallowed below. */
+          if (wasOpen) { row.classList.remove("open"); row.dataset.swallow = "1"; }
+          return;
+        }
         if (horizontal && dx < -56) {
           if (onOpen) onOpen(row);
           else row.classList.add("open");
-          front.style.transform = "";
         } else {
           row.classList.remove("open");
-          front.style.transform = "";
         }
+        row.dataset.swallow = "1"; /* a swipe is never a tap on the tile */
       }
       row.addEventListener("pointerup", end);
       row.addEventListener("pointercancel", end);
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".swipe-actions")) return;
+        if (row.dataset.swallow) {
+          delete row.dataset.swallow;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
     });
   }
 
   function bindSwipeWorkouts() {
     bindSwipe(".swipe-row[data-swipe=workout]");
-    contentEl().addEventListener("click", (e) => {
-      if (e.target.closest(".swipe-actions")) return;
-      if (!e.target.closest(".swipe-row.open")) {
-        contentEl().querySelectorAll(".swipe-row.open").forEach((r) => r.classList.remove("open"));
-      }
-    }, { once: true });
+    const root = contentEl();
+    if (!root.dataset.swipeCloser) {
+      root.dataset.swipeCloser = "1";
+      root.addEventListener("pointerdown", (e) => {
+        if (e.target.closest(".swipe-row.open")) return;
+        root.querySelectorAll(".swipe-row.open").forEach((r) => r.classList.remove("open"));
+      });
+    }
   }
 
   function bindSwipeExercises() {
@@ -3051,7 +3058,11 @@
     window.addEventListener("beforeunload", flush);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flush();
-      else syncShellViewport();
+      else {
+        syncShellViewport();
+        /* v20: refresh counts when the app comes back to the front. */
+        if (view === "home" || view === "program" || view === "program-week" || view === "progress") render();
+      }
     });
     if ("serviceWorker" in navigator) {
       let refreshing = false;

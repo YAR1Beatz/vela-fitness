@@ -308,8 +308,9 @@ input, textarea, select {
   transition: transform 0.2s ease;
   will-change: transform;
 }
-.swipe-row.open .swipe-front { transform: translateX(-92px); }
-.swipe-row.swapping .swipe-front { transform: translateX(-92px); }
+.swipe-row { touch-action: pan-y; }
+.swipe-row .swipe-front { transition: margin-right 0.2s ease; }
+.swipe-row.open .swipe-front, .swipe-row.swapping .swipe-front { margin-right: 100px; }
 /* v19: the Delete action is hidden at rest and only shows while swiping or open. */
 .swipe-row > .swipe-actions,
 .hist-swipe > .swipe-actions { visibility: hidden; pointer-events: none; }

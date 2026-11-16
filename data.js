@@ -558,6 +558,20 @@
     s.workouts.forEach((w) => {
       if (w.exercises.some((ex) => ex.sets.some((st) => st.done))) upsertSessionHistory(w);
     });
+    settleWeekSessions();
+  }
+
+  /* v20: when a week is closed, its session records are made to match what the week
+     page showed: done only if that plan row was finished. Stray/duplicate records keep
+     their logged sets in History; they just stop counting as a finished workout. */
+  function settleWeekSessions() {
+    const s = get();
+    if (s.recoveryWeek) return;
+    const finishedIds = new Set((s.workouts || []).filter((w) => w.completedAt && w.sessionId).map((w) => w.sessionId));
+    sessionsInCycle().forEach((ses) => {
+      if (Number(ses.week) !== Number(s.week || 1)) return;
+      ses.finished = finishedIds.has(ses.sessionId);
+    });
   }
 
   function armsAndDeltsTemplates() {
@@ -816,6 +830,8 @@
       durationMs: timerMs(w) || 0,
       volumeKg: vol && vol.kg || 0,
       completed: !!w.completedAt || logged,
+      /* v20: "finished" = the workout was marked done. Sets logged without finishing don't count. */
+      finished: !!w.completedAt,
     };
     if (!state.sessions) state.sessions = [];
     const i = state.sessions.findIndex((s) => s.sessionId === w.sessionId);
@@ -952,6 +968,8 @@
     const w = workoutById(id);
     if (!w) return;
     w.completedAt = null;
+    const ses = (state.sessions || []).find((x) => x.sessionId === w.sessionId);
+    if (ses) ses.finished = false;
     saveNow();
     notify();
   }
@@ -1619,8 +1637,24 @@
     return day >= start && day < addDaysYMD(start, 7);
   }
 
+  /* v20: a session counts as done only if it was finished. Older records without
+     the flag were saved when "logged" meant done, so they keep counting. */
+  function sessionFinished(ses) {
+    if (!ses) return false;
+    if (ses.finished != null) return !!ses.finished;
+    return ses.completed !== false;
+  }
+
+  /* Weekly quota used for past calendar weeks (streak history). */
+  function quotaDays() {
+    const s = get();
+    return s.daysPerWeek || (s.workouts || []).length || (PROGRAM().defaultDays || 4);
+  }
+
+  /* Planned workouts this week = the rows on this week's plan (custom days like "Mix" included). */
   function plannedWorkouts() {
     const s = get();
+    if ((s.workouts || []).length) return s.workouts.length;
     if (s.daysPerWeek) return s.daysPerWeek;
     const n = (s.workouts || []).length;
     return n || (PROGRAM().defaultDays || 4);
@@ -1681,6 +1715,7 @@
         durationMs: (prev && prev.durationMs) || timerMs(w) || 0,
         volumeKg: vol.kg || 0,
         completed: !!w.completedAt || logged,
+        finished: !!w.completedAt,
       });
     });
     return Object.values(byId);
@@ -1689,7 +1724,7 @@
   function sessionsInWeek(start, programId) {
     return derivedSessions().filter((ses) => {
       if (programId && !sessionProgramMatches(ses, programId)) return false;
-      return inCalendarWeek(sessionDate(ses), start) && ses.completed;
+      return inCalendarWeek(sessionDate(ses), start) && sessionFinished(ses);
     });
   }
 
@@ -1810,21 +1845,30 @@
     const s = get();
     const programId = activeProgramId();
     const start = calendarWeekStart(copenhagenYMD(now));
-    const planned = plannedWorkouts();
-    const sessions = sessionsInWeek(start, programId);
-    const completed = uniqueWorkouts(sessions);
+    let planned, completed, vol, hoursMs, sessions;
+    if (!s.recoveryWeek) {
+      /* v20: same source as the checks on the week page: this program week's plan rows. */
+      const wr = weekRows(s.week || 1);
+      const doneRows = wr.rows.filter((r) => r.done);
+      planned = wr.rows.length;
+      completed = doneRows.length;
+      vol = { kg: 0, repsOnly: 0 };
+      hoursMs = 0;
+      doneRows.forEach((r) => {
+        const v = workoutVolume(r.workout);
+        vol.kg += v.kg || 0;
+        vol.repsOnly += v.repsOnly || 0;
+        hoursMs += timerMs(r.workout) || 0;
+      });
+    } else {
+      planned = 0;
+      sessions = sessionsInWeek(start, programId);
+      completed = uniqueWorkouts(sessions);
+      vol = thisWeekVolume(start, programId);
+      hoursMs = sessions.reduce((sum, ses) => sum + (ses.durationMs || 0), 0);
+    }
     const remaining = Math.max(0, planned - completed);
-    const vol = thisWeekVolume(start, programId);
     const pbs = personalBestsThisWeek(start, programId);
-    const hoursMs = sessions.reduce((sum, ses) => sum + (ses.durationMs || 0), 0);
-    /* Current in-progress timer counts toward hours if the workout has logged work. */
-    (s.workouts || []).forEach((w) => {
-      if (w.completedAt) return;
-      const logged = (w.exercises || []).some((ex) => (ex.sets || []).some((st) => st.done));
-      if (!logged && !w.timerStartedAt && !w.timerAccumMs) return;
-      if (sessions.some((ses) => ses.sessionId === w.sessionId && ses.durationMs)) return;
-      if (logged) hoursMs; /* already in derived sessions */
-    });
 
     /* Streak: consecutive calendar weeks (before this one) that hit the quota.
        This week, if still in progress, does not break it. If this week already
@@ -1836,8 +1880,10 @@
     if (!thisHit) {
       /* don't start counting from a future/empty last week with no data? still check */
     }
+    const quota = quotaDays();
     for (let i = 0; i < 104; i += 1) {
-      if (weekHasQuota(cursor, planned, programId)) streak += 1;
+      if (cursor === start && thisHit) { streak += 1; cursor = addDaysYMD(cursor, -7); continue; }
+      if (weekHasQuota(cursor, quota, programId)) streak += 1;
       else break;
       cursor = addDaysYMD(cursor, -7);
     }
@@ -2103,35 +2149,83 @@
     return seen.size;
   }
 
+
+  /* v20: one source of truth for a program week. The week page, the week cards,
+     the Program totals and the Home dashboard all read these rows. */
+  function weekRows(week) {
+    const s = get();
+    const wk = Number(week) || s.week || 1;
+    const current = !s.recoveryWeek && Number(s.week || 1) === wk;
+    const future = !s.recoveryWeek && wk > Number(s.week || 1);
+    const plan = s.workouts || [];
+    if (current) {
+      return {
+        week: wk, current: true, future: false,
+        rows: plan.map((w) => ({ workout: w, session: null, done: !!w.completedAt, state: w.completedAt ? "logged" : "open" })),
+      };
+    }
+    const byWorkout = {};
+    weekSessionsInCycle(wk).forEach((ses) => {
+      const prev = byWorkout[ses.workoutId];
+      if (!prev || (sessionFinished(ses) && !sessionFinished(prev))) byWorkout[ses.workoutId] = ses;
+    });
+    const rows = plan.map((w) => {
+      const ses = byWorkout[w.id];
+      if (ses) {
+        const done = sessionFinished(ses);
+        return { workout: w, session: ses, done, state: done ? "logged" : "partial" };
+      }
+      return { workout: w, session: null, done: false, state: future ? "upcoming" : "missed" };
+    });
+    Object.keys(byWorkout).forEach((id) => {
+      if (plan.some((w) => w.id === id)) return;
+      const ses = byWorkout[id];
+      const done = sessionFinished(ses);
+      if (!done) return; /* unfinished sessions of removed days are not shown or counted */
+      rows.push({
+        workout: { id, name: ses.workoutName || id, minutes: 60, exercises: [] },
+        session: ses, done, state: done ? "logged" : "partial", orphan: true,
+      });
+    });
+    return { week: wk, current: false, future, rows };
+  }
+
   function weekSessionsInCycle(week, programId) {
     return sessionsInCycle(programId).filter((ses) => Number(ses.week) === Number(week));
   }
 
+  function weekProgress(week) {
+    const s = get();
+    const wr = weekRows(week);
+    const planned = wr.rows.length;
+    const doneRows = wr.rows.filter((r) => r.done);
+    const done = doneRows.length;
+    const timeMs = doneRows.reduce((sum, r) => sum + (r.session ? (r.session.durationMs || 0) : (timerMs(r.workout) || 0)), 0);
+    const pct = planned > 0 ? Math.min(100, Math.round((done / planned) * 100)) : 0;
+    return {
+      week: wr.week,
+      planned,
+      done,
+      pct,
+      timeMs,
+      complete: planned > 0 && done >= planned,
+      current: wr.current && !s.recoveryWeek,
+      sessions: doneRows.map((r) => r.session).filter(Boolean),
+    };
+  }
+
   function cycleProgress() {
     const s = get();
-    const plannedDays = plannedWorkouts() || s.daysPerWeek || (s.workouts || []).length || 4;
+    const plannedDays = plannedWorkouts();
     const weeks = cycleWeeks();
     const current = s.recoveryWeek ? weeks : (s.week || 1);
     const totalWeeks = Math.max(weeks, current);
-    const total = weeks * plannedDays;
-    const sessions = sessionsInCycle();
-    /* Current in-progress completions that may not be in sessions yet. */
-    const extra = [];
-    if (!s.recoveryWeek) {
-      (s.workouts || []).forEach((w) => {
-        if (!w.completedAt) return;
-        if (sessions.some((ses) => ses.sessionId === w.sessionId)) return;
-        extra.push({ sessionId: w.sessionId, workoutId: w.id, week: s.week, durationMs: timerMs(w) || 0, completed: true });
-      });
-    }
-    const all = sessions.concat(extra);
-    const done = uniqueWorkoutCount(all.filter((ses) => ses.completed !== false));
-    const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-    const timeMs = all.reduce((sum, ses) => sum + (ses.durationMs || 0), 0);
     const weekCards = [];
-    for (let w = 1; w <= totalWeeks; w += 1) {
-      weekCards.push(weekProgress(w, plannedDays, sessions, extra));
-    }
+    for (let w = 1; w <= totalWeeks; w += 1) weekCards.push(weekProgress(w));
+    const done = weekCards.reduce((sum, w) => sum + w.done, 0);
+    const total = weekCards.reduce((sum, w) => sum + w.planned, 0);
+    const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+    const timeMs = weekCards.reduce((sum, w) => sum + (w.timeMs || 0), 0);
     return {
       done,
       total,
@@ -2143,25 +2237,6 @@
       currentWeek: s.week || 1,
       recoveryWeek: !!s.recoveryWeek,
       weeks: weekCards,
-    };
-  }
-
-  function weekProgress(week, plannedDays, cycleSessions, extra) {
-    const s = get();
-    const planned = plannedDays || plannedWorkouts() || (s.workouts || []).length || 4;
-    const list = (cycleSessions || sessionsInCycle()).filter((ses) => Number(ses.week) === Number(week));
-    const more = (extra || []).filter((ses) => Number(ses.week) === Number(week));
-    const done = uniqueWorkoutCount(list.concat(more));
-    const pct = planned > 0 ? Math.min(100, Math.round((done / planned) * 100)) : 0;
-    const isCurrent = !s.recoveryWeek && Number(s.week) === Number(week);
-    return {
-      week,
-      planned,
-      done,
-      pct,
-      complete: planned > 0 && done >= planned,
-      current: isCurrent,
-      sessions: list.concat(more),
     };
   }
 
@@ -2281,6 +2356,8 @@
     cycleProgress,
     weekProgress,
     weekSessionsInCycle,
+    weekRows,
+    sessionFinished,
     sessionsInCycle,
     allTimePersonalBests,
     volumeTrend,
