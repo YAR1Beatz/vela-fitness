@@ -78,3 +78,7 @@ Also still without a dedicated photo (closest still or catalog thumbnail only) �
 
 
 No freely licensed photo showing the right equipment was found for: Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Single-Leg Leg Press Calf Raise (Max-OT: Calf Raises on Leg Press), Low Cable Fly, Cable Crunch and Pallof Press. They show the built-in VELA icon instead of a wrong photo.
+
+## Food data (v26)
+
+Food search and barcode lookups use [Open Food Facts](https://world.openfoodfacts.org) — data © Open Food Facts contributors, available under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1-0/); product images are not used. Barcode scanning on iPhone uses [ZXing for JS](https://github.com/zxing-js/library) (Apache License 2.0, vendored as `vendor/zxing.min.js`, licence in `vendor/ZXING-LICENSE.txt`).

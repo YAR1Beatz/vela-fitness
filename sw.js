@@ -5,6 +5,8 @@ const ASSETS = [
   "./styles.css",
   "./app.js",
   "./data.js",
+  "./food.js",
+  "./vendor/zxing.min.js",
   "./program.js",
   "./catalog.js",
   "./photos.js",

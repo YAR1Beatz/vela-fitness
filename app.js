@@ -188,6 +188,9 @@
     } else if (view === "program-week") {
       mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Week ${esc(programWeek)}</div></div>`;
       left = `<button class="icon-btn" type="button" data-action="program-back" aria-label="Back to program">${ICONS.back}</button>`;
+    } else if (view === "food") {
+      mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Food</div></div>`;
+      left = `<button class="icon-btn" type="button" data-action="food-back" aria-label="Back to Home" data-testid="food-back">${ICONS.back}</button>`;
     } else if (view === "progress") {
       mid = `<div class="brand"><div class="word">${ICONS.logo}VELA</div><div class="sub">Progress</div></div>`;
     } else if (view === "checkin") {
@@ -674,6 +677,7 @@
     contentEl().innerHTML = `
       ${dash}
       ${weightCardHtml()}
+      ${window.VELA_FOOD ? window.VELA_FOOD.homeCardHtml() : ""}
       <div class="section">
         <div class="plan-titles">
           <button type="button" class="program-name" data-action="choose-program" data-testid="program-name">${esc(D().programName())}</button>
@@ -894,7 +898,7 @@
       { id: "checkin", label: "Check-in", icon: ICONS.tabCheckin },
       { id: "settings", label: "Settings", icon: ICONS.tabSettings },
     ];
-    const current = (view === "program-week") ? "program" : (view === "review" ? (returnView === "program-week" || returnView === "program" ? "program" : tab) : (view === "workout" ? tab : view));
+    const current = (view === "food") ? "home" : (view === "program-week") ? "program" : (view === "review" ? (returnView === "program-week" || returnView === "program" ? "program" : tab) : (view === "workout" ? tab : view));
     const idx = items.findIndex((it) => it.id === current);
     /* v25: the active bubble slides from the previous tab to the new one. */
     const prev = typeof bar.__tabIndex === "number" ? bar.__tabIndex : idx;
@@ -1059,6 +1063,7 @@
     ).join("") || `<p class="empty">History shows up here after you log a set. You can edit or delete a wrong entry.</p>`;
     contentEl().innerHTML = `
       <div class="progress-page" data-testid="progress-tab">
+        ${window.VELA_FOOD ? window.VELA_FOOD.progressHtml() : ""}
         <section class="prog-card">
           <h2>Personal bests</h2>
           <p class="prog-note">Heaviest weight you’ve logged for each exercise.</p>
@@ -1162,12 +1167,13 @@
         <button type="button" class="add" data-action="reset-program">Reset</button>
       </div>
       <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Bro Split 4-day, Bro Split 5-day and Max-OT each keep their own week and plan. History and last weights are shared, so overload still works if you switch.</p>
+      ${window.VELA_FOOD ? window.VELA_FOOD.settingsHtml() : ""}
       <div class="settings-version" data-testid="app-version">
         <span>Version</span>
         <b>${VELA_VERSION}</b>
       </div>
       <p class="settings-build">VELA ${VELA_VERSION} · ${VELA_CACHE}</p>
-      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Food data comes from Open Food Facts (openfoodfacts.org), available under the Open Database License (ODbL); the barcode scanner uses ZXing (Apache 2.0). Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
     </div>`;
   }
 
@@ -1187,6 +1193,7 @@
     else if (view === "progress") renderProgress();
     else if (view === "checkin") renderCheckInPage();
     else if (view === "settings") renderSettingsPage();
+    else if (view === "food" && window.VELA_FOOD) { hideFooter(); window.VELA_FOOD.renderPage(contentEl()); }
     else {
       contentEl().classList.remove("has-footer");
       renderHome();
@@ -1637,6 +1644,7 @@
   }
 
   function closeSheet() {
+    if (window.VELA_FOOD) window.VELA_FOOD.stopScan();
     stopViewportPin();
     unlockBackgroundScroll();
     const host = overlaysEl().querySelector("[data-sheet-host]");
@@ -1862,7 +1870,7 @@
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
         <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Each program has its own week and plan. History and last weights are shared, so overload still works if you switch. Edit program.js to change the default workouts.</p>
-        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Food data comes from Open Food Facts (openfoodfacts.org), available under the Open Database License (ODbL); the barcode scanner uses ZXing (Apache 2.0). Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);
@@ -2841,6 +2849,7 @@
       return;
     }
     if (action === "switch-tab") { switchTab(btn.dataset.tab); return; }
+    if (action === "food-back") { view = "home"; tab = "home"; render(); contentEl().scrollTop = 0; return; }
     if (action === "open-week") {
       programWeek = Number(btn.dataset.week) || 1;
       view = "program-week";
@@ -2932,6 +2941,8 @@
       workoutEditMode = false;
       reviewWorkout = null;
       render();
+      /* A workout always opens at its first exercise, even from a scrolled Home. */
+      contentEl().scrollTop = 0;
       return;
     }
     if (action === "reset-timer") {
@@ -3181,8 +3192,21 @@
     }
   }
 
+  function openFood() {
+    closeSheet();
+    view = "food";
+    tab = "home";
+    render();
+    contentEl().scrollTop = 0;
+  }
+
   window.VELA_APP = {
     render,
+    openFood,
+    showSheet,
+    closeSheet,
+    showToast,
+    showConfirm,
     get view() { return view; },
     get tab() { return tab; },
     version: VELA_VERSION,
