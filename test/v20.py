@@ -174,7 +174,7 @@ def run(p, width, height, tag):
     page.locator('[data-testid="tab-settings"]').tap()
     page.wait_for_timeout(200)
     ver = page.locator('[data-testid="app-version"] b').inner_text()
-    check(ver == "20", f"[{tag}] version 20", ver)
+    check(int(ver) >= 20, f"[{tag}] version 20+", ver)
     browser.close()
 
 

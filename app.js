@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "20";
-  const VELA_CACHE = "vela-v20b";
+  const VELA_VERSION = "21";
+  const VELA_CACHE = "vela-v21";
 
   let view = "home";
   let tab = "home";
@@ -680,7 +680,7 @@
           <h1>This Week's Plan</h1>
           <p class="week-kicker" data-testid="week-plan-label">${esc(D().weekLabel())}${continued}</p>
         </div>
-        ${s.recoveryWeek ? "" : `<button class="add" type="button" data-action="add-workout">${ICONS.plus} Add workout</button>`}
+        ${s.recoveryWeek ? "" : `<button class="add" type="button" data-action="add-workout" data-testid="home-add-workout">${ICONS.plus} Add workout</button>`}
       </div>
       ${recovery}
       ${s.recoveryWeek ? "" : `<div class="info">${ICONS.info}<span>Swipe left on the workout tile to delete</span></div>
@@ -1014,6 +1014,7 @@
           <p class="week-kicker" data-testid="week-detail-pct">Week ${esc(week)} · ${esc(info.pct)}% completed</p>
           <h1>${current ? "This week's plan" : (future ? "Upcoming week" : "Logged workouts")}</h1>
         </div>
+        ${current ? `<button class="add" type="button" data-action="add-workout" data-testid="week-add-workout">${ICONS.plus} Add workout</button>` : ""}
       </div>
       <div class="tiles" data-testid="week-plan">${tiles || `<div class="empty">No workouts this week.</div>`}</div>`;
     if (current) bindSwipeWorkouts();
