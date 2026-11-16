@@ -4,7 +4,7 @@
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
   const VELA_VERSION = "20";
-  const VELA_CACHE = "vela-v20";
+  const VELA_CACHE = "vela-v20b";
 
   let view = "home";
   let tab = "home";
@@ -82,6 +82,7 @@
     pause: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="7" y="5.5" width="3.8" height="15" rx="1.2" fill="currentColor"/><rect x="15.2" y="5.5" width="3.8" height="15" rx="1.2" fill="currentColor"/></svg>`,
     play: `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M9 6.2v13.6L20.2 13 9 6.2z" fill="currentColor"/></svg>`,
     target: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v2.2M8 12.3v2.2M1.5 8h2.2M12.3 8h2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    reset: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4.2 10a5.8 5.8 0 1 0 1.9-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5.6 2.6v3.6h3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     close: `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M6 6l10 10M16 6 6 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
     more: `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="5.5" cy="11" r="1.55" fill="currentColor"/><circle cx="11" cy="11" r="1.55" fill="currentColor"/><circle cx="16.5" cy="11" r="1.55" fill="currentColor"/></svg>`,
     drag: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3.5 6h11M3.5 9h11M3.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
@@ -180,6 +181,7 @@
         <button type="button" class="timer-btn${running ? "" : " paused"}" data-action="toggle-timer" data-testid="workout-timer" aria-label="${label}">
           ${icon}<span data-timer-clock>${esc(D().formatTimer(D().timerMs(w)))}</span>
         </button>
+        ${view === "workout" && !w.completedAt ? `<button type="button" class="timer-reset" data-action="reset-timer" data-testid="reset-timer" aria-label="Reset workout timer">${ICONS.reset}</button>` : ""}
       </div>`;
     } else if (view === "days-setup") {
       mid = `<div class="brand"><div class="word logo-only">${ICONS.logo}</div></div>`;
@@ -1393,22 +1395,77 @@
     if (!isLastOfLast) startRest(exIndex, last);
   }
 
+  /* v20: the rest timer is timestamp-based. iOS pauses JS while the app is in the
+     background, so we store when rest ends and work out what's left from the clock. */
+  const REST_KEY = "vela-rest-v1";
+
+  function saveRest() {
+    try {
+      if (restTimer) localStorage.setItem(REST_KEY, JSON.stringify({ endsAt: restTimer.endsAt, total: restTimer.total, next: restTimer.next, workoutId: restTimer.workoutId }));
+      else localStorage.removeItem(REST_KEY);
+    } catch (e) {}
+  }
+
+  function restRemaining() {
+    if (!restTimer) return 0;
+    return Math.max(0, Math.ceil((restTimer.endsAt - Date.now()) / 1000));
+  }
+
   function startRest(exIndex, setIndex) {
     stopRest(false);
     const total = D().get().restSeconds || 90;
-    const w = activeWorkout();
     const next = nextSetHint(exIndex, setIndex);
-    restTimer = { remaining: total, total, next, interval: null };
+    runRest({ endsAt: Date.now() + total * 1000, total, next, workoutId: activeWorkoutId });
+  }
+
+  function runRest(t) {
+    restTimer = { endsAt: t.endsAt, total: t.total, next: t.next || "", workoutId: t.workoutId || null, interval: null, remaining: 0 };
+    restTimer.remaining = restRemaining();
+    saveRest();
     showRestSheet();
-    restTimer.interval = setInterval(() => {
-      if (!restTimer) return;
-      restTimer.remaining -= 1;
-      if (restTimer.remaining <= 0) {
-        stopRest(true);
-        return;
-      }
-      patchRest();
-    }, 1000);
+    restTimer.interval = setInterval(tickRest, 250);
+    tickRest();
+  }
+
+  function tickRest() {
+    if (!restTimer) return;
+    restTimer.remaining = restRemaining();
+    if (restTimer.remaining <= 0) { finishRest(); return; }
+    patchRest();
+  }
+
+  function finishRest() {
+    if (!restTimer) return;
+    if (restTimer.interval) clearInterval(restTimer.interval);
+    restTimer.interval = null;
+    restTimer.remaining = 0;
+    patchRest();
+    try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) {}
+    const sheet = overlaysEl().querySelector('[data-testid="rest-timer"]');
+    if (sheet) {
+      sheet.classList.add("rest-done");
+      const lbl = sheet.querySelector(".rest-lbl");
+      if (lbl) lbl.textContent = "Rest done";
+    }
+    restTimer = null;
+    saveRest();
+    setTimeout(() => {
+      if (restTimer) return; /* a new rest started meanwhile */
+      const host = overlaysEl().querySelector("[data-rest-host]");
+      const el = host && host.querySelector('.rest-done');
+      if (el) host.innerHTML = "";
+    }, 1500);
+  }
+
+  /* Bring the rest timer up to date after the app was in the background or reloaded. */
+  function resumeRest() {
+    if (restTimer) { tickRest(); return; }
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(REST_KEY) || "null"); } catch (e) {}
+    if (!saved || !saved.endsAt) return;
+    if (view !== "workout") return;
+    if (saved.workoutId && saved.workoutId !== activeWorkoutId) return;
+    runRest(saved);
   }
 
   function nextSetHint(exIndex, setIndex) {
@@ -1481,6 +1538,7 @@
   function stopRest(close) {
     if (restTimer && restTimer.interval) clearInterval(restTimer.interval);
     restTimer = null;
+    saveRest();
     if (close !== false) {
       const host = overlaysEl().querySelector("[data-rest-host]");
       if (host) host.innerHTML = "";
@@ -2860,6 +2918,18 @@
       render();
       return;
     }
+    if (action === "reset-timer") {
+      const id = activeWorkoutId;
+      if (!id) return;
+      showConfirm({
+        title: "Reset timer?",
+        body: "The session timer goes back to 0:00. Your logged sets are kept.",
+        confirm: "Reset",
+        danger: true,
+        onConfirm: () => { D().resetTimer(id); renderHeader(); },
+      });
+      return;
+    }
     if (action === "toggle-timer") {
       if (activeWorkoutId) D().toggleTimer(activeWorkoutId);
       renderHeader();
@@ -2946,9 +3016,10 @@
     if (action === "skip-rest") { stopRest(true); return; }
     if (action === "add-rest") {
       if (restTimer) {
-        restTimer.remaining += 15;
+        restTimer.endsAt += 15000;
         restTimer.total += 15;
-        patchRest();
+        saveRest();
+        tickRest();
       }
       return;
     }
@@ -3053,13 +3124,19 @@
       window.visualViewport.addEventListener("scroll", syncShellViewport);
     }
     render();
+    resumeRest();
     const flush = () => D().saveNow();
     window.addEventListener("pagehide", flush);
+    const wake = () => { patchTimer(); resumeRest(); };
+    window.addEventListener("pageshow", wake);
+    window.addEventListener("focus", wake);
     window.addEventListener("beforeunload", flush);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flush();
       else {
         syncShellViewport();
+        patchTimer();
+        resumeRest();
         /* v20: refresh counts when the app comes back to the front. */
         if (view === "home" || view === "program" || view === "program-week" || view === "progress") render();
       }

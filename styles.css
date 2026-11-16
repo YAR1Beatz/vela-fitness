@@ -871,6 +871,20 @@ input, textarea, select {
 }
 .timer-btn svg { width: 26px; height: 26px; flex: 0 0 26px; }
 .timer-btn.paused { color: var(--muted); }
+.timer-reset {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  margin-left: -4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: rgba(30, 224, 200, 0.08);
+}
+.timer-reset:active { background: var(--accent); color: var(--accent-ink); }
+.rest-done .rest-lbl { color: var(--accent); }
 
 .ex-heading {
   font-size: 20px;

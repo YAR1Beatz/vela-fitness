@@ -944,6 +944,18 @@
     return Math.max(0, ms);
   }
 
+  /* v20: restart the session timer from 0:00. A running timer keeps running. */
+  function resetTimer(workoutId) {
+    const w = workoutById(workoutId);
+    if (!w || w.completedAt) return;
+    w.timerAccumMs = 0;
+    w.timerElapsedFinal = null;
+    if (!w.timerPaused && w.timerStartedAt) w.timerStartedAt = Date.now();
+    else { w.timerStartedAt = null; w.timerPaused = true; }
+    saveNow();
+    notify();
+  }
+
   function formatTimer(ms) {
     const total = Math.floor(Math.max(0, ms) / 1000);
     const h = Math.floor(total / 3600);
@@ -2428,6 +2440,7 @@
     startTimer,
     pauseTimer,
     toggleTimer,
+    resetTimer,
     timerMs,
     formatTimer,
     trackSets,

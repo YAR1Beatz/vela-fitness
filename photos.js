@@ -102,16 +102,15 @@ window.VELA_PHOTOS = {
   "machine-chest-press": {
     "name": "Machine Chest Press",
     "frames": [
-      "img/exercises/machine-chest-press/0.webp",
-      "img/exercises/machine-chest-press/1.webp"
+      "img/exercises/machine-chest-press/0.webp"
     ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Barbell bench press video used; no clear machine-chest-press demo was found."
+    "match": "exact",
+    "author": "Tyler Read",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Girl_doing_chest_press_machine_exercise.jpg",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "note": "Seated machine chest press, single still; no start/end pair."
   },
   "close-grip-bench-press": {
     "name": "Close-Grip Bench Press",

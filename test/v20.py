@@ -178,10 +178,77 @@ def run(p, width, height, tag):
     browser.close()
 
 
+def run_timers(p, width, height, tag):
+    browser = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
+    ctx = browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=3,
+                              is_mobile=True, has_touch=True)
+    page = ctx.new_page()
+    page.add_init_script("""(() => { const real = Date.now.bind(Date);
+        const get = () => Number(sessionStorage.getItem('__off') || 0);
+        Object.defineProperty(window, '__off', { get, set: (v) => sessionStorage.setItem('__off', String(v)) });
+        Date.now = () => real() + get(); })()""")
+    page.goto(URL, wait_until="networkidle")
+    if page.locator('[data-testid="days-setup"]').count():
+        page.locator('[data-testid="days-option-4"]').tap()
+    page.add_style_tag(content=INSETS)
+    page.locator('[data-testid="workout-tile-chest"]').tap()
+    page.wait_for_selector('[data-testid="reset-timer"]')
+    # Session timer reset
+    page.evaluate("() => { window.__off += 754000; }")
+    page.wait_for_timeout(1100)
+    before = page.locator('[data-timer-clock]').inner_text()
+    page.locator('[data-testid="reset-timer"]').tap()
+    page.wait_for_selector('.dialog')
+    check("0:00" in page.locator('.dialog').inner_text(), f"[{tag}] reset asks to confirm", page.locator('.dialog').inner_text())
+    page.screenshot(path=str(SHOTS / f"timer-reset-confirm{tag}.png"))
+    page.locator('[data-confirm=ok]').tap()
+    page.wait_for_timeout(300)
+    after = page.locator('[data-timer-clock]').inner_text()
+    check(before.count(":") and after.endswith(("0:00", "0:01")) and before != after, f"[{tag}] timer resets to 0:00", (before, after))
+    # Rest timer is timestamp-based
+    page.locator('[data-testid="set-chip-0-0"]').tap()
+    page.wait_for_selector('[data-testid="sets-tracking"]')
+    page.locator('[data-testid="reps-input"]').fill("8")
+    page.locator('[data-testid="weight-input"]').fill("60")
+    page.locator('[data-testid="track-reps"]').tap()
+    page.wait_for_selector('[data-testid="rest-timer"]')
+    start = page.locator('[data-rest-clock]').inner_text()
+    # Simulate iOS suspending JS for 40 s: jump the clock and fire visibilitychange in one go
+    jumped = page.evaluate("""() => { window.__off += 40000;
+        document.dispatchEvent(new Event('visibilitychange'));
+        return document.querySelector('[data-rest-clock]').textContent; }""")
+    check(start in ("1:30", "1:29") and jumped in ("0:50", "0:49"), f"[{tag}] rest catches up after app switch", (start, jumped))
+    page.screenshot(path=str(SHOTS / f"rest-after-switch{tag}.png"))
+    saved = page.evaluate("() => JSON.parse(localStorage.getItem('vela-rest-v1') || 'null')")
+    check(bool(saved and saved.get("endsAt")), f"[{tag}] rest end time is saved", saved)
+    # Reload (iOS killed the app): rest comes back with the right time left
+    page.reload(wait_until="networkidle")
+    page.wait_for_selector('[data-testid="rest-timer"]')
+    t = page.locator('[data-rest-clock]').inner_text()
+    check(t in ("0:50", "0:49", "0:48"), f"[{tag}] rest survives a reload", t)
+    # Finished while away: shows done, then closes
+    done = page.evaluate("""() => { window.__off += 120000;
+        document.dispatchEvent(new Event('visibilitychange'));
+        const el = document.querySelector('[data-testid=rest-timer]');
+        return el ? [el.classList.contains('rest-done'), el.querySelector('.rest-lbl').textContent, document.querySelector('[data-rest-clock]').textContent] : null; }""")
+    check(done and done[0] and done[1] == "Rest done" and done[2] == "0:00", f"[{tag}] rest finished while away shows done", done)
+    page.screenshot(path=str(SHOTS / f"rest-done{tag}.png"))
+    page.wait_for_timeout(1800)
+    check(page.locator('[data-testid="rest-timer"]').count() == 0, f"[{tag}] rest sheet closes after done")
+    check(page.evaluate("() => localStorage.getItem('vela-rest-v1')") is None, f"[{tag}] saved rest cleared")
+    # Machine Chest Press photo
+    ph = page.evaluate("() => window.VELA_CATALOG.photoFor('Machine Chest Press')")
+    check(ph and ph["frames"] == ["img/exercises/machine-chest-press/0.webp"] and ph["match"] == "exact",
+          f"[{tag}] Machine Chest Press uses the new machine photo", ph and ph.get("frames"))
+    browser.close()
+
+
 httpd, URL = start_server()
 with sync_playwright() as p:
     run(p, 440, 956, "")
     run(p, 375, 812, "-375")
+    run_timers(p, 440, 956, "")
+    run_timers(p, 375, 812, "-375")
 httpd.shutdown()
 print("FAILS:", fails)
 sys.exit(1 if fails else 0)

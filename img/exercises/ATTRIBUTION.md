@@ -35,7 +35,7 @@ Cropped or resized copies are shared under the same license as the source.
 | Leg Extension | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
 | Leg Press Machine | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Low Cable Fly | closest | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Mid-rep cable fly still used; not specifically a low-cable fly. |
-| Machine Chest Press | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Barbell bench press video used; no clear machine-chest-press demo was found. |
+| Machine Chest Press | exact | Tyler Read | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Girl_doing_chest_press_machine_exercise.jpg) | Seated machine chest press, single still (cropped, resized). |
 | Machine Shoulder Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Overhead Cable Crossover | closest | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Mid-rep cable fly / crossover still used; not specifically a high-to-low crossover. |
 | Overhead Rope Extension | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Dumbbell overhead triceps extension used; not a rope-cable variation. |
