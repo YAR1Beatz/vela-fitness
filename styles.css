@@ -310,6 +310,14 @@ input, textarea, select {
 }
 .swipe-row.open .swipe-front { transform: translateX(-92px); }
 .swipe-row.swapping .swipe-front { transform: translateX(-92px); }
+/* v19: the Delete action is hidden at rest and only shows while swiping or open. */
+.swipe-row > .swipe-actions,
+.hist-swipe > .swipe-actions { visibility: hidden; pointer-events: none; }
+.swipe-row.open > .swipe-actions,
+.swipe-row.dragging > .swipe-actions,
+.swipe-row.swapping > .swipe-actions,
+.hist-swipe.open > .swipe-actions,
+.hist-swipe.dragging > .swipe-actions { visibility: visible; pointer-events: auto; }
 
 .tile {
   display: flex;
@@ -2182,8 +2190,8 @@ button.program-name {
 }
 .week-card.done .week-copy p { color: var(--accent); }
 
-.tile.missed { opacity: 0.72; }
-.tile.locked { opacity: 0.55; }
+.tile.missed .meta, .tile.missed .mark { opacity: 0.72; }
+.tile.locked .meta, .tile.locked .mark { opacity: 0.55; }
 .mark.missed { color: var(--faint); font-size: 18px; width: 26px; text-align: center; }
 
 /* Progress */

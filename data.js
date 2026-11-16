@@ -777,7 +777,7 @@
         datetime: stamp,
         workout: w.name,
         workoutId: w.id,
-        week: get().week,
+        week: ((state.history[canonKey(ex.key || ex.name)] || []).find((h) => h.sessionId === w.sessionId) || {}).week || get().week,
         programId: activeProgramId(),
         sessionId: w.sessionId,
         sets: ex.sets.map((st) =>
@@ -802,11 +802,14 @@
     if (!logged && !w.completedAt) return;
     const stamp = w.completedAt || new Date().toISOString();
     const vol = workoutVolume(w);
+    if (!state.sessions) state.sessions = [];
+    const prev = state.sessions.find((x) => x.sessionId === w.sessionId);
     const entry = {
       programId: activeProgramId(),
       workoutId: w.id,
       workoutName: w.name,
-      week: get().week,
+      /* A session keeps the week it was first logged in. */
+      week: (prev && prev.week) || get().week,
       sessionId: w.sessionId,
       date: stamp.slice(0, 10),
       datetime: stamp,

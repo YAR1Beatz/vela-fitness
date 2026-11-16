@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "12";
-  const VELA_CACHE = "vela-v12";
+  const VELA_VERSION = "19";
+  const VELA_CACHE = "vela-v19";
 
   let view = "home";
   let tab = "home";
@@ -536,6 +536,7 @@
           decided = true;
           horizontal = Math.abs(x) > Math.abs(y) && Math.abs(x) > 6;
           if (horizontal) {
+            row.classList.add("dragging");
             try { row.setPointerCapture(e.pointerId); } catch (err) {}
           } else {
             tracking = false;
@@ -553,6 +554,7 @@
         if (!tracking && !decided) return;
         const shouldDelete = horizontal && dx < -56;
         tracking = false;
+        row.classList.remove("dragging");
         front.style.transition = "";
         front.style.transform = "";
         if (shouldDelete) requestDeleteWeight(row.dataset.id);
@@ -959,22 +961,30 @@
       <div class="home-next program-next"><button class="program" type="button" data-action="next-week" data-testid="next-program-tab">${esc(nextLbl)}</button></div>`;
   }
 
-  function workoutTile(w, { logged, missed, locked, sessionId } = {}) {
+  function workoutTile(w, { logged, missed, locked, sessionId, pastWeek } = {}) {
     const n = (w.exercises || []).length;
-    const done = !!(w.completedAt || logged);
+    /* On a past/upcoming week page only that week's own sessions count as done.
+       The plan's completedAt belongs to the current week and must not leak in. */
+    const done = pastWeek ? !!logged : !!(w.completedAt || logged);
+    const isMissed = !done && !!missed;
     const mark = done
       ? `<div class="mark" aria-label="Done">${ICONS.checkFill}</div>`
-      : missed
+      : isMissed
         ? `<div class="mark missed">—</div>`
         : `<div class="mark chev">${ICONS.chev}</div>`;
     const sub = w.dayLabel ? `${esc(w.dayLabel)} · ` : "";
-    const status = missed ? "Not logged" : (locked ? "Upcoming" : `${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes || 60)} mins`);
-    const action = locked ? "" : (sessionId ? `data-action="open-review" data-session="${esc(sessionId)}"` : `data-action="open-workout" data-id="${esc(w.id)}"`);
-    const disabled = locked ? " disabled" : "";
-    return `<div class="swipe-row" data-swipe="${locked || sessionId ? "none" : "workout"}" data-id="${esc(w.id)}">
-      <button type="button" class="swipe-actions" data-action="delete-workout" data-id="${esc(w.id)}">Delete</button>
+    const status = done && pastWeek
+      ? "Logged"
+      : (isMissed ? "Not logged" : (locked ? "Upcoming" : `${n} exercise${n === 1 ? "" : "s"} · ${esc(w.minutes || 60)} mins`));
+    const action = locked ? "" : (sessionId ? `data-action="open-review" data-session="${esc(sessionId)}"` : (pastWeek ? "" : `data-action="open-workout" data-id="${esc(w.id)}"`));
+    const disabled = locked || (pastWeek && !sessionId) ? " disabled" : "";
+    const swipeable = !pastWeek && !locked && !sessionId;
+    /* Delete only exists on swipeable rows and stays hidden until the row is swiped. */
+    const del = swipeable ? `<button type="button" class="swipe-actions" data-action="delete-workout" data-id="${esc(w.id)}" tabindex="-1" aria-hidden="true">Delete</button>` : "";
+    return `<div class="swipe-row" data-swipe="${swipeable ? "workout" : "none"}" data-id="${esc(w.id)}" data-week-state="${done ? "logged" : (isMissed ? "missed" : (locked ? "upcoming" : "open"))}">
+      ${del}
       <div class="swipe-front">
-        <button type="button" class="tile${done ? " done" : ""}${missed ? " missed" : ""}${locked ? " locked" : ""}"${action}${disabled} data-testid="workout-tile-${esc(w.id)}">
+        <button type="button" class="tile${done ? " done" : ""}${isMissed ? " missed" : ""}${locked ? " locked" : ""}"${action}${disabled} data-testid="workout-tile-${esc(w.id)}">
           <div class="meta"><h2>${esc(w.name)}</h2><p>${sub}${esc(status)}</p></div>
           ${mark}
         </button>
@@ -1003,14 +1013,14 @@
       const plan = (s.workouts || []);
       tiles = plan.map((w) => {
         const ses = byId[w.id];
-        if (ses) return workoutTile(w, { logged: true, sessionId: ses.sessionId });
-        return workoutTile(w, { missed: !future, locked: !!future });
+        if (ses) return workoutTile(w, { logged: true, sessionId: ses.sessionId, pastWeek: true });
+        return workoutTile(w, { missed: !future, locked: !!future, pastWeek: true });
       }).join("");
       /* Sessions for workouts no longer on the plan */
       Object.keys(byId).forEach((id) => {
         if (plan.some((w) => w.id === id)) return;
         const ses = byId[id];
-        tiles += workoutTile({ id, name: ses.workoutName || id, minutes: 60, exercises: [] }, { logged: true, sessionId: ses.sessionId });
+        tiles += workoutTile({ id, name: ses.workoutName || id, minutes: 60, exercises: [] }, { logged: true, sessionId: ses.sessionId, pastWeek: true });
       });
     }
     contentEl().innerHTML = `
@@ -2314,6 +2324,7 @@
           decided = true;
           horizontal = Math.abs(x) > Math.abs(y) && Math.abs(x) > 6;
           if (horizontal) {
+            row.classList.add("dragging");
             try { row.setPointerCapture(e.pointerId); } catch (err) {}
           } else {
             tracking = false;
@@ -2332,6 +2343,7 @@
         const isTap = tracking && !decided;
         const shouldDelete = horizontal && dx < -56;
         tracking = false;
+        row.classList.remove("dragging");
         front.style.transition = "";
         front.style.transform = "";
         if (shouldDelete) {
@@ -2630,6 +2642,7 @@
           decided = true;
           horizontal = Math.abs(x) > Math.abs(y) && Math.abs(x) > 6;
           if (horizontal) {
+            row.classList.add("dragging");
             try { row.setPointerCapture(e.pointerId); } catch (err) {}
           } else {
             tracking = false;
@@ -2646,6 +2659,7 @@
       function end() {
         if (!tracking && !decided) return;
         tracking = false;
+        row.classList.remove("dragging");
         front.style.transition = "";
         if (horizontal && dx < -56) {
           if (onOpen) onOpen(row);
