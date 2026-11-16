@@ -577,16 +577,15 @@ window.VELA_PHOTOS = {
   "chest-supported-row": {
     "name": "Chest-Supported Row",
     "frames": [
-      "img/exercises/chest-supported-row/0.webp",
-      "img/exercises/chest-supported-row/1.webp"
+      "img/exercises/chest-supported-row/0.webp"
     ],
-    "match": "closest",
-    "author": "George Stepanek",
+    "match": "exact",
+    "author": "Aliva Sahoo",
     "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/",
-    "license": "CC BY-SA 3.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-    "note": "One-arm dumbbell row on a bench used; not a chest-supported machine/pad row."
+    "source_url": "https://commons.wikimedia.org/wiki/File:Back_Machine.jpg",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "note": "Plate-loaded seated row machine (chest pad, angled handles); machine only, no lifter. Cropped and resized."
   },
   "t-bar-row": {
     "name": "T-Bar Row",

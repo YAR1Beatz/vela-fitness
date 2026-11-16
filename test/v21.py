@@ -84,7 +84,7 @@ def run(p, w, h, tag):
     page.screenshot(path=str(SHOTS / f"home-after-add{tag}.png"))
     page.locator('[data-testid="tab-settings"]').tap()
     page.wait_for_timeout(200)
-    check(page.locator('[data-testid="app-version"] b').inner_text() == "21", f"[{tag}] version 21")
+    check(int(page.locator('[data-testid="app-version"] b').inner_text()) >= 21, f"[{tag}] version 21+")
     b.close()
 
 

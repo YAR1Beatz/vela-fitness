@@ -15,7 +15,7 @@ Cropped or resized copies are shared under the same license as the source.
 | Cable Fly | exact | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Single mid-rep still; no start/end pair. |
 | Cable Lateral Raise | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Dumbbell lateral raise video used; not a cable raise. |
 | Chest Dip | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Chest-Supported Row | closest | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons | One-arm dumbbell row on a bench used; not a chest-supported machine/pad row. |
+| Chest-Supported Row (Max-OT: Row Machine) | exact | Aliva Sahoo | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Back_Machine.jpg) | Plate-loaded seated row machine, machine only (cropped, resized). |
 | Close-Grip Bench Press | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Standard bench press video used; grip width may not be close-grip. |
 | Decline Bench Press | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Flat bench press video used; no freely licensed decline-bench demo was found. |
 | Diamond Push-Up | closest | PTPioneer | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Standard push-up still used; hand position is not a diamond/close grip. |
