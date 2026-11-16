@@ -466,13 +466,17 @@ window.VELA_PHOTOS = {
       "img/exercises/cable-push-down-straight-bar/0.webp",
       "img/exercises/cable-push-down-straight-bar/1.webp"
     ],
+    "video": "img/exercises/cable-push-down-straight-bar/demo.mp4",
+    "poster": "img/exercises/cable-push-down-straight-bar/poster.jpg",
     "match": "exact",
     "author": "George Stepanek",
     "source": "Wikimedia Commons",
     "source_url": "https://commons.wikimedia.org/wiki/File:CableMachinePushdown.JPG",
     "license": "CC BY-SA 3.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-    "note": "Triceps pushdown with a short straight bar on a high cable; start and end frames split from one image."
+    "note": "Triceps pushdown with a short straight bar on a high cable; start and end frames split from one image.",
+    "videoAuthor": "ChatGPT",
+    "videoNote": "Looping demo generated with ChatGPT."
   },
   "skull-crusher": {
     "name": "Skull Crusher",

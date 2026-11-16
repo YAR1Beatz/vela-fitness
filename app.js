@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "24";
-  const VELA_CACHE = "vela-v24";
+  const VELA_VERSION = "25";
+  const VELA_CACHE = "vela-v25";
 
   let view = "home";
   let tab = "home";
@@ -860,7 +860,7 @@
     }
     const bar = tabbarEl();
     if (bar) bar.classList.toggle("hidden", hide);
-    const space = hide ? "0px" : "calc(var(--tabbar-h) + var(--safe-bottom))";
+    const space = hide ? "0px" : "var(--tabbar-reserve)";
     document.documentElement.style.setProperty("--tabbar-space", space);
   }
 
@@ -895,10 +895,25 @@
       { id: "settings", label: "Settings", icon: ICONS.tabSettings },
     ];
     const current = (view === "program-week") ? "program" : (view === "review" ? (returnView === "program-week" || returnView === "program" ? "program" : tab) : (view === "workout" ? tab : view));
-    bar.innerHTML = items.map((it) => {
+    const idx = items.findIndex((it) => it.id === current);
+    /* v25: the active bubble slides from the previous tab to the new one. */
+    const prev = typeof bar.__tabIndex === "number" ? bar.__tabIndex : idx;
+    bar.style.setProperty("--tab-count", String(items.length));
+    bar.innerHTML = `<span class="tab-indicator${idx < 0 ? " none" : ""}" aria-hidden="true" data-testid="tab-indicator"></span>` + items.map((it) => {
       const on = current === it.id ? " on" : "";
       return `<button type="button" class="tab-btn${on}" data-action="switch-tab" data-tab="${it.id}" data-testid="tab-${it.id}" aria-label="${esc(it.label)}" aria-current="${current === it.id ? "page" : "false"}">${it.icon}<span>${esc(it.label)}</span></button>`;
     }).join("");
+    const ind = bar.querySelector(".tab-indicator");
+    if (ind && idx >= 0) {
+      if (prev >= 0 && prev !== idx) {
+        ind.style.transition = "none";
+        ind.style.setProperty("--tab-index", String(prev));
+        void ind.offsetWidth;
+        ind.style.transition = "";
+      }
+      ind.style.setProperty("--tab-index", String(idx));
+    }
+    if (idx >= 0) bar.__tabIndex = idx;
     bar.setAttribute("data-testid", "tab-bar");
     syncChrome();
   }
@@ -1152,7 +1167,7 @@
         <b>${VELA_VERSION}</b>
       </div>
       <p class="settings-build">VELA ${VELA_VERSION} · ${VELA_CACHE}</p>
-      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press also has a looping demo generated with ChatGPT. Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
     </div>`;
   }
 
@@ -1847,7 +1862,7 @@
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
         <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Each program has its own week and plan. History and last weights are shared, so overload still works if you switch. Edit program.js to change the default workouts.</p>
-        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press also has a looping demo generated with ChatGPT. Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);

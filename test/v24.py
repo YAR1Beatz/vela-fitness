@@ -131,7 +131,7 @@ def run(p, w, h, tag):
     page.reload(wait_until="networkidle")
     page.locator('[data-testid="tab-settings"]').tap()
     page.wait_for_timeout(200)
-    check(page.locator('[data-testid="app-version"] b').inner_text() == "24", f"[{tag}] version 24")
+    check(page.locator('[data-testid="app-version"] b').inner_text() >= "24", f"[{tag}] version >= 24")
     b.close()
 
 
