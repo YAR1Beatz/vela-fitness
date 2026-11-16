@@ -10,10 +10,10 @@ Cropped or resized copies are shared under the same license as the source.
 | Exercise | Match | Author | License | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Back Extension | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
-| Flat Barbell Bench Press | exact | Goulart (stills); looping demo generated with ChatGPT | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (stills) | wger.de (stills) | Licensed Goulart stills remain as the photo fallback. A ChatGPT-generated looping demo (H.264) plays on this exercise. |
 | Bulgarian Split Squat | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Standing dumbbell lunge video used; not a rear-foot-elevated split squat. |
+| Cable Curl | exact | Tyler Read (PTPioneer, www.ptpioneer.com) | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Girl_doing_cable_bicep_curl_exercise.jpg) | Straight-bar curl on a low cable. Cropped and resized. |
 | Cable Fly | exact | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Single mid-rep still; no start/end pair. |
-| Cable Lateral Raise | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Dumbbell lateral raise video used; not a cable raise. |
+| Cable Kickback | exact | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:The_gym_girl_is_pulling_weight_with_her_leg_muscle.jpg) | Standing glute kickback with an ankle strap on a low cable. Resized. |
 | Chest Dip | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Chest-Supported Row (Max-OT: Row Machine) | exact | Aliva Sahoo | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Back_Machine.jpg) | Plate-loaded seated row machine, machine only (cropped, resized). |
 | Close-Grip Bench Press | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Standard bench press video used; grip width may not be close-grip. |
@@ -22,43 +22,44 @@ Cropped or resized copies are shared under the same license as the source.
 | Dumbbell Curl | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | EZ-Bar Curl | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Straight barbell curl video used; not an EZ-bar. |
 | Face Pull | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
+| Flat Barbell Bench Press | exact | Goulart (stills); looping demo generated with ChatGPT | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (stills) | wger.de (stills) | Licensed Goulart stills remain as the photo fallback. A ChatGPT-generated looping demo (H.264) plays on this exercise. |
 | Glute Bridge | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Hip thrust video used (bench-supported); not a floor glute bridge. |
+| Hack Squat | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:HackSquatMachineExercise.JPG) | Start and end frames split from one image. |
 | Hammer Curl | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Hip Thrust | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
+| Incline Barbell Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | wger Incline Bench Press (barbell) video stills. |
 | Incline Dumbbell Curl | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Seated/standing dumbbell curl video used; not an incline-bench curl. |
 | Incline Dumbbell Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Incline Barbell Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | wger Incline Bench Press (barbell) video stills. |
 | Incline Dumbbell Tricep Extension | exact (illustration) | Everkinetic | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons | No freely licensed photo found. Line art from [Incline triceps extensions with dumbbell 1/2](https://commons.wikimedia.org/wiki/File:Incline_triceps_extensions_with_dumbbell_2.svg), restyled on navy for VELA. |
-| Incline Machine Press | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Incline dumbbell press video used; equipment is dumbbells, not a machine. |
+| Incline Machine Press | exact | Aliva Sahoo | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Chest_Incline.jpg) | Plate-loaded incline chest press machine; machine only, no lifter (no freely licensed photo of someone using one was found). Cropped and resized. |
 | Lat Pulldown | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
 | Lateral Raise | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Leg Extension | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
 | Leg Press Machine | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Low Cable Fly | closest | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Mid-rep cable fly still used; not specifically a low-cable fly. |
+| Lying Leg Curl | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:LyingLegCurlMachineExercise.JPG) | Start and end frames split from one image. |
+| Lying Tricep Extension | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Same stills as Skull Crusher. |
 | Machine Chest Press | exact | Tyler Read | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Girl_doing_chest_press_machine_exercise.jpg) | Seated machine chest press, single still (cropped, resized). |
 | Machine Shoulder Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Overhead Cable Crossover | closest | Nenad Stojkovic | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Mid-rep cable fly / crossover still used; not specifically a high-to-low crossover. |
-| Overhead Rope Extension | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Dumbbell overhead triceps extension used; not a rope-cable variation. |
+| Overhead Cable Crossover | exact | MC2 Michael Russell, U.S. Navy | [Public domain](https://commons.wikimedia.org/wiki/Help:Public_domain) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:US_Navy_101122-N-7948R-079_Yeoman_3rd_Class_Benjamin_Castillo_performs_cable_flyes_in_the_gym_aboard_the_amphibious_dock_landing_ship_USS_Pearl_Har.jpg) | High-pulley cable crossover, hands crossed at the bottom. U.S. military photo. Cropped and resized. |
+| Overhead Rope Extension | exact | Lance Cpl. Ryan A. Rholes, U.S. Marine Corps | [Public domain](https://commons.wikimedia.org/wiki/Help:Public_domain) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:USMC-090211-M-0474R-004.jpg) | Overhead triceps extension with a rope on a high cable, facing away from the stack. U.S. military photo. Cropped and resized. |
 | Overhead Tricep Extension | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Pec Deck | exact | Tyler Read | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Single still of a pec-deck / machine fly (the file is mis-titled as a chest press). |
+| Pec Deck | exact | Nenad Stojkovic (nenadstojkovicart) | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Flickr](https://www.flickr.com/photos/202846129@N03/54580828717) | Woman on a pec deck (butterfly) machine with elbow pads, open position. Cropped and resized. |
+| Preacher Curl | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:PreacherBenchBicepsCurl.JPG) | Dumbbell curl on a preacher bench; start and end frames split from one image. |
 | Pull-Up | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Push-Up | exact | PTPioneer | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | Wikimedia Commons | Single still, outdoor, using push-up handles. |
 | Rear Delt Fly | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Reverse Hyper | closest | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons | Roman-chair back extension used; not a reverse hyper (legs move, torso fixed). |
 | Romanian Deadlift | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Seated Cable Row | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Seated Calf Raise | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Seated Dumbbell Shoulder Press | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Seated Leg Curl | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Single-Arm Dumbbell Row | exact | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons |  |
-| Lying Tricep Extension | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Same stills as Skull Crusher. |
 | Skull Crusher | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Smith Machine Squat | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Standing Calf Raise | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 | Standing Leg Curl | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
-| Straight-Arm Pulldown | closest | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons | Standard lat pulldown photos used; arms are not kept straight. |
-| T-Bar Row | closest | George Stepanek | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | Wikimedia Commons | One-arm dumbbell row used; not a T-bar row. |
-| Tricep Rope Pushdown | closest | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de | Cable triceps extension video used; attachment may be a bar rather than a rope. |
+| T-Bar Row | exact | Colossus Fitness | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:How_to_properly_do_Machine_T-Bar_Rows.webm) | Two frames (start and top) taken from a demonstration video of a chest-supported plate-loaded T-bar row machine. |
+| Tricep Rope Pushdown | exact | Shixart1985 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strong_woman_using_cable_machine_for_upper_body_workout_in_gym.jpg) | Rope attachment on a high cable at the bottom of a pushdown. Cropped and resized. |
 | Walking Lunge | exact | Goulart | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | wger.de |  |
 
 ## Sources
@@ -73,3 +74,6 @@ Cropped or resized copies are shared under the same license as the source.
 No freely licensed real-photo match was found for: **Dumbbell Pullover** (keeps the illustrated thumbnail). **Incline Dumbbell Tricep Extension** uses a restyled Everkinetic illustration because no freely licensed photo of the correct movement was found.
 
 Also still without a dedicated photo (closest still or catalog thumbnail only) — see the audit in the v13 report: Arnold Press, Barbell Back Squat, Barbell Overhead Press, Front Raise, Front Squat, Barbell Curl, Barbell Shrug, Cable Crunch, Swiss Ball Crunch, Swiss Ball Leg Raise, and the wrist-curl variations, plus any other catalog entries not listed in the table above.
+
+
+No freely licensed photo showing the right equipment was found for: Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Single-Leg Leg Press Calf Raise (Max-OT: Calf Raises on Leg Press), Low Cable Fly, Cable Crunch and Pallof Press. They show the built-in VELA icon instead of a wrong photo.

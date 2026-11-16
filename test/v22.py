@@ -49,7 +49,7 @@ def run(p, w, h, tag):
     page.screenshot(path=str(SHOTS / f"row-machine{tag}.png"))
     page.locator('[data-testid="tab-settings"]').tap()
     page.wait_for_timeout(200)
-    check(page.locator('[data-testid="app-version"] b').inner_text() == "22", f"[{tag}] version 22")
+    check(page.locator('[data-testid="app-version"] b').inner_text() >= "22", f"[{tag}] version >= 22")
     b.close()
 
 

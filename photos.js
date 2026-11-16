@@ -129,16 +129,15 @@ window.VELA_PHOTOS = {
   "incline-machine-press": {
     "name": "Incline Machine Press",
     "frames": [
-      "img/exercises/incline-machine-press/0.webp",
-      "img/exercises/incline-machine-press/1.webp"
+      "img/exercises/incline-machine-press/0.webp"
     ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
+    "match": "exact",
+    "author": "Aliva Sahoo",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Chest_Incline.jpg",
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Incline dumbbell press video used; equipment is dumbbells, not a machine."
+    "note": "Plate-loaded incline chest press machine; machine only, no lifter (no freely licensed photo of someone using one was found). Cropped and resized."
   },
   "seated-leg-curl": {
     "name": "Seated Leg Curl",
@@ -378,20 +377,6 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": ""
   },
-  "cable-lateral-raise": {
-    "name": "Cable Lateral Raise",
-    "frames": [
-      "img/exercises/cable-lateral-raise/0.webp",
-      "img/exercises/cable-lateral-raise/1.webp"
-    ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Dumbbell lateral raise video used; not a cable raise."
-  },
   "rear-delt-fly": {
     "name": "Rear Delt Fly",
     "frames": [
@@ -465,16 +450,15 @@ window.VELA_PHOTOS = {
   "tricep-rope-pushdown": {
     "name": "Tricep Rope Pushdown",
     "frames": [
-      "img/exercises/tricep-rope-pushdown/0.webp",
-      "img/exercises/tricep-rope-pushdown/1.webp"
+      "img/exercises/tricep-rope-pushdown/0.webp"
     ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Cable triceps extension video used; attachment may be a bar rather than a rope."
+    "match": "exact",
+    "author": "Shixart1985",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Strong_woman_using_cable_machine_for_upper_body_workout_in_gym.jpg",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "note": "Rope attachment on a high cable at the bottom of a pushdown. Cropped and resized."
   },
   "skull-crusher": {
     "name": "Skull Crusher",
@@ -507,16 +491,15 @@ window.VELA_PHOTOS = {
   "overhead-rope-extension": {
     "name": "Overhead Rope Extension",
     "frames": [
-      "img/exercises/overhead-rope-extension/0.webp",
-      "img/exercises/overhead-rope-extension/1.webp"
+      "img/exercises/overhead-rope-extension/0.webp"
     ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Dumbbell overhead triceps extension used; not a rope-cable variation."
+    "match": "exact",
+    "author": "Lance Cpl. Ryan A. Rholes, U.S. Marine Corps",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:USMC-090211-M-0474R-004.jpg",
+    "license": "Public domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Help:Public_domain",
+    "note": "Overhead triceps extension with a rope on a high cable, facing away from the stack. U.S. military photo. Cropped and resized."
   },
   "leg-extension": {
     "name": "Leg Extension",
@@ -545,20 +528,6 @@ window.VELA_PHOTOS = {
     "license": "CC BY-SA 3.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
     "note": ""
-  },
-  "straight-arm-pulldown": {
-    "name": "Straight-Arm Pulldown",
-    "frames": [
-      "img/exercises/straight-arm-pulldown/0.webp",
-      "img/exercises/straight-arm-pulldown/1.webp"
-    ],
-    "match": "closest",
-    "author": "George Stepanek",
-    "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/",
-    "license": "CC BY-SA 3.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-    "note": "Standard lat pulldown photos used; arms are not kept straight."
   },
   "single-arm-dumbbell-row": {
     "name": "Single-Arm Dumbbell Row",
@@ -593,13 +562,13 @@ window.VELA_PHOTOS = {
       "img/exercises/t-bar-row/0.webp",
       "img/exercises/t-bar-row/1.webp"
     ],
-    "match": "closest",
-    "author": "George Stepanek",
+    "match": "exact",
+    "author": "Colossus Fitness",
     "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/",
-    "license": "CC BY-SA 3.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-    "note": "One-arm dumbbell row used; not a T-bar row."
+    "source_url": "https://commons.wikimedia.org/wiki/File:How_to_properly_do_Machine_T-Bar_Rows.webm",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "note": "Two frames (start and top) taken from a demonstration video of a chest-supported plate-loaded T-bar row machine."
   },
   "back-extension": {
     "name": "Back Extension",
@@ -615,32 +584,18 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
     "note": ""
   },
-  "reverse-hyper": {
-    "name": "Reverse Hyper",
-    "frames": [
-      "img/exercises/reverse-hyper/0.webp",
-      "img/exercises/reverse-hyper/1.webp"
-    ],
-    "match": "closest",
-    "author": "George Stepanek",
-    "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/",
-    "license": "CC BY-SA 3.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-    "note": "Roman-chair back extension used; not a reverse hyper (legs move, torso fixed)."
-  },
   "pec-deck": {
     "name": "Pec Deck",
     "frames": [
       "img/exercises/pec-deck/0.webp"
     ],
     "match": "exact",
-    "author": "Tyler Read",
-    "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/wiki/File:Girl_doing_chest_press_machine_exercise.jpg",
+    "author": "Nenad Stojkovic (nenadstojkovicart)",
+    "source": "Flickr",
+    "source_url": "https://www.flickr.com/photos/202846129@N03/54580828717",
     "license": "CC BY 2.0",
     "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "note": "Single still of a pec-deck / machine fly (the file is mis-titled as a chest press)."
+    "note": "Woman on a pec deck (butterfly) machine with elbow pads, open position. Cropped and resized."
   },
   "cable-fly": {
     "name": "Cable Fly",
@@ -660,26 +615,13 @@ window.VELA_PHOTOS = {
     "frames": [
       "img/exercises/overhead-cable-crossover/0.webp"
     ],
-    "match": "closest",
-    "author": "Nenad Stojkovic",
+    "match": "exact",
+    "author": "MC2 Michael Russell, U.S. Navy",
     "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/wiki/File:Chest_flies_with_cable_machine_-_cable_crossover_flies.jpg",
-    "license": "CC BY 2.0",
-    "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "note": "Mid-rep cable fly / crossover still used; not specifically a high-to-low crossover."
-  },
-  "low-cable-fly": {
-    "name": "Low Cable Fly",
-    "frames": [
-      "img/exercises/low-cable-fly/0.webp"
-    ],
-    "match": "closest",
-    "author": "Nenad Stojkovic",
-    "source": "Wikimedia Commons",
-    "source_url": "https://commons.wikimedia.org/wiki/File:Chest_flies_with_cable_machine_-_cable_crossover_flies.jpg",
-    "license": "CC BY 2.0",
-    "license_url": "https://creativecommons.org/licenses/by/2.0/",
-    "note": "Mid-rep cable fly still used; not specifically a low-cable fly."
+    "source_url": "https://commons.wikimedia.org/wiki/File:US_Navy_101122-N-7948R-079_Yeoman_3rd_Class_Benjamin_Castillo_performs_cable_flyes_in_the_gym_aboard_the_amphibious_dock_landing_ship_USS_Pearl_Har.jpg",
+    "license": "Public domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Help:Public_domain",
+    "note": "High-pulley cable crossover, hands crossed at the bottom. U.S. military photo. Cropped and resized."
   },
   "push-up": {
     "name": "Push-Up",
@@ -735,20 +677,6 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": "Closest licensed stills: Romanian Deadlift."
   },
-  "single-leg-leg-press-calf-raise": {
-    "name": "Single-Leg Leg Press Calf Raise",
-    "frames": [
-      "img/exercises/standing-calf-raise/0.webp",
-      "img/exercises/standing-calf-raise/1.webp"
-    ],
-    "match": "closest",
-    "author": "Goulart",
-    "source": "wger.de",
-    "source_url": "https://wger.de/",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "note": "Closest licensed stills: Standing Calf Raise."
-  },
   "alternating-dumbbell-curl": {
     "name": "Alternating Dumbbell Curl",
     "frames": [
@@ -794,5 +722,73 @@ window.VELA_PHOTOS = {
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": "Same licensed stills as Skull Crusher (lying tricep extension)."
+  },
+  "cable-kickback": {
+    "name": "Cable Kickback",
+    "frames": [
+      "img/exercises/cable-kickback/0.webp"
+    ],
+    "match": "exact",
+    "author": "Nenad Stojkovic",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:The_gym_girl_is_pulling_weight_with_her_leg_muscle.jpg",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "note": "Standing glute kickback with an ankle strap on a low cable. Resized."
+  },
+  "lying-leg-curl": {
+    "name": "Lying Leg Curl",
+    "frames": [
+      "img/exercises/lying-leg-curl/0.webp",
+      "img/exercises/lying-leg-curl/1.webp"
+    ],
+    "match": "exact",
+    "author": "George Stepanek",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:LyingLegCurlMachineExercise.JPG",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "note": "Start and end frames split from one image."
+  },
+  "hack-squat": {
+    "name": "Hack Squat",
+    "frames": [
+      "img/exercises/hack-squat/0.webp",
+      "img/exercises/hack-squat/1.webp"
+    ],
+    "match": "exact",
+    "author": "George Stepanek",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:HackSquatMachineExercise.JPG",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "note": "Start and end frames split from one image."
+  },
+  "preacher-curl": {
+    "name": "Preacher Curl",
+    "frames": [
+      "img/exercises/preacher-curl/0.webp",
+      "img/exercises/preacher-curl/1.webp"
+    ],
+    "match": "exact",
+    "author": "George Stepanek",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:PreacherBenchBicepsCurl.JPG",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "note": "Dumbbell curl on a preacher bench; start and end frames split from one image."
+  },
+  "cable-curl": {
+    "name": "Cable Curl",
+    "frames": [
+      "img/exercises/cable-curl/0.webp"
+    ],
+    "match": "exact",
+    "author": "Tyler Read (PTPioneer, www.ptpioneer.com)",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Girl_doing_cable_bicep_curl_exercise.jpg",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "note": "Straight-bar curl on a low cable. Cropped and resized."
   }
 };
