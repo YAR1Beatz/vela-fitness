@@ -94,6 +94,8 @@
     tabProgress: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 18.5V5.5M4.5 18.5h15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.8 14.2 11.2 10l3 2.6 4.4-5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     tabCheckin: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.1" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 19.2c.8-3.2 3.1-5 6.2-5s5.4 1.8 6.2 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
     tabSettings: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" d="M9.7 3.85c.1-.55.57-.95 1.13-.95h2.34c.56 0 1.03.4 1.13.95l.2 1.18c.5.14.97.36 1.39.64l1.1-.45c.53-.22 1.14 0 1.44.5l1.17 2.02c.3.52.2 1.18-.24 1.57l-.92.8c.1.48.16.98.16 1.5s-.06 1.02-.16 1.5l.92.8c.44.39.54 1.05.24 1.57l-1.17 2.02c-.3.5-.91.72-1.44.5l-1.1-.45c-.42.28-.89.5-1.39.64l-.2 1.18c-.1.55-.57.95-1.13.95h-2.34c-.56 0-1.03-.4-1.13-.95l-.2-1.18a6.4 6.4 0 0 1-1.39-.64l-1.1.45c-.53.22-1.14 0-1.44-.5L4.12 15.6c-.3-.52-.2-1.18.24-1.57l.92-.8A6.1 6.1 0 0 1 5.12 12c0-.52.06-1.02.16-1.5l-.92-.8c-.44-.39-.54-1.05-.24-1.57l1.17-2.02c.3-.5.91-.72 1.44-.5l1.1.45c.42-.28.89-.5 1.39-.64l.2-1.18z"/><circle cx="12" cy="12" r="2.55" stroke="currentColor" stroke-width="1.6"/></svg>`,
+    arrowUp: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 11 9 6.5l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    arrowDown: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 7 9 11.5 13.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     weekCheck: `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1EE0C8"/><path d="M6.6 11.2 9.4 14 15.6 7.6" fill="none" stroke="#04261F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   };
 
@@ -533,6 +535,7 @@
         front.style.transition = "none";
       });
       row.addEventListener("pointermove", (e) => {
+        if (homeDrag) { tracking = false; decided = false; return; }
         if (!tracking) return;
         const x = e.clientX - startX;
         const y = e.clientY - startY;
@@ -611,6 +614,183 @@
     openLogWeight(entry);
   }
 
+  const HOME_LAYOUT_KEY = "vela-home-layout-v1";
+  const HOME_DEFAULT = ["stats", "weight", "food", "plan"];
+  function homeOrder() {
+    let saved = [];
+    try { saved = (JSON.parse(localStorage.getItem(HOME_LAYOUT_KEY) || "{}").order) || []; } catch (e) { saved = []; }
+    const out = saved.filter((id, i) => HOME_DEFAULT.includes(id) && saved.indexOf(id) === i);
+    HOME_DEFAULT.forEach((id) => { if (!out.includes(id)) out.push(id); }); /* new cards are appended */
+    return out;
+  }
+  function saveHomeOrder(order) {
+    try { localStorage.setItem(HOME_LAYOUT_KEY, JSON.stringify({ order, updatedAt: Date.now() })); } catch (e) { /* full */ }
+  }
+  function moveHomeBlock(id, dir) {
+    const order = homeOrder();
+    const i = order.indexOf(id), j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    saveHomeOrder(order);
+    haptic();
+    const y = contentEl().scrollTop;
+    renderHome();
+    bindSwipeWorkouts();
+    contentEl().scrollTop = y;
+    const moved = contentEl().querySelector(`[data-home-block="${id}"]`);
+    if (moved && moved.animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      moved.animate([{ transform: `translateY(${dir * -40}px)` }, { transform: "none" }], { duration: 220, easing: "ease-out" });
+    }
+  }
+  /* v27: press and hold a Home card (~450 ms), then drag — like rearranging iOS apps.
+     The hold is cancelled if the finger moves more than 10px first, so scrolling is untouched. */
+  const HOLD_MS = 450;
+  const HOLD_SLOP = 10;
+  let homeDrag = null;
+  function bindHomeLongPress() {
+    const root = contentEl();
+    if (root.dataset.homeLp) return;
+    root.dataset.homeLp = "1";
+    let hold = null;
+    const cancelHold = () => { if (hold) { clearTimeout(hold.timer); hold = null; } };
+    const point = (e) => (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+    const start = (e, kind) => {
+      if (view !== "home" || homeDrag) return;
+      if (kind === "mouse" && e.button !== 0) return;
+      const block = e.target.closest && e.target.closest(".home-block");
+      if (!block || !root.contains(block)) return;
+      if (e.target.closest("input, textarea, select")) return;
+      const p = point(e);
+      cancelHold();
+      hold = { block, x: p.clientX, y: p.clientY, kind, timer: setTimeout(() => beginHomeDrag(hold), HOLD_MS) };
+    };
+    const move = (e) => {
+      const p = point(e);
+      if (homeDrag) {
+        if (e.cancelable) e.preventDefault(); /* no page scroll while dragging */
+        homeDrag.lastY = p.clientY;
+        layoutHomeDrag();
+        return;
+      }
+      if (hold && (Math.abs(p.clientX - hold.x) > HOLD_SLOP || Math.abs(p.clientY - hold.y) > HOLD_SLOP)) cancelHold();
+    };
+    const end = () => {
+      cancelHold();
+      if (homeDrag) dropHomeDrag();
+    };
+    root.addEventListener("touchstart", (e) => { if (e.touches.length === 1) start(e, "touch"); else cancelHold(); }, { passive: true });
+    document.addEventListener("touchmove", move, { passive: false });
+    document.addEventListener("touchend", end);
+    document.addEventListener("touchcancel", end);
+    root.addEventListener("mousedown", (e) => start(e, "mouse"));
+    document.addEventListener("mousemove", (e) => { if (hold && hold.kind === "mouse" || homeDrag && homeDrag.kind === "mouse") move(e); });
+    document.addEventListener("mouseup", (e) => { if (hold && hold.kind === "mouse" || homeDrag && homeDrag.kind === "mouse") end(e); });
+    root.addEventListener("scroll", () => { if (hold) cancelHold(); }, { passive: true });
+    /* No iOS callout / context menu on a held card. */
+    root.addEventListener("contextmenu", (e) => { if (e.target.closest && e.target.closest(".home-block")) e.preventDefault(); });
+    /* Swallow the click that follows a drop so the card under the finger doesn't open. */
+    document.addEventListener("click", (e) => {
+      if (root.dataset.swallowClick) {
+        delete root.dataset.swallowClick;
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }, true);
+  }
+  function beginHomeDrag(h) {
+    if (!h || view !== "home") return;
+    const root = contentEl();
+    const blocks = [...root.querySelectorAll(".home-block")];
+    const startIndex = blocks.indexOf(h.block);
+    if (startIndex < 0) return;
+    const scroll0 = root.scrollTop;
+    homeDrag = {
+      kind: h.kind, block: h.block, blocks, startIndex, target: startIndex,
+      y0: h.y, lastY: h.y, scroll0,
+      rects: blocks.map((b) => { const r = b.getBoundingClientRect(); return { top: r.top + scroll0, height: r.height }; }),
+      raf: 0,
+    };
+    root.classList.add("home-dragging");
+    h.block.classList.add("lifted");
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* */ } }
+    haptic();
+    const sel = window.getSelection && window.getSelection();
+    if (sel && sel.removeAllRanges) sel.removeAllRanges();
+    root.querySelectorAll(".swipe-row.open, .swipe-row.dragging").forEach((r) => r.classList.remove("open", "dragging"));
+    layoutHomeDrag();
+    const tick = () => {
+      if (!homeDrag) return;
+      const box = root.getBoundingClientRect();
+      const edge = 80;
+      const y = homeDrag.lastY;
+      let v = 0;
+      const bottomEdge = box.bottom - (parseFloat(getComputedStyle(root).paddingBottom) || 0) + 30;
+      if (y < box.top + edge) v = -Math.ceil((box.top + edge - y) / 4);
+      else if (y > bottomEdge - edge) v = Math.ceil((y - (bottomEdge - edge)) / 4);
+      if (v) {
+        const before = root.scrollTop;
+        root.scrollTop = before + Math.max(-18, Math.min(18, v));
+        if (root.scrollTop !== before) layoutHomeDrag();
+      }
+      homeDrag.raf = requestAnimationFrame(tick);
+    };
+    homeDrag.raf = requestAnimationFrame(tick);
+  }
+  function layoutHomeDrag() {
+    const d = homeDrag;
+    if (!d) return;
+    const root = contentEl();
+    const scrollDelta = root.scrollTop - d.scroll0;
+    const dy = d.lastY - d.y0 + scrollDelta;
+    d.block.style.transform = `translateY(${dy}px) scale(1.03)`;
+    const r0 = d.rects[d.startIndex];
+    /* Like iOS: the lifted card's leading edge passing a neighbour's middle swaps them. */
+    const topEdge = r0.top + dy;
+    const bottomEdge = r0.top + r0.height + dy;
+    let target = d.startIndex;
+    d.rects.forEach((r, k) => {
+      if (k < d.startIndex && topEdge < r.top + r.height / 2) target = Math.min(target, k);
+      if (k > d.startIndex && bottomEdge > r.top + r.height / 2) target = Math.max(target, k);
+    });
+    if (target !== d.target && navigator.vibrate) { try { navigator.vibrate(6); } catch (err) { /* */ } }
+    d.target = target;
+    const gap = d.rects.length > 1 ? Math.max(0, (d.rects[1].top - (d.rects[0].top + d.rects[0].height))) : 0;
+    const shiftBy = r0.height + gap;
+    d.blocks.forEach((b, k) => {
+      if (b === d.block) return;
+      let shift = 0;
+      if (d.startIndex < target && k > d.startIndex && k <= target) shift = -shiftBy;
+      if (d.startIndex > target && k < d.startIndex && k >= target) shift = shiftBy;
+      b.style.transform = shift ? `translateY(${shift}px)` : "";
+    });
+  }
+  function dropHomeDrag() {
+    const d = homeDrag;
+    if (!d) return;
+    homeDrag = null;
+    cancelAnimationFrame(d.raf);
+    const root = contentEl();
+    root.dataset.swallowClick = "1";
+    setTimeout(() => { delete root.dataset.swallowClick; }, 300);
+    root.classList.remove("home-dragging");
+    if (d.target !== d.startIndex) {
+      const visible = d.blocks.map((b) => b.dataset.homeBlock);
+      const id = visible.splice(d.startIndex, 1)[0];
+      visible.splice(d.target, 0, id);
+      const rest = homeOrder().filter((x) => !visible.includes(x));
+      saveHomeOrder(visible.concat(rest));
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch (err) { /* */ } }
+    }
+    const y = root.scrollTop;
+    renderHome();
+    bindSwipeWorkouts();
+    root.scrollTop = y;
+    const dropped = root.querySelector(`[data-home-block="${d.block.dataset.homeBlock}"]`);
+    if (dropped && dropped.animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      dropped.animate([{ transform: "scale(1.03)" }, { transform: "none" }], { duration: 180, easing: "ease-out" });
+    }
+  }
+
   function renderHome() {
     const s = D().get();
     contentEl().classList.remove("has-footer");
@@ -674,10 +854,7 @@
       ? `<div class="recovery-card" data-testid="recovery-week">${ICONS.info}<div><b>Recovery week</b><p>Max-OT prescribes a week off after 8 weeks of heavy training. History and last weights are kept. Start your next cycle when you’re ready.</p></div></div>`
       : "";
     const continued = !s.recoveryWeek && s.week > D().cycleWeeks() ? " · continued" : "";
-    contentEl().innerHTML = `
-      ${dash}
-      ${weightCardHtml()}
-      ${window.VELA_FOOD ? window.VELA_FOOD.homeCardHtml() : ""}
+    const planHtml = `
       <div class="section">
         <div class="plan-titles">
           <button type="button" class="program-name" data-action="choose-program" data-testid="program-name">${esc(D().programName())}</button>
@@ -688,10 +865,26 @@
       </div>
       ${recovery}
       ${s.recoveryWeek ? "" : `<div class="info">${ICONS.info}<span>Swipe left on the workout tile to delete</span></div>
-      <div class="tiles" data-testid="week-plan">${tiles || `<div class="empty">No workouts this week. Tap Add workout to start.</div>`}</div>`}`;
-    if (s.recoveryWeek) {
-      contentEl().insertAdjacentHTML("beforeend", `<div class="tiles" data-testid="week-plan" hidden></div>`);
-    }
+      <div class="tiles" data-testid="week-plan">${tiles || `<div class="empty">No workouts this week. Tap Add workout to start.</div>`}</div>`}
+      ${s.recoveryWeek ? `<div class="tiles" data-testid="week-plan" hidden></div>` : ""}`;
+    /* v27: Home cards can be rearranged; order lives in its own localStorage key. */
+    const blocks = {
+      stats: { label: "Streak & stats", html: dash },
+      weight: { label: "Body weight", html: weightCardHtml() },
+      food: { label: "Today’s food", html: window.VELA_FOOD ? window.VELA_FOOD.homeCardHtml() : "" },
+      plan: { label: "This week’s plan", html: planHtml },
+    };
+    const order = homeOrder().filter((id) => blocks[id] && blocks[id].html);
+    const n = order.length;
+    const blockHtml = order.map((id, idx) => `<div class="home-block" data-home-block="${id}" data-testid="home-block-${id}">
+        <div class="block-tools sr-only">
+          <button type="button" data-action="home-move" data-id="${id}" data-dir="-1" aria-label="Move ${esc(blocks[id].label)} up" data-testid="move-up-${id}"${idx === 0 ? " disabled" : ""}>Move up</button>
+          <button type="button" data-action="home-move" data-id="${id}" data-dir="1" aria-label="Move ${esc(blocks[id].label)} down" data-testid="move-down-${id}"${idx === n - 1 ? " disabled" : ""}>Move down</button>
+        </div>
+        <div class="block-body">${blocks[id].html}</div>
+      </div>`).join("");
+    contentEl().innerHTML = `<div class="home-blocks" data-testid="home-blocks">${blockHtml}</div>`;
+    bindHomeLongPress();
     const footerLbl = s.recoveryWeek ? "Start next cycle" : "Get your next program";
     contentEl().insertAdjacentHTML("beforeend", `<div class="home-next"><button class="program" type="button" data-action="next-week" data-testid="next-program">${footerLbl}</button></div>`);
     hideFooter();
@@ -2849,6 +3042,8 @@
       return;
     }
     if (action === "switch-tab") { switchTab(btn.dataset.tab); return; }
+    if (action === "home-move") { moveHomeBlock(btn.dataset.id, Number(btn.dataset.dir)); return; }
+
     if (action === "food-back") { view = "home"; tab = "home"; render(); contentEl().scrollTop = 0; return; }
     if (action === "open-week") {
       programWeek = Number(btn.dataset.week) || 1;

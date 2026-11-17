@@ -18,7 +18,7 @@
   /* ---------- state ---------- */
   let state = null;
   function blank() {
-    return { version: 1, targets: null, days: {}, foods: {}, recents: [], favourites: [], searchCache: {} };
+    return { version: 1, targets: null, days: {}, foods: {}, recents: [], favourites: [], searchCache: {}, meals: [] };
   }
   function load() {
     if (state) return state;
@@ -203,6 +203,60 @@
     src.forEach((it) => addItem(toYmd, meal, Object.assign({}, it, { id: undefined, ts: Date.now() })));
     return src.length;
   }
+  /* ---------- saved meals (v27) ---------- */
+  function itemAt(it, amount) {
+    /* Recompute an item for a new amount: from its food when known, else proportionally. */
+    const a = Number(amount) || 0;
+    const food = it.foodId && getFood(it.foodId);
+    if (!it.quick && food) {
+      const m = macrosFor(food, a, it.unit);
+      return Object.assign({}, it, { amount: a, kcal: m.kcal, p: m.p, c: m.c, f: m.f });
+    }
+    if (it.quick || !(it.amount > 0)) return Object.assign({}, it);
+    const k = a / it.amount;
+    return Object.assign({}, it, { amount: a, kcal: it.kcal * k, p: it.p * k, c: it.c * k, f: it.f * k });
+  }
+  const strip = (it) => ({ foodId: it.foodId || null, name: it.name, brand: it.brand || "", amount: it.amount, unit: it.unit, kcal: it.kcal, p: it.p, c: it.c, f: it.f, quick: !!it.quick });
+  function savedMeals() { return load().meals || (load().meals = []); }
+  function getMeal(id) { return savedMeals().find((m) => m.id === id) || null; }
+  function suggestMealName(slot) {
+    const lbl = (MEALS.find((m) => m.id === slot) || MEALS[0]).label;
+    const names = new Set(savedMeals().map((m) => m.name.toLowerCase()));
+    let n = 1;
+    while (names.has(`${lbl} ${n}`.toLowerCase())) n += 1;
+    return `${lbl} ${n}`;
+  }
+  function saveMealFromDay(ymd, slot, name) {
+    const items = (day(ymd)[slot] || []).map(strip);
+    if (!items.length) return null;
+    const meal = { id: uid("meal"), name: String(name).trim() || suggestMealName(slot), slot, items, createdAt: Date.now() };
+    savedMeals().unshift(meal);
+    save();
+    return meal;
+  }
+  function updateMeal(id, patch) {
+    const m = getMeal(id);
+    if (!m) return null;
+    if (patch.name != null) m.name = String(patch.name).trim() || m.name;
+    if (patch.items) m.items = patch.items.map(strip);
+    m.updatedAt = Date.now();
+    save();
+    return m;
+  }
+  function deleteMeal(id) {
+    const list = savedMeals();
+    const i = list.findIndex((m) => m.id === id);
+    if (i < 0) return null;
+    const [m] = list.splice(i, 1);
+    save();
+    return { index: i, meal: m };
+  }
+  function restoreMeal(snap) { if (snap) { savedMeals().splice(snap.index, 0, snap.meal); save(); } }
+  function addMealItems(ymd, slot, items) {
+    items.forEach((it) => addItem(ymd, slot, Object.assign(strip(it), { fromMeal: true })));
+    return items.length;
+  }
+
   function totals(items) {
     return items.reduce((t, it) => ({ kcal: t.kcal + (it.kcal || 0), p: t.p + (it.p || 0), c: t.c + (it.c || 0), f: t.f + (it.f || 0) }), { kcal: 0, p: 0, c: 0, f: 0 });
   }
@@ -280,6 +334,7 @@
   let editMode = false;
   let addCtx = null; /* { meal, tab, term, results, status } */
   let chartRange = 7;
+  let mealsEdit = false;
   let scanStop = null;
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const ICON = {
@@ -290,6 +345,9 @@
     scan: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.5 8.5v7M10 8.5v7M12.5 8.5v7M15 8.5v7M17 8.5v7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
     star: (on) => `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.5l-5.1 2.8L8 13.6l-4.3-4 5.8-.7z" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
     bolt: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
+    more: `<svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="5.5" cy="11" r="1.6" fill="currentColor"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/><circle cx="16.5" cy="11" r="1.6" fill="currentColor"/></svg>`,
+    bowl: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 11h17a8.5 8.5 0 0 1-17 0z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 7.5c0-1.4 1-2 1-3.5M13 7.5c0-1.4 1-2 1-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    save: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.8h12a1 1 0 0 1 1 1v15.4l-7-4.4-7 4.4V4.8a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
     food: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16.5 21V3c-2 1-3.5 3.5-3.5 7v3h3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   };
 
@@ -375,6 +433,7 @@
         <div class="meal-head">
           <h3>${m.label}</h3>
           <span class="meal-kcal" data-testid="meal-kcal-${m.id}">${fmt(t.kcal, 0)} kcal</span>
+          ${items.length ? `<button type="button" class="meal-more" data-food="meal-menu" data-meal="${m.id}" aria-label="${m.label} options" data-testid="meal-menu-${m.id}">${ICON.more}</button>` : ""}
         </div>
         ${rows ? `<div class="meal-items">${rows}</div>` : ""}
         <div class="meal-actions">
@@ -481,7 +540,7 @@
   function paintAdd() {
     const ctx = addCtx;
     const mealLbl = (MEALS.find((m) => m.id === ctx.meal) || MEALS[0]).label;
-    const tabs = [["search", "Search"], ["recent", "Recent"], ["fav", "Favourites"], ["mine", "My foods"]]
+    const tabs = [["search", "Search"], ["meals", "Meals"], ["recent", "Recent"], ["fav", "Favourites"], ["mine", "My foods"]]
       .map(([id, l]) => `<button type="button" class="wrange${ctx.tab === id ? " on" : ""}" data-food="add-tab" data-tab="${id}" data-testid="add-tab-${id}">${l}</button>`).join("");
     let body = "";
     const s = load();
@@ -498,6 +557,31 @@
         </div>
         ${ctx.status ? `<p class="food-status" data-testid="food-status">${esc(ctx.status)}</p>` : ""}
         <div class="food-list" data-testid="food-results">${res ? (res.map((f) => listRow(f)).join("") || `<p class="empty">No foods found. Try another word or create your own food.</p>`) : `<p class="empty">Search Open Food Facts, scan a barcode, or pick from Recent.</p>`}</div>`;
+    } else if (ctx.tab === "meals") {
+      const list = savedMeals();
+      const rows = list.map((m) => {
+        const t = totals(m.items);
+        return `<div class="swipe-row food-swipe meal-swipe" data-meal-swipe data-id="${esc(m.id)}">
+          <button type="button" class="swipe-actions" data-food="meal-del" data-id="${esc(m.id)}">Delete</button>
+          <div class="swipe-front">
+            <div class="saved-meal" data-testid="saved-meal">
+              <button type="button" class="saved-meal-main" data-food="meal-open" data-id="${esc(m.id)}">
+                <span class="sm-ico">${ICON.bowl}</span>
+                <span class="fr-main"><span class="fr-name">${esc(m.name)}</span>
+                  <span class="fr-meta">${m.items.length} item${m.items.length === 1 ? "" : "s"} · <b>${fmt(t.kcal, 0)} kcal</b> · P ${fmt(t.p, 0)} · C ${fmt(t.c, 0)} · F ${fmt(t.f, 0)}</span></span>
+              </button>
+              ${mealsEdit ? `<div class="fi-edit">
+                <button type="button" class="fi-btn" data-food="meal-edit" data-id="${esc(m.id)}" data-testid="saved-meal-edit">Edit</button>
+                <button type="button" class="fi-btn danger" data-food="meal-del" data-id="${esc(m.id)}" data-testid="saved-meal-delete">Delete</button>
+              </div>` : `<button type="button" class="sm-add" data-food="meal-open" data-id="${esc(m.id)}" aria-label="Add ${esc(m.name)}">${ICON.plus}</button>`}
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+      body = list.length
+        ? `<div class="food-tools"><span class="food-tools-lbl">Saved meals</span><button type="button" class="weight-hist-btn${mealsEdit ? " on" : ""}" data-food="meals-edit" data-testid="saved-meals-edit-toggle">${mealsEdit ? "Done" : "Edit"}</button></div>
+           <div class="food-list" data-testid="saved-meals">${rows}</div>`
+        : `<p class="empty" data-testid="saved-meals-empty">No saved meals yet. On the Food page, tap ⋯ on a meal and choose “Save as meal”.</p>`;
     } else if (ctx.tab === "recent") {
       const list = s.recents.map(getFood).filter((f) => f && !f.deleted);
       body = `<div class="food-list">${list.map((f) => listRow(f)).join("") || `<p class="empty">Foods you log show up here for quick re-adding.</p>`}</div>`;
@@ -514,6 +598,7 @@
       <div class="weight-ranges food-tabs">${tabs}</div>
       <div class="sheet-body">${body}</div>
     </div>`, { top: true });
+    bindMealSwipes();
     const form = document.querySelector("[data-food-search]");
     if (form) form.addEventListener("submit", (e) => { e.preventDefault(); runSearch(form.querySelector("[data-food-q]").value); });
   }
@@ -733,6 +818,148 @@
     </div>`;
   }
 
+  /* ---------- saved meals UI (v27) ---------- */
+  function openMealMenu(slot) {
+    const lbl = (MEALS.find((m) => m.id === slot) || MEALS[0]).label;
+    const n = (day(curDay)[slot] || []).length;
+    A().showSheet(`<div class="sheet action-sheet" data-testid="meal-menu-sheet">
+      <div class="handle"></div>
+      <p class="as-title">${esc(lbl)} · ${n} item${n === 1 ? "" : "s"}</p>
+      <button type="button" class="as-btn" data-food="save-meal" data-meal="${slot}" data-testid="save-as-meal">${ICON.save}<span>Save as meal</span></button>
+      <button type="button" class="as-btn" data-food="add-saved" data-meal="${slot}" data-testid="add-saved-meal">${ICON.bowl}<span>Add a saved meal</span></button>
+      <button type="button" class="as-btn" data-food="toggle-edit" data-testid="meal-menu-edit">${ICON.more}<span>Edit items</span></button>
+      <button type="button" class="as-btn cancel" data-food="close">Cancel</button>
+    </div>`);
+  }
+  function openSaveMeal(slot) {
+    const items = day(curDay)[slot] || [];
+    const t = totals(items);
+    A().showSheet(`<div class="sheet food-sheet kb-safe" data-testid="save-meal-sheet">
+      <div class="tracking-head"><h2>Save as meal</h2><button type="button" class="tracking-close" data-food="close">Cancel</button></div>
+      <p class="amt-brand">${items.length} item${items.length === 1 ? "" : "s"} · ${fmt(t.kcal, 0)} kcal · P ${fmt(t.p, 0)} · C ${fmt(t.c, 0)} · F ${fmt(t.f, 0)}</p>
+      <label class="field-label" for="meal-name">Name</label>
+      <input class="text-input" id="meal-name" data-meal-name value="${esc(suggestMealName(slot))}" maxlength="40" autocomplete="off" enterkeyhint="done" data-testid="meal-name-input">
+      <div class="sm-preview">${items.map((it) => `<div class="smp-row"><span>${esc(it.name || "Quick add")}</span><b>${esc(amountLabel(it))}</b></div>`).join("")}</div>
+      <div class="sheet-actions"><button type="button" class="btn pri" data-food="save-meal-go" data-meal="${slot}" data-testid="meal-name-save">Save meal</button></div>
+    </div>`);
+    const inp = document.querySelector("[data-meal-name]");
+    if (inp) { inp.focus(); inp.select(); }
+  }
+  function amountLabel(it) {
+    if (it.quick) return `${fmt(it.kcal, 0)} kcal`;
+    return it.unit === "serving" ? `${fmt(it.amount)} serving${it.amount === 1 ? "" : "s"}` : `${fmt(it.amount, 0)} g`;
+  }
+  /* mode "add": preview + adjust before adding; mode "edit": rename, change amounts, remove items, delete. */
+  function openMealSheet(id, mode) {
+    const meal = getMeal(id);
+    if (!meal) return;
+    const slot = (addCtx && addCtx.meal) || "breakfast";
+    const slotLbl = (MEALS.find((m) => m.id === slot) || MEALS[0]).label;
+    let rows = meal.items.map((it) => ({ it, amount: it.amount, on: true }));
+    const cur = () => rows.filter((r) => r.on).map((r) => itemAt(r.it, r.amount));
+    const totalsHtml = () => {
+      const t = totals(cur());
+      return `<div class="amt-live" data-testid="meal-sheet-totals">
+        <div><b data-testid="meal-sheet-kcal">${fmt(t.kcal, 0)}</b><span>kcal</span></div>
+        <div><b>${fmt(t.p, 0)}</b><span>protein g</span></div>
+        <div><b>${fmt(t.c, 0)}</b><span>carbs g</span></div>
+        <div><b>${fmt(t.f, 0)}</b><span>fat g</span></div></div>`;
+    };
+    const rowHtml = (r, i) => {
+      const x = itemAt(r.it, r.amount);
+      const unit = r.it.quick ? "" : r.it.unit === "serving" ? "srv" : "g";
+      return `<div class="msi${r.on ? "" : " off"}" data-row="${i}" data-testid="meal-sheet-item">
+        ${mode === "add" ? `<button type="button" class="msi-check${r.on ? " on" : ""}" data-toggle="${i}" aria-label="Include ${esc(r.it.name)}">${r.on ? "✓" : ""}</button>` : ""}
+        <span class="msi-main"><span class="fi-name">${esc(r.it.name || "Quick add")}</span><span class="fi-meta" data-rowmeta="${i}">${fmt(x.kcal, 0)} kcal · P ${fmt(x.p, 0)} · C ${fmt(x.c, 0)} · F ${fmt(x.f, 0)}</span></span>
+        ${r.it.quick ? `<span class="msi-q">Quick add</span>` : `<label class="msi-amt"><input class="text-input" inputmode="decimal" data-amt-row="${i}" value="${esc(fmt(r.amount))}" aria-label="Amount for ${esc(r.it.name)}"><i>${unit}</i></label>`}
+        ${mode === "edit" ? `<button type="button" class="msi-del" data-remove="${i}" aria-label="Remove ${esc(r.it.name)}" data-testid="meal-sheet-remove">×</button>` : ""}
+      </div>`;
+    };
+    const paint = () => {
+      A().showSheet(`<div class="sheet food-sheet kb-safe tall" data-testid="meal-sheet" data-mode="${mode}">
+        <div class="tracking-head"><h2>${mode === "edit" ? "Edit meal" : esc(meal.name)}</h2>
+          <button type="button" class="tracking-close" data-food="back-to-add" data-testid="meal-sheet-back">${addCtx ? "Back" : "Close"}</button></div>
+        <div class="sheet-body">
+          ${mode === "edit"
+            ? `<label class="field-label" for="meal-rename">Name</label><input class="text-input" id="meal-rename" data-meal-rename value="${esc(meal.name)}" maxlength="40" data-testid="meal-rename">`
+            : `<p class="amt-brand">Adjust amounts or untick items, then add them to ${esc(slotLbl)}.</p>`}
+          <label class="field-label">${rows.length} item${rows.length === 1 ? "" : "s"}</label>
+          <div class="msi-list">${rows.map(rowHtml).join("") || `<p class="empty">No items left.</p>`}</div>
+          <div data-meal-totals>${totalsHtml()}</div>
+        </div>
+        <div class="sheet-actions">
+          ${mode === "edit"
+            ? `<button type="button" class="btn ghost danger-text" data-meal-delete data-testid="meal-sheet-delete">Delete</button>
+               <button type="button" class="btn pri" data-meal-save data-testid="meal-sheet-save">Save changes</button>`
+            : `<button type="button" class="btn ghost" data-meal-editbtn data-testid="meal-sheet-edit">Edit meal</button>
+               <button type="button" class="btn pri" data-meal-add data-testid="meal-sheet-add">Add ${cur().length} to ${esc(slotLbl)}</button>`}
+        </div>
+      </div>`, { top: true });
+      bind();
+    };
+    const bind = () => {
+      const root = document.querySelector("[data-testid=meal-sheet]");
+      root.querySelectorAll("[data-amt-row]").forEach((inp) => inp.addEventListener("input", () => {
+        const i = Number(inp.dataset.amtRow);
+        rows[i].amount = num(inp.value) || 0;
+        const x = itemAt(rows[i].it, rows[i].amount);
+        root.querySelector(`[data-rowmeta="${i}"]`).textContent = `${fmt(x.kcal, 0)} kcal · P ${fmt(x.p, 0)} · C ${fmt(x.c, 0)} · F ${fmt(x.f, 0)}`;
+        root.querySelector("[data-meal-totals]").innerHTML = totalsHtml();
+      }));
+      root.querySelectorAll("[data-toggle]").forEach((b) => b.addEventListener("click", () => { const i = Number(b.dataset.toggle); rows[i].on = !rows[i].on; paint(); }));
+      root.querySelectorAll("[data-remove]").forEach((b) => b.addEventListener("click", () => { rows.splice(Number(b.dataset.remove), 1); paint(); }));
+      const add = root.querySelector("[data-meal-add]");
+      if (add) add.addEventListener("click", () => {
+        const items = cur().filter((x) => x.quick || x.amount > 0);
+        if (!items.length) { A().showToast("Pick at least one item"); return; }
+        addMealItems(curDay || today(), slot, items);
+        addCtx = null;
+        A().closeSheet();
+        A().render();
+        A().showToast(`${meal.name} added to ${slotLbl}`);
+      });
+      const eb = root.querySelector("[data-meal-editbtn]");
+      if (eb) eb.addEventListener("click", () => openMealSheet(id, "edit"));
+      const sv = root.querySelector("[data-meal-save]");
+      if (sv) sv.addEventListener("click", () => {
+        const name = root.querySelector("[data-meal-rename]").value.trim();
+        if (!name) { A().showToast("Give the meal a name"); return; }
+        if (!rows.length) { A().showToast("A meal needs at least one item — or delete it"); return; }
+        updateMeal(id, { name, items: rows.map((r) => itemAt(r.it, r.amount)) });
+        A().showToast("Meal saved");
+        if (addCtx) { addCtx.tab = "meals"; paintAdd(); } else A().closeSheet();
+      });
+      const del = root.querySelector("[data-meal-delete]");
+      if (del) del.addEventListener("click", () => removeSavedMeal(id));
+    };
+    paint();
+  }
+  function removeSavedMeal(id) {
+    const snap = deleteMeal(id);
+    if (!snap) return;
+    if (addCtx) { addCtx.tab = "meals"; paintAdd(); } else A().closeSheet();
+    A().showToast(`${snap.meal.name} deleted`, "Undo", () => { restoreMeal(snap); if (addCtx && document.querySelector("[data-testid=add-food-sheet]")) paintAdd(); });
+  }
+  function bindMealSwipes() {
+    document.querySelectorAll("[data-meal-swipe]").forEach((row) => {
+      const front = row.querySelector(".swipe-front");
+      let x0 = null, dx = 0, pid = null;
+      row.addEventListener("pointerdown", (e) => { if (mealsEdit) return; x0 = e.clientX; dx = 0; pid = e.pointerId; });
+      row.addEventListener("pointermove", (e) => {
+        if (x0 == null || e.pointerId !== pid) return;
+        dx = Math.min(0, e.clientX - x0);
+        if (dx < -8) { front.style.transition = "none"; front.style.transform = `translateX(${Math.max(dx, -120)}px)`; row.classList.add("dragging"); }
+      });
+      const end = () => {
+        if (x0 == null) return;
+        x0 = null; front.style.transition = ""; front.style.transform = ""; row.classList.remove("dragging");
+        if (dx < -90) removeSavedMeal(row.dataset.id);
+      };
+      row.addEventListener("pointerup", end);
+      row.addEventListener("pointercancel", end);
+    });
+  }
+
   /* ---------- barcode ---------- */
   function loadZxing() {
     if (window.ZXing) return Promise.resolve(window.ZXing);
@@ -905,7 +1132,23 @@
     if (act === "open") { e.preventDefault(); curDay = today(); editMode = false; A().openFood(); return; }
     if (act === "prev-day") { setDay(addDays(curDay, -1)); return; }
     if (act === "next-day") { setDay(addDays(curDay, 1)); return; }
-    if (act === "toggle-edit") { editMode = !editMode; A().render(); return; }
+    if (act === "toggle-edit") { editMode = !editMode; A().closeSheet(); A().render(); return; }
+    if (act === "meal-menu") { openMealMenu(btn.dataset.meal); return; }
+    if (act === "save-meal") { openSaveMeal(btn.dataset.meal); return; }
+    if (act === "save-meal-go") {
+      const inp = document.querySelector("[data-meal-name]");
+      const name = inp ? inp.value.trim() : "";
+      if (!name) { A().showToast("Give the meal a name"); return; }
+      const m = saveMealFromDay(curDay, btn.dataset.meal, name);
+      A().closeSheet();
+      if (m) A().showToast(`Saved “${m.name}” · ${m.items.length} items`);
+      return;
+    }
+    if (act === "add-saved") { addCtx = { meal: btn.dataset.meal, tab: "meals", term: "", results: null, status: "" }; paintAdd(); return; }
+    if (act === "meals-edit") { mealsEdit = !mealsEdit; paintAdd(); return; }
+    if (act === "meal-open") { if (btn.closest(".dragging")) return; openMealSheet(btn.dataset.id, "add"); return; }
+    if (act === "meal-edit") { openMealSheet(btn.dataset.id, "edit"); return; }
+    if (act === "meal-del") { removeSavedMeal(btn.dataset.id); return; }
     if (act === "add") { openAdd(btn.dataset.meal); return; }
     if (act === "add-tab") { addCtx.tab = btn.dataset.tab; paintAdd(); return; }
     if (act === "close") { stopScan(); addCtx = null; A().closeSheet(); return; }
@@ -976,6 +1219,7 @@
   window.VELA_FOOD = {
     MEALS, load, reset, save, homeCardHtml, renderPage, settingsHtml, progressHtml,
     dayTotals, targets, suggestTargets, setTargets, logFood, addItem, saveCustomFood, macrosFor,
+    savedMeals, saveMealFromDay, updateMeal, deleteMeal, addMealItems, itemAt,
     searchOff, lookupBarcode, foodFromOff, openAdd, openScan, stopScan,
     get day() { return curDay; }, set day(v) { curDay = v; },
     _setFetch(fn) { fetchImpl = fn; },

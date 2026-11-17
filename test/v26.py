@@ -95,7 +95,8 @@ def run(p, w, h, tag):
 
     # Home card under body weight
     order = page.evaluate("""() => { const w = document.querySelector('[data-testid=weight-card]'), f = document.querySelector('[data-testid=food-card]');
-        return !!(w && f && (w.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING) && w.nextElementSibling === f); }""")
+        const wb = w && (w.closest('[data-home-block]') || w), fb = f && (f.closest('[data-home-block]') || f);
+        return !!(w && f && (w.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING) && wb.nextElementSibling === fb); }""")
     check(order, f"[{tag}] food card directly under Body weight")
     check(page.locator('[data-testid=tab-bar] .tab-btn').count() == 5, f"[{tag}] still 5 tabs")
     page.evaluate("document.querySelector('[data-testid=weight-card]').scrollIntoView({block:'start'})")
