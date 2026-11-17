@@ -14,7 +14,7 @@ class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
 httpd = socketserver.TCPServer(("127.0.0.1", 0), functools.partial(Q, directory=str(ROOT)))
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
-URL = f"http://127.0.0.1:{httpd.server_address[1]}/"
+URL = os.environ.get("URL") or f"http://127.0.0.1:{httpd.server_address[1]}/"
 UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
 
 # A v26-shaped food store (no "meals" key) with Morten-like breakfast today.
@@ -44,7 +44,7 @@ SEED = """() => {
 
 def run(p, w, h, tag, full):
     b = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
-    c = b.new_context(viewport={"width": w, "height": h}, screen={"width": w, "height": h}, device_scale_factor=3, is_mobile=True, has_touch=True, user_agent=UA)
+    c = b.new_context(viewport={"width": w, "height": h}, screen={"width": w, "height": h}, device_scale_factor=3, is_mobile=True, has_touch=True, user_agent=UA, service_workers="block" if os.environ.get("URL") else "allow")
     page = c.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
