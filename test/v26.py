@@ -4,7 +4,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(os.environ.get("ROOT", Path(__file__).resolve().parent.parent))
-SHOTS = Path(os.environ.get("SHOTS", "/workspace/design-ideas/gym-app/draft-v26"))
+SHOTS = Path(os.environ.get("SHOTS", "/workspace/design-ideas/gym-app/live-v26"))
 SHOTS.mkdir(parents=True, exist_ok=True)
 fails = []
 def check(ok, label, detail=""):
@@ -196,6 +196,8 @@ def run(p, w, h, tag):
     keys_changed = [k for k in after if k != "uiTab" and json.dumps(after[k], sort_keys=True) != json.dumps(final.get(k), sort_keys=True)]
     check(not keys_changed, f"[{tag}] food logging never changed training data", keys_changed)
     check(not errors, f"[{tag}] no page errors", errors)
+    page.locator('[data-testid=tab-settings]').tap(); page.wait_for_timeout(150)
+    check(page.locator('[data-testid="app-version"] b').inner_text() >= "26", f"[{tag}] version >= 26")
     b.close()
 
 with sync_playwright() as p:
