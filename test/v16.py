@@ -90,7 +90,9 @@ def main():
         check(page.locator('[data-testid="weight-card"]').count() == 1, "weight card sits on Home")
         # card should be immediately after the streak/stats card
         order = page.evaluate("""() => {
-          const kids = [...document.querySelector('#content').children];
+          /* v27: Home cards sit inside rearrangeable .home-block wrappers. */
+          const blocks = [...document.querySelectorAll('#content [data-home-block]')];
+          const kids = blocks.length ? blocks.map((b) => b.querySelector('.block-body').firstElementChild || b) : [...document.querySelector('#content').children];
           return kids.map((el) => el.getAttribute('data-testid') || el.className.split(' ')[0]);
         }""")
         print("home children", order)
