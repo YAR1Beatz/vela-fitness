@@ -1,10 +1,12 @@
-const CACHE = "vela-v25";
+const CACHE = "vela-v26";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./data.js",
+  "./food.js",
+  "./vendor/zxing.min.js",
   "./program.js",
   "./catalog.js",
   "./photos.js",

@@ -1,6 +1,6 @@
 """VELA v25: looping ChatGPT demo on Cable Push Down (Straight Bar) (Max-OT "Cable Pushdown"),
 and the floating pill tab bar with a sliding active bubble."""
-import functools, http.server, json, os, socketserver, sys, threading
+import functools, re, http.server, json, os, socketserver, sys, threading
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -122,8 +122,8 @@ def run(p, w, h, tag):
         page.evaluate("document.querySelector('.content').scrollTop = 0")
         page.wait_for_timeout(60)
         page.screenshot(path=str(SHOTS / f"tab-{t}{sfx}.png"))
-    check(page.locator('[data-testid="app-version"] b').inner_text() == "25", f"[{tag}] version 25")
-    check("vela-v25" in page.locator('.settings-build').inner_text(), f"[{tag}] cache vela-v25")
+    check(page.locator('[data-testid="app-version"] b').inner_text() >= "25", f"[{tag}] version >= 25")
+    check(re.search(r"vela-v(2[5-9]|[3-9]\d)", page.locator('.settings-build').inner_text()), f"[{tag}] cache vela-v25+")
 
     # ---- pushdown demo video
     meta = page.evaluate("""() => { const C = window.VELA_CATALOG;
