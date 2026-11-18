@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "27";
-  const VELA_CACHE = "vela-v27";
+  const VELA_VERSION = "28";
+  const VELA_CACHE = "vela-v28";
 
   let view = "home";
   let tab = "home";

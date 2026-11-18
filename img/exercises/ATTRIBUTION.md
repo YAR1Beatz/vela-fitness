@@ -74,7 +74,7 @@ Cropped or resized copies are shared under the same license as the source.
 
 No freely licensed real-photo match was found for: **Dumbbell Pullover** (keeps the illustrated thumbnail). **Incline Dumbbell Tricep Extension** uses a restyled Everkinetic illustration because no freely licensed photo of the correct movement was found.
 
-Also still without a dedicated photo (closest still or catalog thumbnail only) — see the audit in the v13 report: Arnold Press, Barbell Back Squat, Barbell Overhead Press, Front Raise, Front Squat, Barbell Curl, Barbell Shrug, Cable Crunch, Swiss Ball Crunch, Swiss Ball Leg Raise, and the wrist-curl variations, plus any other catalog entries not listed in the table above.
+Also still without a dedicated photo (closest still or catalog thumbnail only) — see the audit in the v13 report: Arnold Press, Barbell Back Squat, Front Raise, Front Squat, Barbell Curl, Barbell Shrug, Cable Crunch, Swiss Ball Crunch, Swiss Ball Leg Raise, and the wrist-curl variations, plus any other catalog entries not listed in the table above.
 
 
 No freely licensed photo showing the right equipment was found for: Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Single-Leg Leg Press Calf Raise (Max-OT: Calf Raises on Leg Press), Low Cable Fly, Cable Crunch and Pallof Press. They show the built-in VELA icon instead of a wrong photo.
@@ -82,3 +82,7 @@ No freely licensed photo showing the right equipment was found for: Straight-Arm
 ## Food data (v26)
 
 Food search and barcode lookups use [Open Food Facts](https://world.openfoodfacts.org) — data © Open Food Facts contributors, available under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1-0/); product images are not used. Barcode scanning on iPhone uses [ZXing for JS](https://github.com/zxing-js/library) (Apache License 2.0, vendored as `vendor/zxing.min.js`, licence in `vendor/ZXING-LICENSE.txt`).
+
+## v28 — Standing Barbell Shoulder Press (Barbell Overhead Press)
+
+- `barbell-overhead-press/0.webp` — "Battle of the Rail- 41st Field Artillery Brigade (8301035)", U.S. Army photo by Sgt. Omar Joseph (DVIDS 8301035, VIRIN 240321-A-DQ743-1142). Public domain as a work of the U.S. federal government ({{PD-USGov-Military-Army}}). https://commons.wikimedia.org/wiki/File:Battle_of_the_Rail-_41st_Field_Artillery_Brigade_(8301035).jpg — resized to 600×480. Shows a standing overhead press with a straight barbell at lockout. No endorsement by the U.S. Army is implied.

@@ -159,12 +159,21 @@
     return sets;
   }
 
+  /* Some exercises always suggest a fixed rep target (e.g. Standing Barbell Shoulder
+     Press = 6), whatever was logged last time. The weight still follows the last log. */
+  function fixedRepsFor(name) {
+    const cat = C() && C().findExercise(name);
+    return cat && cat.suggestReps != null ? cat.suggestReps : null;
+  }
+
   function suggestionFor(name, fallbackReps, fallbackWeight) {
+    const fixed = fixedRepsFor(name);
+    if (fixed != null) fallbackReps = fixed;
     if (!state) return { reps: fallbackReps, weight: fallbackWeight };
     const rec = aliasKeys(name).map((k) => state.lastLogged[k]).find(Boolean);
     if (rec && (rec.reps != null || rec.weight != null)) {
       return {
-        reps: rec.reps != null ? rec.reps : fallbackReps,
+        reps: fixed != null ? fixed : (rec.reps != null ? rec.reps : fallbackReps),
         weight: rec.weight != null ? rec.weight : fallbackWeight,
       };
     }
@@ -322,6 +331,10 @@
       splitPushdownExercises(state);
       state.version = 8;
     }
+    if (state.version < 9) {
+      applyFixedRepTargets(state);
+      state.version = 9;
+    }
     if (!state.sessions) state.sessions = [];
     if (!state.checkIns) state.checkIns = [];
     if (!state.programs) state.programs = {};
@@ -335,6 +348,22 @@
     normalizeProgramSlots(state);
     (state.workouts || []).forEach(ensureWorkoutFields);
     return state;
+  }
+
+  /* v27.1: exercises with a fixed suggested rep target (Standing Barbell Shoulder Press
+     → 6) get it in every program. Only the suggestion changes: logged sets, typed-in
+     reps, history and last-logged values are left exactly as they are. */
+  function applyFixedRepTargets(state) {
+    const lists = [state.workouts || []];
+    Object.values(state.programs || {}).forEach((p) => {
+      if (p && Array.isArray(p.workouts) && !lists.includes(p.workouts)) lists.push(p.workouts);
+    });
+    lists.forEach((ws) => ws.forEach((w) => (w && w.exercises || []).forEach((ex) => {
+      const fixed = ex && ex.name ? fixedRepsFor(ex.name) : null;
+      if (fixed == null) return;
+      ex.programReps = fixed;
+      ex.suggestedReps = fixed;
+    })));
   }
 
   /* v24: "Tricep Rope Pushdown" and Max-OT's "Cable Pushdown" used to share one key

@@ -85,7 +85,7 @@ def run(p, w, h, tag):
         barPhoto2: (C.photoFor('Cable Push Down (Straight Bar)') || {}).frames, barEx: (C.findExercise('Cable Pushdowns') || {}).name,
         ropeEx: (C.findExercise('Tricep Rope Pushdown') || {}).name };
     }""")
-    check(r["version"] == 8, f"[{tag}] state migrated to v8", r["version"])
+    check(r["version"] >= 8, f"[{tag}] state migrated to v8+", r["version"])
     check(r["rope"] == ["ses-bro", "ses-old"], f"[{tag}] Bro Split + legacy logs -> rope", r["rope"])
     check(r["bar"] == ["ses-max", "ses-max2"], f"[{tag}] Max-OT logs -> straight bar", r["bar"])
     check(not r["old"], f"[{tag}] old keys emptied after move", r["old"])
