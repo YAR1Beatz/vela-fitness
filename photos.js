@@ -821,5 +821,19 @@ window.VELA_PHOTOS = {
     "license": "Public domain (U.S. Government work)",
     "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-Military-Army",
     "note": "Standing barbell overhead press at lockout. Resized to 600×480."
+  },
+  "reverse-pec-deck-machine": {
+    "name": "Reverse Pec Deck (Machine)",
+    "frames": [
+      "img/exercises/reverse-pec-deck-machine/0.webp",
+      "img/exercises/reverse-pec-deck-machine/1.webp"
+    ],
+    "match": "exact",
+    "author": "심으뜸의 마이너스 라이프 (Shim Eu-ddeum, Minus Life)",
+    "source": "Wikimedia Commons (from YouTube)",
+    "source_url": "https://commons.wikimedia.org/wiki/File:%EB%88%84%EA%B5%AC%EB%82%98_%EA%B0%80%EC%8A%B4%EC%9A%B4%EB%8F%99%EC%9D%84_%ED%95%B4%EC%95%BC_%ED%95%9C%EB%8B%A4!_%ED%97%AC%EC%8A%A4%EC%9E%A5_%EA%B8%B0%EA%B5%AC_%ED%8E%99_%EB%8D%B1_%ED%94%8C%EB%9D%BC%EC%9D%B4_%26_%EB%A6%AC%EC%96%B4_%EB%8D%B8%ED%86%A0%EC%9D%B4%EB%93%9C_How_to_do_Pec_dec_fly_and_rear_deltoid.webm",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "note": "Start and end frames taken from the video at 9:22 and 9:25 (seated facing the pec deck, reverse fly); cropped to remove captions and resized."
   }
 };

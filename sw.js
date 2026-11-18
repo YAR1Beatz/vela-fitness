@@ -1,4 +1,4 @@
-const CACHE = "vela-v28";
+const CACHE = "vela-v29";
 const ASSETS = [
   "./",
   "./index.html",
@@ -78,6 +78,8 @@ const ASSETS = [
   "./img/exercises/leg-press-machine/1.webp",
   "./img/exercises/machine-chest-press/0.webp",
   "./img/exercises/barbell-overhead-press/0.webp",
+  "./img/exercises/reverse-pec-deck-machine/0.webp",
+  "./img/exercises/reverse-pec-deck-machine/1.webp",
   "./img/exercises/machine-shoulder-press/0.webp",
   "./img/exercises/machine-shoulder-press/1.webp",
   "./img/exercises/overhead-tricep-extension/0.webp",

@@ -107,6 +107,7 @@
     { name: "Front Raise", thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
     { name: "Rear Delt Fly", aliases: ["Rear Lateral Dumbbell Raise", "Rear Lateral Dumbbell Raises"],  thumb: "rear-delt", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
     { name: "Face Pull", thumb: "face-pull", category: "Shoulders", equipment: "Cable", defaultReps: 15, defaultWeight: 15, tempo: [2, 0, 2, 1] },
+    { name: "Reverse Pec Deck (Machine)", aliases: ["Reverse Pec Dec (Machine)", "Reverse Pec Deck", "Reverse Pec Dec", "Pec Deck Rear Delt Fly", "Machine Rear Delt Fly", "Rear Delt Machine Fly", "Reverse Machine Fly"], thumb: "rear-delt", category: "Shoulders", equipment: "Machine", defaultReps: 12, repsRange: "12-15", defaultWeight: 25, tempo: [2, 0, 2, 1] },
     { name: "Barbell Shrug", thumb: "rdl", category: "Shoulders", equipment: "Barbell", defaultReps: 12, defaultWeight: 60, tempo: [1, 1, 1, 1] },
 
     { name: "EZ-Bar Curl", thumb: "curl", category: "Biceps", equipment: "Barbell", defaultReps: 10, defaultWeight: 25, tempo: [3, 0, 1, 1] },
