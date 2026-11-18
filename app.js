@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "28";
-  const VELA_CACHE = "vela-v28";
+  const VELA_VERSION = "29";
+  const VELA_CACHE = "vela-v29";
 
   let view = "home";
   let tab = "home";
@@ -2292,7 +2292,7 @@
         tempo: catalog && catalog.tempo,
         thumb: catalog && catalog.thumb,
         sets: 3,
-        reps: 10,
+        reps: catalog && catalog.repsRange ? catalog.defaultReps : 10,
         weight: catalog ? catalog.defaultWeight : null,
       });
       closeSheet();

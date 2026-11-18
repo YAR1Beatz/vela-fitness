@@ -1161,7 +1161,7 @@
       sets: sets || (prev.sets && prev.sets.length) || 3,
       reps: reps != null ? reps : (catalog && catalog.defaultReps) || 10,
       weight: weight !== undefined ? weight : (catalog ? catalog.defaultWeight : null),
-      thumb: thumb || (catalog && catalog.thumb) || "generic",
+      thumb: thumb || (catalog && catalog.thumb) || "generic",      repsRange: (catalog && catalog.repsRange) || "",
     };
     const next = buildExercise(src);
     next.id = prev.id;
@@ -1182,7 +1182,7 @@
       sets: sets || 3,
       reps: reps != null ? reps : 10,
       weight: weight !== undefined ? weight : (catalog ? catalog.defaultWeight : null),
-      thumb: thumb || (catalog && catalog.thumb) || "generic",
+      thumb: thumb || (catalog && catalog.thumb) || "generic",      repsRange: (catalog && catalog.repsRange) || "",
     };
     const ex = buildExercise(src);
     w.exercises.push(ex);
