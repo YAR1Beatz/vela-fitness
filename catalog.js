@@ -100,7 +100,7 @@
 
     { name: "Seated Dumbbell Shoulder Press", aliases: ["Seated Dumbbell Press"], thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 8, defaultWeight: 20, tempo: [3, 0, 1, 1] },
     { name: "Machine Shoulder Press", thumb: "ohp", category: "Shoulders", equipment: "Machine", defaultReps: 8, defaultWeight: 30, tempo: [3, 0, 1, 1] },
-    { name: "Barbell Overhead Press", aliases: ["Standing Barbell Shoulder Press"], thumb: "ohp", category: "Shoulders", equipment: "Barbell", defaultReps: 8, defaultWeight: 35, tempo: [3, 0, 1, 1] },
+    { name: "Barbell Overhead Press", aliases: ["Standing Barbell Shoulder Press"], thumb: "ohp", category: "Shoulders", equipment: "Barbell", defaultReps: 6, suggestReps: 6, defaultWeight: 35, tempo: [3, 0, 1, 1] },
     { name: "Arnold Press", thumb: "ohp", category: "Shoulders", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 14, tempo: [3, 0, 1, 1] },
     { name: "Lateral Raise", aliases: ["Side Lateral Dumbbell Raise", "Side Lateral Dumbbell Raises"], thumb: "lateral", category: "Shoulders", equipment: "Dumbbell", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },
     { name: "Cable Lateral Raise", thumb: "lateral", category: "Shoulders", equipment: "Cable", defaultReps: 12, defaultWeight: 8, tempo: [2, 0, 2, 1] },

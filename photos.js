@@ -808,5 +808,18 @@ window.VELA_PHOTOS = {
     "license": "CC BY 2.0",
     "license_url": "https://creativecommons.org/licenses/by/2.0/",
     "note": "Straight-bar curl on a low cable. Cropped and resized."
+  },
+  "barbell-overhead-press": {
+    "name": "Standing Barbell Shoulder Press",
+    "frames": [
+      "img/exercises/barbell-overhead-press/0.webp"
+    ],
+    "match": "exact",
+    "author": "Sgt. Omar Joseph, U.S. Army",
+    "source": "Wikimedia Commons",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Battle_of_the_Rail-_41st_Field_Artillery_Brigade_(8301035).jpg",
+    "license": "Public domain (U.S. Government work)",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-Military-Army",
+    "note": "Standing barbell overhead press at lockout. Resized to 600×480."
   }
 };
