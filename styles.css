@@ -2521,3 +2521,11 @@ button.program-name {
   .chips.row .chip.logged { font-size: 12px; padding: 0 6px 0 8px; gap: 4px; }
   .chips.row .chip.logged .badge { flex-basis: 18px; width: 18px; height: 18px; }
 }
+
+/* ---------- v30: delete a food entry ---------- */
+.food-swipe[data-food-swipe] { touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.food-swipe[data-food-swipe] .swipe-front { transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.food-swipe[data-food-swipe].open .swipe-front { margin-right: 0; transform: translateX(-88px); }
+.food-swipe[data-food-swipe] .swipe-actions { gap: 6px; font-size: 14px; }
+.sheet-del { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 10px; background: transparent; }
+@media (prefers-reduced-motion: reduce) { .food-swipe[data-food-swipe] .swipe-front { transition: none; } }

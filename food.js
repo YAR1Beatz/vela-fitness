@@ -26,6 +26,17 @@
     if (!state || typeof state !== "object") state = blank();
     const b = blank();
     Object.keys(b).forEach((k) => { if (state[k] == null) state[k] = b[k]; });
+    /* v30 repair: entries made with "Copy yesterday" before v30 were saved without an id,
+       so Delete / Edit couldn't find them. Give every entry an id (nothing else changes). */
+    let repaired = 0;
+    Object.values(state.days || {}).forEach((d) => {
+      if (!d || typeof d !== "object") return;
+      Object.values(d).forEach((list) => {
+        if (!Array.isArray(list)) return;
+        list.forEach((it) => { if (it && typeof it === "object" && !it.id) { it.id = uid("it"); repaired++; } });
+      });
+    });
+    if (repaired) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage full */ } }
     return state;
   }
   function save() {
@@ -156,7 +167,8 @@
   }
   function addItem(ymd, meal, item) {
     const d = day(ymd, true);
-    const it = Object.assign({ id: uid("it"), ts: Date.now() }, item);
+    const it = Object.assign({ ts: Date.now() }, item);
+    if (!it.id) it.id = uid("it"); /* an explicit id: undefined must not wipe the new id */
     d[meal].push(it);
     if (it.foodId) {
       const s = load();
@@ -200,7 +212,7 @@
   }
   function copyMeal(fromYmd, toYmd, meal) {
     const src = day(fromYmd)[meal] || [];
-    src.forEach((it) => addItem(toYmd, meal, Object.assign({}, it, { id: undefined, ts: Date.now() })));
+    src.forEach((it) => { const copy = Object.assign({}, it, { ts: Date.now() }); delete copy.id; addItem(toYmd, meal, copy); });
     return src.length;
   }
   /* ---------- saved meals (v27) ---------- */
@@ -338,6 +350,7 @@
   let scanStop = null;
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const ICON = {
+    trash: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.2 4.2h9.6M6.2 4.2V3h3.6v1.2M4.4 4.2 5 13h6l.6-8.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     left: `<svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M13.5 5.5 7.5 11l6 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     right: `<svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M8.5 5.5 14.5 11l-6 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     cal: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
@@ -413,7 +426,7 @@
       const rows = items.map((it) => {
         const amt = it.quick ? "Quick add" : it.unit === "serving" ? `${fmt(it.amount)} serving${it.amount === 1 ? "" : "s"}` : `${fmt(it.amount, 0)} g`;
         return `<div class="swipe-row food-swipe" data-food-swipe data-meal="${m.id}" data-id="${esc(it.id)}">
-          <button type="button" class="swipe-actions" data-food="del-item" data-meal="${m.id}" data-id="${esc(it.id)}">Delete</button>
+          <button type="button" class="swipe-actions" data-food="del-item" data-meal="${m.id}" data-id="${esc(it.id)}" data-testid="food-swipe-delete">${ICON.trash} Delete</button>
           <div class="swipe-front">
             <div class="food-item" data-testid="food-item">
               <button type="button" class="food-item-main" data-food="edit-item" data-meal="${m.id}" data-id="${esc(it.id)}">
@@ -493,27 +506,79 @@
     if (inp) inp.addEventListener("change", () => { if (inp.value) setDay(inp.value); });
   }
 
+  /* iOS-style swipe: drag a row left to reveal a red Delete button (it stays open; tap it
+     to delete). A long swipe past ~60% of the row deletes straight away. Touch events with
+     a direction lock, so vertical scrolling is never hijacked; mouse uses pointer events. */
+  const SWIPE_OPEN = 88;
+  function closeSwipeRows(except) {
+    document.querySelectorAll(".food-swipe[data-food-swipe].open").forEach((r) => {
+      if (r === except) return;
+      r.classList.remove("open");
+      const f = r.querySelector(".swipe-front");
+      if (f) { f.style.transition = ""; f.style.transform = ""; }
+    });
+  }
   function bindSwipes(root) {
     root.querySelectorAll("[data-food-swipe]").forEach((row) => {
       const front = row.querySelector(".swipe-front");
-      let x0 = null, dx = 0, id = null;
-      row.addEventListener("pointerdown", (e) => { if (editMode) return; x0 = e.clientX; dx = 0; id = e.pointerId; });
-      row.addEventListener("pointermove", (e) => {
-        if (x0 == null || e.pointerId !== id) return;
-        dx = Math.min(0, e.clientX - x0);
-        if (dx < -8) { front.style.transition = "none"; front.style.transform = `translateX(${Math.max(dx, -120)}px)`; row.classList.add("dragging"); }
-      });
-      const end = () => {
-        if (x0 == null) return;
-        x0 = null;
-        front.style.transition = "";
-        front.style.transform = "";
-        row.classList.remove("dragging");
-        if (dx < -90) deleteItem(row.dataset.meal, row.dataset.id);
+      let g = null; /* gesture: { x0, y0, base, dx, lock } */
+      const startAt = (x, y) => {
+        if (editMode) return;
+        closeSwipeRows(row);
+        g = { x0: x, y0: y, base: row.classList.contains("open") ? -SWIPE_OPEN : 0, dx: 0, lock: null };
       };
-      row.addEventListener("pointerup", end);
-      row.addEventListener("pointercancel", end);
+      const moveTo = (x, y, e) => {
+        if (!g) return;
+        const mx = x - g.x0, my = y - g.y0;
+        if (!g.lock) {
+          if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+          g.lock = Math.abs(mx) > Math.abs(my) * 1.2 ? "x" : "y";
+          if (g.lock === "y") { g = null; return; }
+          row.classList.add("dragging");
+          front.style.transition = "none";
+        }
+        if (e && e.cancelable) e.preventDefault(); /* horizontal: keep the page still */
+        let pos = g.base + mx;
+        if (pos > 0) pos = pos / 4; /* rubber band to the right */
+        const full = row.offsetWidth;
+        if (pos < -full) pos = -full;
+        g.dx = pos;
+        front.style.transform = `translateX(${pos}px)`;
+      };
+      const finish = () => {
+        if (!g) return;
+        const st = g; g = null;
+        if (!st.lock) return; /* a plain tap: let the click through */
+        row.dataset.swiped = String(Date.now());
+        front.style.transition = "";
+        const full = row.offsetWidth;
+        if (st.dx < -full * 0.6) {
+          front.style.transform = `translateX(${-full}px)`;
+          setTimeout(() => deleteItem(row.dataset.meal, row.dataset.id), 160);
+          return;
+        }
+        row.classList.remove("dragging");
+        if (st.dx < -SWIPE_OPEN / 2) { row.classList.add("open"); front.style.transform = `translateX(${-SWIPE_OPEN}px)`; }
+        else { row.classList.remove("open"); front.style.transform = ""; }
+      };
+      row.addEventListener("touchstart", (e) => { if (e.touches.length === 1) startAt(e.touches[0].clientX, e.touches[0].clientY); else g = null; }, { passive: true });
+      row.addEventListener("touchmove", (e) => { if (e.touches.length === 1) moveTo(e.touches[0].clientX, e.touches[0].clientY, e); }, { passive: false });
+      row.addEventListener("touchend", finish);
+      row.addEventListener("touchcancel", () => { if (g) { g.dx = g.base; } finish(); });
+      row.addEventListener("pointerdown", (e) => { if (e.pointerType === "mouse") startAt(e.clientX, e.clientY); });
+      row.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") moveTo(e.clientX, e.clientY, null); });
+      row.addEventListener("pointerup", (e) => { if (e.pointerType === "mouse") finish(); });
+      /* swallow the click that ends a swipe */
+      row.addEventListener("click", (e) => {
+        const t = Number(row.dataset.swiped || 0);
+        if (t && Date.now() - t < 350 && !e.target.closest(".swipe-actions")) { e.stopPropagation(); e.preventDefault(); }
+      }, true);
     });
+    if (!document.documentElement.dataset.foodSwipeClose) {
+      document.documentElement.dataset.foodSwipeClose = "1";
+      document.addEventListener("touchstart", (e) => { if (!e.target.closest(".food-swipe.open")) closeSwipeRows(); }, { passive: true });
+      document.addEventListener("mousedown", (e) => { if (!e.target.closest(".food-swipe.open")) closeSwipeRows(); });
+    }
   }
 
   function deleteItem(meal, id) {
@@ -665,6 +730,7 @@
         <button type="button" class="btn ghost" data-food="${o.editId ? "close" : "back-to-add"}">${o.editId ? "Cancel" : "Back"}</button>
         <button type="button" class="btn pri" data-amt-save data-testid="amount-save">${o.editId ? "Save" : "Add to " + (MEALS.find((x) => x.id === meal) || {}).label}</button>
       </div>
+      ${o.editId ? `<button type="button" class="btn danger-text sheet-del" data-food="del-item-sheet" data-meal="${esc(meal)}" data-id="${esc(o.editId)}" data-testid="sheet-delete-item">${ICON.trash} Delete from ${esc((MEALS.find((x) => x.id === meal) || {}).label || "meal")}</button>` : ""}
     </div>`);
     const root = document.querySelector("[data-testid=amount-sheet]");
     const inp = root.querySelector("[data-amt]");
@@ -712,6 +778,7 @@
         <label>Fat g<input class="text-input" data-q-f inputmode="decimal" placeholder="—" value="${v.f ? esc(fmt(v.f)) : ""}"></label>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-q-save data-testid="quick-save">${item ? "Save" : "Add"}</button></div>
+      ${item && item.id ? `<button type="button" class="btn danger-text sheet-del" data-food="del-item-sheet" data-meal="${esc(meal)}" data-id="${esc(item.id)}" data-testid="sheet-delete-item">${ICON.trash} Delete from ${esc((MEALS.find((x) => x.id === meal) || {}).label || "meal")}</button>` : ""}
     </div>`);
     const root = document.querySelector("[data-testid=quick-sheet]");
     root.querySelector("[data-q-save]").addEventListener("click", () => {
@@ -1184,6 +1251,8 @@
     }
     if (act === "edit-item") {
       if (btn.closest(".dragging")) return;
+      const openRow = btn.closest(".food-swipe.open");
+      if (openRow) { closeSwipeRows(); return; }
       const it = findItem(btn.dataset.meal, btn.dataset.id);
       if (!it) return;
       if (it.quick || !it.foodId || !getFood(it.foodId)) { openQuick(btn.dataset.meal, it); return; }
@@ -1192,6 +1261,7 @@
       return;
     }
     if (act === "del-item") { deleteItem(btn.dataset.meal, btn.dataset.id); return; }
+    if (act === "del-item-sheet") { A().closeSheet(); deleteItem(btn.dataset.meal, btn.dataset.id); return; }
     if (act === "targets") { openTargets(); return; }
     if (act === "use-suggest") {
       const s = suggestTargets();
