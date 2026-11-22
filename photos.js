@@ -209,6 +209,32 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": ""
   },
+  "smith-machine-back-squat": {
+    "name": "Smith Machine Back Squat",
+    "frames": [
+      "img/exercises/smith-machine-back-squat/0.webp"
+    ],
+    "match": "exact",
+    "author": "VELA",
+    "source": "VELA",
+    "source_url": "",
+    "license": "Generated demo photo",
+    "license_url": "",
+    "note": "Generated demo photo for VELA."
+  },
+  "smith-machine-front-squat": {
+    "name": "Smith Machine Front Squat",
+    "frames": [
+      "img/exercises/smith-machine-front-squat/0.webp"
+    ],
+    "match": "exact",
+    "author": "VELA",
+    "source": "VELA",
+    "source_url": "",
+    "license": "Generated demo photo",
+    "license_url": "",
+    "note": "Generated demo photo for VELA."
+  },
   "walking-lunge": {
     "name": "Walking Lunge",
     "frames": [

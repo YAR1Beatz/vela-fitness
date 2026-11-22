@@ -70,6 +70,8 @@
     { name: "Leg Press Machine", thumb: "press", category: "Legs", sub: "Quads", equipment: "Machine", defaultReps: 10, defaultWeight: 80, tempo: [3, 0, 2, 1] },
     { name: "Romanian Deadlift", thumb: "rdl", category: "Legs", sub: "Hamstrings", equipment: "Barbell", defaultReps: 10, defaultWeight: 60, tempo: [3, 1, 2, 1] },
     { name: "Smith Machine Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Smith", defaultReps: 10, defaultWeight: 50, tempo: [3, 1, 2, 1] },
+    { name: "Smith Machine Back Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Smith", defaultReps: 10, defaultWeight: 50, tempo: [3, 1, 2, 1] },
+    { name: "Smith Machine Front Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Smith", defaultReps: 10, defaultWeight: 50, tempo: [3, 1, 2, 1] },
     { name: "Barbell Back Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Barbell", defaultReps: 8, defaultWeight: 70, tempo: [3, 1, 2, 1] },
     { name: "Front Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Barbell", defaultReps: 8, defaultWeight: 50, tempo: [3, 1, 2, 1] },
     { name: "Goblet Squat", thumb: "rdl", category: "Legs", sub: "Quads", equipment: "Dumbbell", defaultReps: 10, defaultWeight: 20, tempo: [3, 0, 2, 1] },
