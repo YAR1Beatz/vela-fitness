@@ -523,7 +523,25 @@
         out.push(h);
       });
     });
+    out.sort((a, b) => String((b && (b.datetime || b.date)) || "").localeCompare(String((a && (a.datetime || a.date)) || "")));
     return out;
+  }
+
+  function historyEntryForSession(exerciseKey, sessionId) {
+    if (!exerciseKey || !sessionId) return null;
+    return readHistoryAll(exerciseKey).find((h) => h && h.sessionId === sessionId) || null;
+  }
+
+  /* Volume of previous sets that line up with already-logged current sets.
+     If every current set is done, use the full previous session (extra past sets count). */
+  function comparablePreviousSetsVolume(currentSets, previousSets) {
+    const current = currentSets || [];
+    const previous = previousSets || [];
+    if (!current.some((s) => s && s.done)) return { kg: 0, repsOnly: 0 };
+    const complete = current.length && current.every((s) => s && s.done);
+    if (complete) return setsVolume(previous);
+    const subset = previous.map((s, i) => (current[i] && current[i].done ? s : null));
+    return setsVolume(subset);
   }
 
   function stampCycleStart(s, when) {
@@ -1678,7 +1696,7 @@
   function previousExerciseVolume(ex, sessionId) {
     const prev = previousSession(ex && ex.key, sessionId);
     if (!prev) return null;
-    return setsVolume(prev.sets);
+    return comparablePreviousSetsVolume(ex && ex.sets, prev.sets);
   }
 
   function targetVolume(ex) {
@@ -1711,13 +1729,29 @@
   function previousWorkoutVolume(workout) {
     const prev = previousWorkoutSession(workout);
     if (!prev) return null;
-    let total = { kg: 0, repsOnly: 0 };
-    Object.keys(get().history || {}).forEach((key) => {
-      (get().history[key] || []).forEach((h) => {
-        if (h.sessionId === prev.sessionId) total = addVolumes(total, setsVolume(h.sets));
+    /* Finished workouts compare the full previous session.
+       Mid-session, only compare exercises (and in-progress sets) already logged
+       this time, so a running total is not scored against last week's whole workout. */
+    const finished = !!(workout && workout.completedAt);
+    if (finished) {
+      let total = { kg: 0, repsOnly: 0 };
+      Object.keys(get().history || {}).forEach((key) => {
+        (get().history[key] || []).forEach((h) => {
+          if (h.sessionId === prev.sessionId) total = addVolumes(total, setsVolume(h.sets));
+        });
       });
+      return total;
+    }
+    let total = { kg: 0, repsOnly: 0 };
+    let any = false;
+    (workout && workout.exercises || []).forEach((ex) => {
+      if (!(ex.sets || []).some((s) => s && s.done)) return;
+      const entry = historyEntryForSession(ex.key, prev.sessionId);
+      if (!entry) return;
+      any = true;
+      total = addVolumes(total, comparablePreviousSetsVolume(ex.sets, entry.sets));
     });
-    return total;
+    return any ? total : null;
   }
 
 
@@ -2532,6 +2566,8 @@
     workoutVolume,
     previousWorkoutVolume,
     volumeCompare,
+    comparablePreviousSetsVolume,
+    historyEntryForSession,
     setsVolume,
     formatVolumeParts,
     doneExerciseCount,
