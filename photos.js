@@ -412,9 +412,9 @@ window.VELA_PHOTOS = {
     "author": "VELA",
     "source": "VELA",
     "source_url": "",
-    "license": "Generated demo photo",
+    "license": "Photo provided for VELA",
     "license_url": "",
-    "note": "Generated demo photo for VELA, modelled on a Hammer Strength selectorized lateral raise."
+    "note": "Photo provided for VELA. Phone UI overlays were removed; resized to 600×338 WebP."
   },
   "rear-delt-fly": {
     "name": "Rear Delt Fly",

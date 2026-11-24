@@ -97,5 +97,5 @@ Food search and barcode lookups use [Open Food Facts](https://world.openfoodfact
 
 ## v33 — Machine Lateral Raise
 
-- `machine-lateral-raise/0.webp` — generated demo photo for VELA, resized to 600×338 WebP. Modelled on a Hammer Strength selectorized seated lateral raise (purple frame, weight stack with incremental plates, padded arm supports). No freely licensed photo of this machine was found.
+- `machine-lateral-raise/0.webp` — photo provided for VELA, showing a seated machine lateral raise. Phone UI overlay buttons in the corners were removed, then the still was resized to 600×338 WebP.
 
