@@ -403,6 +403,19 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": ""
   },
+  "machine-lateral-raise": {
+    "name": "Machine Lateral Raise",
+    "frames": [
+      "img/exercises/machine-lateral-raise/0.webp"
+    ],
+    "match": "exact",
+    "author": "VELA",
+    "source": "VELA",
+    "source_url": "",
+    "license": "Photo provided for VELA",
+    "license_url": "",
+    "note": "Photo provided for VELA. Phone UI overlays were removed; resized to 600×338 WebP."
+  },
   "rear-delt-fly": {
     "name": "Rear Delt Fly",
     "frames": [

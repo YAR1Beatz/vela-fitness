@@ -3,8 +3,8 @@
 (function () {
   const D = () => window.VELA_DATA;
   const C = () => window.VELA_CATALOG;
-  const VELA_VERSION = "32";
-  const VELA_CACHE = "vela-v32";
+  const VELA_VERSION = "33";
+  const VELA_CACHE = "vela-v33";
 
   let view = "home";
   let tab = "home";
@@ -1366,7 +1366,7 @@
         <b>${VELA_VERSION}</b>
       </div>
       <p class="settings-build">VELA ${VELA_VERSION} · ${VELA_CACHE}</p>
-      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Smith Machine Back Squat and Smith Machine Front Squat use generated demo photos. Food data comes from Open Food Facts (openfoodfacts.org), available under the Open Database License (ODbL); the barcode scanner uses ZXing (Apache 2.0). Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+      <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Smith Machine Back Squat and Smith Machine Front Squat use generated demo photos. Machine Lateral Raise uses a photo provided for VELA. Food data comes from Open Food Facts (openfoodfacts.org), available under the Open Database License (ODbL); the barcode scanner uses ZXing (Apache 2.0). Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
     </div>`;
   }
 
@@ -1895,10 +1895,18 @@
       : photo
         ? `${photo.author || "Unknown"} · ${photo.license || ""}${photo.match === "closest" ? " · closest match" : ""}`
         : "";
+    const catalog = C().findExercise(ex.name);
+    const note = catalog && catalog.note;
+    const cues = (catalog && catalog.cues) || [];
+    const cuesHtml = cues.length
+      ? `<ol class="demo-cues" data-testid="exercise-cues">${cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`
+      : "";
     showSheet(`<div class="demo-card" role="dialog" aria-modal="true" aria-label="${esc(ex.name)} demo" data-testid="exercise-demo">
         <button type="button" class="tracking-close" data-action="close-sheet" data-testid="close-demo" aria-label="Close">Done ${ICONS.close}</button>
         <div class="demo-photo">${C().photoMarkup(ex.name, { large: true })}</div>
         <h2>${esc(ex.name)}</h2>
+        ${note ? `<p class="demo-note" data-testid="exercise-note">${esc(note)}</p>` : ""}
+        ${cuesHtml}
         ${credit ? `<p class="demo-credit">${esc(credit)}</p>` : ""}
       </div>`, { top: true });
   }
@@ -2063,7 +2071,7 @@
           <button type="button" class="add" data-action="reset-program">Reset</button>
         </div>
         <p class="empty" style="text-align:left;padding:16px 0 0">VELA keeps everything on this phone. Each program has its own week and plan. History and last weights are shared, so overload still works if you switch. Edit program.js to change the default workouts.</p>
-        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Smith Machine Back Squat and Smith Machine Front Squat use generated demo photos. Food data comes from Open Food Facts (openfoodfacts.org), available under the Open Database License (ODbL); the barcode scanner uses ZXing (Apache 2.0). Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
+        <p class="credits" data-testid="photo-credits">Exercise photos are freely licensed stills: videos by Goulart on wger.de (CC BY-SA 4.0) and photographs by George Stepanek, Aliva Sahoo, Tyler Read, Nenad Stojkovic, Shixart1985 and PTPioneer (CC BY / CC BY-SA), stills from a Colossus Fitness video (CC BY 3.0); Cable Push Down (Straight Bar) and Cable Rope Tricep Extension have their own photos (George Stepanek, CC BY-SA 3.0; Shixart1985, CC BY 2.0), and U.S. Navy / U.S. Marine Corps photos (public domain). Incline Dumbbell Tricep Extension uses an Everkinetic line illustration (CC BY-SA 3.0) restyled for VELA — no freely licensed photo was found. Flat Barbell Bench Press and Cable Push Down (Straight Bar) also have looping demos generated with ChatGPT. Smith Machine Back Squat and Smith Machine Front Squat use generated demo photos. Machine Lateral Raise uses a photo provided for VELA. Food data comes from Open Food Facts (openfoodfacts.org), available under the Open Database License (ODbL); the barcode scanner uses ZXing (Apache 2.0). Dumbbell Pullover, Straight-Arm Pulldown, Reverse Hyper, Cable Lateral Raise, Calf Raises on Leg Press, Low Cable Fly, Cable Crunch and Pallof Press have no freely licensed photo of the right equipment yet, so they show an icon. We did not use free-exercise-db images — those were scraped and are not free to reuse.</p>
       </div>
       <div class="sheet-actions"><button type="button" class="btn pri" data-action="close-sheet">Done</button></div>
     </div>`);

@@ -1267,6 +1267,21 @@ input, textarea, select {
   color: var(--faint);
   line-height: 1.4;
 }
+.demo-note {
+  margin-top: 2px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--muted);
+}
+.demo-cues {
+  margin: 8px 4px 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.demo-cues li { margin: 0 0 6px; }
 
 /* v6: library picker, edit mode, volume vs last session */
 .ex-head-row {
