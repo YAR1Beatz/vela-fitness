@@ -94,3 +94,8 @@ Food search and barcode lookups use [Open Food Facts](https://world.openfoodfact
 ## v31 — Smith Machine Back Squat and Smith Machine Front Squat
 
 - `smith-machine-back-squat/0.webp` and `smith-machine-front-squat/0.webp` — generated demo photos for VELA, resized to 600×338 WebP. The existing Smith Machine Squat entry and its wger.de / Goulart stills are unchanged.
+
+## v33 — Machine Lateral Raise
+
+- `machine-lateral-raise/0.webp` — generated demo photo for VELA, resized to 600×338 WebP. Modelled on a Hammer Strength selectorized seated lateral raise (purple frame, weight stack with incremental plates, padded arm supports). No freely licensed photo of this machine was found.
+

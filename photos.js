@@ -403,6 +403,19 @@ window.VELA_PHOTOS = {
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "note": ""
   },
+  "machine-lateral-raise": {
+    "name": "Machine Lateral Raise",
+    "frames": [
+      "img/exercises/machine-lateral-raise/0.webp"
+    ],
+    "match": "exact",
+    "author": "VELA",
+    "source": "VELA",
+    "source_url": "",
+    "license": "Generated demo photo",
+    "license_url": "",
+    "note": "Generated demo photo for VELA, modelled on a Hammer Strength selectorized lateral raise."
+  },
   "rear-delt-fly": {
     "name": "Rear Delt Fly",
     "frames": [
